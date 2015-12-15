@@ -1,0 +1,9 @@
+{
+  "flags": [
+    {{if eq (flagString "flavor") "x"}}
+      {{template "flavorx"}}
+    {{else if eq (flagString "flavor") "y"}}
+      {{template "flavory"}}
+    {{end}}
+  ]
+}
