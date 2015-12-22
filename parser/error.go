@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"encoding/json"

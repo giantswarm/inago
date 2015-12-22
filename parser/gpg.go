@@ -1,4 +1,6 @@
-package infraconfigparser
+package parser
+
+// TODO test decryption
 
 import (
 	"bytes"

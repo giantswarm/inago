@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"bytes"
@@ -29,12 +29,6 @@ type FlagDefinition struct {
 
 // FlagTmpl is the structure defined in flag templates.
 type FlagTmpl struct {
-	// Overwrites defines what configuration flags this flags overwrite. It is an
-	// error if the given configuration set cannot be found. It is also an error
-	// if any flag supposed to be overwritten cannot be found in the given
-	// configuration set.
-	Overwrites string `json:"overwrites"`
-
 	// FlagDefinition is a list of flag definitions. See FlagDefinition.
 	FlagDefinitions []FlagDefinition `json:"flags"`
 }
@@ -64,19 +58,19 @@ func (fs Flags) OverwriteWith(overwrite *viper.Viper) *viper.Viper {
 	return v
 }
 
-// LoadAllFlagTmpls tries to load all flags by the defined templates within a
+// LoadAllFlags tries to load all flags by the defined templates within a
 // configuration set. There is a root template flag.tmpl. All other templates
 // will be handled as partials. So they need to be included in the root
 // template by the golang template statement. dynFlags is a viper containing
 // dynamic flags given by --flag=foo:bar.
-func (cl ConfigLoader) LoadAllFlags(dynFlags *viper.Viper) (Flags, error) {
+func (tl TmplLoader) LoadAllFlags(dynFlags *viper.Viper) (Flags, error) {
 	flags := Flags{}
 
-	tmplPaths, err := tmplPathsRecursive(cl.FlagPath, tmplExt)
+	tmplPaths, err := tmplPathsRecursive(tl.flagPath, tmplExt)
 	if err != nil {
 		return Flags{}, maskAny(err)
 	}
-	partialPaths, err := tmplPathsRecursive(cl.FlagPath, partialExt)
+	partialPaths, err := tmplPathsRecursive(tl.flagPath, partialExt)
 	if err != nil {
 		return Flags{}, maskAny(err)
 	}

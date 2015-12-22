@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"testing"
@@ -7,15 +7,15 @@ import (
 )
 
 func Test_Flag_Simple(t *testing.T) {
-	c := NewConfigLoaderConfig{
-		FlagPath: "fixtures/simple/flag",
+	c := NewTmplLoaderConfig{
+		TmplPath: "../fixture/simple",
 	}
-	cl := NewConfigLoader(c)
+	tl := NewTmplLoader(c)
 
 	v := viper.New()
 	v.Set("flavor", "x")
 
-	flags, err := cl.LoadAllFlags(v)
+	flags, err := tl.LoadAllFlags(v)
 	if err != nil {
 		t.Fatalf("LoadAllFlags failed: %#v", err)
 	}
@@ -28,15 +28,15 @@ func Test_Flag_Simple(t *testing.T) {
 }
 
 func Test_Flag_Subdir(t *testing.T) {
-	c := NewConfigLoaderConfig{
-		FlagPath: "fixtures/subdir/flag",
+	c := NewTmplLoaderConfig{
+		TmplPath: "../fixture/subdir",
 	}
-	cl := NewConfigLoader(c)
+	tl := NewTmplLoader(c)
 
 	v := viper.New()
 	v.Set("flavor", "y")
 
-	flags, err := cl.LoadAllFlags(v)
+	flags, err := tl.LoadAllFlags(v)
 	if err != nil {
 		t.Fatalf("LoadAllFlags failed: %#v", err)
 	}

@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"bytes"
@@ -7,14 +7,16 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Unit struct {
-	Name string   `json:"name,omitempty"`
-	Tmpl UnitTmpl `json:"tmpl,omitempty"`
-}
-
 type UnitTmpl struct {
 	// general
-	Type string `json:"type,omitempty"`
+
+	// UnitType is the GS specific unit type like lb-register or ambassador.
+	GSType string `json:"gs-type,omitempty"`
+
+	// SystemdType is the Type statement of a systemd unit file's Service
+	// section. E.g. oneshot.
+	SystemdType string `json:"systemd-type,omitempty"`
+	Iptables    bool   `json:"iptables,omitempty"`
 
 	// service
 	Name      string   `json:"name,omitempty"`
@@ -28,14 +30,22 @@ type UnitTmpl struct {
 	Visibility string `json:"visibility,omitempty"`
 }
 
-func (cl ConfigLoader) LoadAllUnits(allFlags *viper.Viper) ([]Unit, error) {
-	units := []Unit{}
+type ServiceTmpl struct {
+	Name      string     `json:"name,omitempty"`
+	After     string     `json:"after,omitempty"`
+	Scale     int        `json:"scale,omitempty"`
+	Conflicts []string   `json:"conflicts,omitempty"`
+	Units     []UnitTmpl `json:"units,omitempty"`
+}
 
-	tmplPaths, err := tmplPathsRecursive(cl.UnitPath, tmplExt)
+func (tl TmplLoader) LoadAllServiceTmpls(allFlags *viper.Viper) ([]ServiceTmpl, error) {
+	serviceTmpls := []ServiceTmpl{}
+
+	tmplPaths, err := tmplPathsRecursive(tl.servicePath, tmplExt)
 	if err != nil {
 		return nil, maskAny(err)
 	}
-	partialPaths, err := tmplPathsRecursive(cl.UnitPath, partialExt)
+	partialPaths, err := tmplPathsRecursive(tl.servicePath, partialExt)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -70,18 +80,14 @@ func (cl ConfigLoader) LoadAllUnits(allFlags *viper.Viper) ([]Unit, error) {
 		if err != nil {
 			return nil, maskAny(err)
 		}
-		var ut UnitTmpl
-		err = unmarshalJSONFromBuffer(buffer, &ut)
+		var st ServiceTmpl
+		err = unmarshalJSONFromBuffer(buffer, &st)
 		if err != nil {
 			return nil, maskAny(err)
 		}
 
-		g := Unit{
-			Name: configNameByPath(tmplPath),
-			Tmpl: ut,
-		}
-		units = append(units, g)
+		serviceTmpls = append(serviceTmpls, st)
 	}
 
-	return units, nil
+	return serviceTmpls, nil
 }

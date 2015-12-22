@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"bytes"
@@ -17,14 +17,14 @@ type Collection struct {
 	Tmpl CollectionTmpl `json:"tmpl,omitempty"`
 }
 
-func (cl ConfigLoader) LoadAllCollections(allFlags *viper.Viper) ([]Collection, error) {
+func (tl TmplLoader) LoadAllCollections(allFlags *viper.Viper) ([]Collection, error) {
 	collections := []Collection{}
 
-	tmplPaths, err := tmplPathsRecursive(cl.CollectionPath, tmplExt)
+	tmplPaths, err := tmplPathsRecursive(tl.collectionPath, tmplExt)
 	if err != nil {
 		return nil, maskAny(err)
 	}
-	partialPaths, err := tmplPathsRecursive(cl.CollectionPath, partialExt)
+	partialPaths, err := tmplPathsRecursive(tl.collectionPath, partialExt)
 	if err != nil {
 		return nil, maskAny(err)
 	}

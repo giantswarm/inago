@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"fmt"
@@ -82,4 +82,19 @@ func flagString(v *viper.Viper) func(string) (string, error) {
 func dockerLink(service, alias string) string {
 	// TODO fix service name when scaled
 	return fmt.Sprintf("--link %s.service:%s", service, alias)
+}
+
+func dict(items ...interface{}) (map[string]interface{}, error) {
+	if len(items)%2 != 0 {
+		return nil, maskAny(errors.New("invalid dict call"))
+	}
+	dict := make(map[string]interface{}, len(items)/2)
+	for i := 0; i < len(items); i += 2 {
+		key, ok := items[i].(string)
+		if !ok {
+			return nil, maskAny(errors.New("dict keys must be strings"))
+		}
+		dict[key] = items[i+1]
+	}
+	return dict, nil
 }

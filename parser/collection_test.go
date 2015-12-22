@@ -1,4 +1,4 @@
-package infraconfigparser
+package parser
 
 import (
 	"testing"
@@ -7,12 +7,12 @@ import (
 )
 
 func Test_Collection_Simple(t *testing.T) {
-	c := NewConfigLoaderConfig{
-		CollectionPath: "fixtures/simple/collection",
+	c := NewTmplLoaderConfig{
+		TmplPath: "../fixture/simple",
 	}
-	cl := NewConfigLoader(c)
+	tl := NewTmplLoader(c)
 
-	collections, err := cl.LoadAllCollections(nil)
+	collections, err := tl.LoadAllCollections(nil)
 	if err != nil {
 		t.Fatalf("LoadAllFlags failed: %#v", err)
 	}
@@ -37,15 +37,15 @@ func Test_Collection_Simple(t *testing.T) {
 }
 
 func Test_Collection_Subdir(t *testing.T) {
-	c := NewConfigLoaderConfig{
-		CollectionPath: "fixtures/subdir/collection",
+	c := NewTmplLoaderConfig{
+		TmplPath: "../fixture/subdir",
 	}
-	cl := NewConfigLoader(c)
+	tl := NewTmplLoader(c)
 
 	v := viper.New()
 	v.Set("flavor", "y")
 
-	collections, err := cl.LoadAllCollections(v)
+	collections, err := tl.LoadAllCollections(v)
 	if err != nil {
 		t.Fatalf("LoadAllFlags failed: %#v", err)
 	}

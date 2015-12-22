@@ -1,4 +1,4 @@
-PROJECT=infra-config-parser
+PROJECT=infra-tmpl-go
 
 BUILD_PATH := $(shell pwd)/.gobuild
 
