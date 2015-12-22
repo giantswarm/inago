@@ -1,1 +1,1 @@
-# infra-config-parser
+# infra-tmpl-go

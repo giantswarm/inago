@@ -1,0 +1,5 @@
+"subdir",
+"subdir",
+{{if eq (flagString "flavor") "y"}}
+  "y"
+{{end}}

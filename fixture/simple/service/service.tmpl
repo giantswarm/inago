@@ -1,0 +1,51 @@
+{
+  "name": "service",
+  "components": {
+      "comp/one": {
+        "image": "namespace/image:version",
+        "ports": 80,
+        "args": [
+          "foo",
+          "bar"
+        ]
+      },
+      "comp/two": {
+        "image": "namespace/image:version",
+        "ports": 80,
+        "args": [
+          "foo",
+          "bar"
+        ],
+        "scale": { "min": 2 },
+        "links": [
+          { "component": "comp/one", "target_port": 80 }
+        ],
+        "domains": {
+          "80": [
+            {{if eq (flagString "flavor") "x"}}
+              "public",
+            {{end}}
+            "private",
+          ]
+        }
+      }
+    }
+  },
+  "priviliged": {
+    "after": "utils.service",
+    "conflicts": [ "comp/one" ],
+    "components": {
+      "comp/one": {
+        "iptables": true
+      },
+      "comp/two": {
+        "iptables": true,
+        "domains": {
+          "visibility": {
+            "80:private": "private"
+          }
+        }
+      }
+    }
+  }
+}

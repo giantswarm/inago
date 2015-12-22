@@ -1,0 +1,34 @@
+{{if .Unit}}
+  [Unit]
+{{end}}
+{{range $statement := .Unit}}
+  {{$statement.Key}}={{$statement.Val}}
+{{end}}
+
+{{if .Service}}
+  [Service]
+{{end}}
+{{range $statement := .Service}}
+  {{$statement.Key}}={{$statement.Val}}
+{{end}}
+
+{{if .Timer}}
+  [Timer]
+{{end}}
+{{range $statement := .Timer}}
+  {{$statement.Key}}={{$statement.Val}}
+{{end}}
+
+{{if .Install}}
+  [Install]
+{{end}}
+{{range $statement := .Install}}
+  {{$statement.Key}}={{$statement.Val}}
+{{end}}
+
+{{if .XFleet}}
+  [X-Fleet]
+{{end}}
+{{range $statement := .XFleet}}
+  {{$statement.Key}}={{$statement.Val}}
+{{end}}
