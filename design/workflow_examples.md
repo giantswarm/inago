@@ -14,7 +14,7 @@ http://127.0.0.1:4001
 ```
 
 ### ping
-For sanity's sake, let's add an easy way to test if we can actually reach the cluster.
+For sanity's sake, let's add an easy way to test if we can actually reach the cluster (exit codes for automation).
 ```
 $ formica ping
 Cluster is reachable
@@ -42,32 +42,33 @@ UNIT                  HASH    DSTATE   STATE    TMACHINE
 hello-world.service   e55c0ae launched launched 113f16a7.../127.0.0.1
 ```
 
-### gather
+### fetch
 The cluster should be the source of truth concerning state - having the state stored externally can lead to drift between the cluster state and the external state. It is still possible to commit the configuration to source control.
-To this end, we should be able to pull the configuration from it.
+To this end, we should be able to fetch the configuration from the cluster itself.
 ```
 $ fleetctl --endpoint http://127.0.0.1:4001 list-units
 UNIT                  HASH    DSTATE   STATE    TMACHINE
 hello-world.service   e55c0ae launched launched 113f16a7.../127.0.0.1
 $ ls
-$ formica gather
+$ formica fetch
 Service "hello-world" found in cluster
-Gathering service definition "hello-world" from cluster
+Fetching service definition "hello-world" from cluster
 $ ls
 [CONFIGURATION DETAILING HELLO_WORLD SERVICE]
-$ formica gather
+$ formica fetch
 No changes detected between cluster and local state
 ```
 
 ## Workflows
 
 ### Without source control
-- Gather latest configuration from cluster
+- Fetch latest configuration from cluster
 - Make changes to configuration
 - Apply changes to cluster
 
 ### With source control
 - Checkout latest configuration from source control
+- Test no change between cluster and source control states
 - Make changes to configuration
 - Apply changes to cluster
 - Commit changes to source control
