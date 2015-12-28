@@ -16,7 +16,7 @@ http://127.0.0.1:4001
 ### ping
 For sanity's sake, let's add an easy way to test if we can actually reach the cluster.
 ```
-$ formica ping && echo $?
+$ formica ping
 Cluster is reachable
 $ echo $?
 0
