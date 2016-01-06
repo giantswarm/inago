@@ -129,16 +129,18 @@ With regards to the service API, the files would be joined together into one lar
 
 ```
 {
-    "example.json": {
-        "units": {
-        ...
-    "ambassador.json": {
-        "systemd": {
-        ...
-    },
-    "restart_policy.json": {
-        "Restart": "on-failure",
-        ...
+    "files": {
+        "example.json": {
+            "units": {
+            ...
+        "ambassador.json": {
+            "systemd": {
+            ...
+        },
+        "restart_policy.json": {
+            "Restart": "on-failure",
+            ...
+        }    
     }
 }
 ```
