@@ -80,9 +80,8 @@ type Fleet interface {
 	// setting the unit's target state to inactive.
 	Destroy(name string) error
 
-	// GetStatus fetches the current status of a unit. If there cannot be any
-	// unit found, an error that you can identify using IsUnitNotFound is
-	// returned.
+	// GetStatus fetches the current status of a unit. If the unit cannot be
+	// found, an error that you can identify using IsUnitNotFound is returned.
 	GetStatus(name string) (UnitStatus, error)
 }
 
