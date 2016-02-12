@@ -56,6 +56,9 @@ test:
 	    golang:1.5 \
 	    $(TEST_COMMAND)
 		
+lint:
+	go vet -x
+
 ci-build: $(SOURCE) VERSION .gobuild
 	echo Building for $(GOOS)/$(GOARCH)
 	$(BUILD_COMMAND)
