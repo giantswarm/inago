@@ -5,6 +5,9 @@ language: go
 go:
     - 1.5
 
+notifications:
+    email: false
+
 before_install:
 - wget https://downloads.giantswarm.io/builder/0.11.0/builder
 - chmod +x ./builder
