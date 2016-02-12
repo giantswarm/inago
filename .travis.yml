@@ -1,0 +1,17 @@
+sudo: false # Explicitly use container-based infrastructure
+
+language: go
+
+go:
+    - 1.5
+
+before_install:
+- wget https://downloads.giantswarm.io/builder/0.11.0/builder
+- chmod +x ./builder
+- export PATH=$PATH:$PWD
+
+script:
+- make lint
+- make ci-test
+- make ci-build
+- ./formica
