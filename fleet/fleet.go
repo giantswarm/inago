@@ -9,9 +9,6 @@ import (
 	"net/url"
 
 	"github.com/coreos/fleet/client"
-	"github.com/coreos/fleet/etcd"
-	"github.com/coreos/fleet/machine"
-	"github.com/coreos/fleet/registry"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
 )
@@ -92,7 +89,7 @@ type Fleet interface {
 func NewFleet(config Config) (Fleet, error) {
 	client, err := client.NewHTTPClient(config.Client, config.Endpoint)
 	if err != nil {
-		return nil, mask(err)
+		return nil, maskAny(err)
 	}
 
 	newFleet := fleet{
@@ -157,7 +154,7 @@ func (f fleet) Destroy(name string) error {
 
 func (f fleet) GetStatus(name string) (UnitStatus, error) {
 	// Lookup fleet cluster state.
-	fleetUnits := f.Client.Units()
+	fleetUnits, err := f.Client.Units()
 	if err != nil {
 		return UnitStatus{}, maskAny(err)
 	}
@@ -174,7 +171,7 @@ func (f fleet) GetStatus(name string) (UnitStatus, error) {
 	}
 
 	// Lookup machine states.
-	fleetUnitStates := f.Client.UnitStates()
+	fleetUnitStates, err := f.Client.UnitStates()
 	if err != nil {
 		return UnitStatus{}, maskAny(err)
 	}
@@ -207,16 +204,15 @@ func (f fleet) GetStatus(name string) (UnitStatus, error) {
 	return ourUnitStatus, nil
 }
 
-func ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
+func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 	machineStates, err := f.Client.Machines()
 	if err != nil {
 		return nil, maskAny(err)
 	}
 
-	var ip net.IP
 	for _, ms := range machineStates {
 		if unitState.MachineID == ms.ID {
-			return net.ParseIP(ms.PublicIP)
+			return net.ParseIP(ms.PublicIP), nil
 		}
 	}
 
