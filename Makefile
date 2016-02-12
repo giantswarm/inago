@@ -27,13 +27,16 @@ clean:
 	#
 	# Fetch private packages first (so `go get` skips them later)
 	# @GOPATH=$(GOPATH) builder go get github.com/spf13/cobra
-
+	# Pin versions of certain libs
+	@builder get dep -b v0.10.2 git@github.com:coreos/fleet.git $(GOPATH)/src/github.com/coreos/fleet
+	#
+	@GOPATH=$(GOPATH) builder go get github.com/juju/errgo
 	#
 	# Fetch public dependencies via `go get`
 	GOPATH=$(GOPATH) go get -d -v github.com/giantswarm/$(PROJECT)
 
 $(BIN): $(SOURCE) VERSION .gobuild
-	echo Building inside Docker container for $(GOOS)/$(GOARCH)
+	@echo Building inside Docker container for $(GOOS)/$(GOARCH)
 	docker run \
 	    --rm \
 	    -v $(shell pwd):/usr/code \
@@ -55,14 +58,14 @@ test:
 	    -w /usr/code \
 	    golang:1.5 \
 	    $(TEST_COMMAND)
-		
+
 lint:
 	go vet -x
 
 ci-build: $(SOURCE) VERSION .gobuild
 	echo Building for $(GOOS)/$(GOARCH)
 	$(BUILD_COMMAND)
-	
+
 ci-test:
 	echo Testing for $(GOOS)/$(GOARCH)
 	$(TEST_COMMAND)
