@@ -28,7 +28,7 @@ clean:
 	# Fetch private packages first (so `go get` skips them later)
 	# @GOPATH=$(GOPATH) builder go get github.com/spf13/cobra
 	# Pin versions of certain libs
-	@builder get dep -b v0.10.2 git@github.com:coreos/fleet.git $(GOPATH)/src/github.com/coreos/fleet
+	@builder get dep -b v0.10.2 https://github.com/coreos/fleet.git $(GOPATH)/src/github.com/coreos/fleet
 	#
 	@GOPATH=$(GOPATH) builder go get github.com/juju/errgo
 	#
