@@ -169,6 +169,10 @@ func (f fleet) GetStatus(name string) (UnitStatus, error) {
 		}
 	}
 
+	if foundFleetUnit == nil {
+		return UnitStatus{}, maskAny(unitNotFoundError)
+	}
+
 	// Lookup machine states.
 	fleetUnitStates := f.Client.UnitStates()
 	if err != nil {
