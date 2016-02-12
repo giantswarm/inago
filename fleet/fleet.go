@@ -67,27 +67,25 @@ type UnitStatus struct {
 // Fleet defines the interface a fleet client needs to implement to provide
 // basic operations against a fleet endpoint.
 type Fleet interface {
-	// Submit schedules a unit on the configured fleet cluster. In case the given
-	// unit already exists, UnitAlreadyExistsError is returned.
+	// Submit schedules a unit on the configured fleet cluster. This is done by
+	// setting the unit's target state to loaded.
 	Submit(name, content string) error
 
-	// Start starts a unit on the configured fleet cluster. In case the given
-	// unit is already started, UnitRunningError is returned. If there cannot be
-	// any unit found, UnitNotFoundError is returned.
+	// Start starts a unit on the configured fleet cluster. This is done by
+	// setting the unit's target state to launched.
 	Start(name string) error
 
-	// Stop stops a unit on the configured fleet cluster. In case the given unit
-	// is already stopped, UnitHaltError is returned. If there cannot be any unit
-	// found, UnitNotFoundError is returned.
+	// Stop stops a unit on the configured fleet cluster. This is done by
+	// setting the unit's target state to loaded.
 	Stop(name string) error
 
-	// Destroy delets a unit on the configured fleet cluster. In case the given
-	// unit is not stopped, UnitRunningError is returned. If there cannot be any
-	// unit found, UnitNotFoundError is returned.
+	// Destroy delets a unit on the configured fleet cluster. This is done by
+	// setting the unit's target state to inactive.
 	Destroy(name string) error
 
-	// GetStatus fetches the current status of a unit. If there cannot be any unit
-	// found, UnitNotFoundError is returned.
+	// GetStatus fetches the current status of a unit. If there cannot be any
+	// unit found, an error that you can identify using IsUnitNotFound is
+	// returned.
 	GetStatus(name string) (UnitStatus, error)
 }
 
