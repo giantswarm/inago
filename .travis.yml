@@ -17,4 +17,4 @@ script:
 - make lint
 - make ci-build
 - make ci-test
-- ./formica
+- ./formicactl/formicactl
