@@ -20,5 +20,4 @@ func createRun(cmd *cobra.Command, args []string) {
 		cmd.Help()
 		os.Exit(1)
 	}
-
 }

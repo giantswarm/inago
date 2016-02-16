@@ -258,4 +258,6 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 }
 
 // TODO
-func PrintStatus(UnitStatus) {}
+func PrintStatus(UnitStatus) error {
+	return nil
+}
