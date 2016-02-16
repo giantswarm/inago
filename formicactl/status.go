@@ -19,7 +19,7 @@ var (
 )
 
 func statusRun(cmd *cobra.Command, args []string) {
-	if len(args) < 1 || len(args) > 1 {
+	if len(args) != 1 {
 		cmd.Help()
 		os.Exit(1)
 	}
