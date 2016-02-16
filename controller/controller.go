@@ -29,19 +29,19 @@ func DefaultConfig() Config {
 // operations for groups of unit files against a fleet cluster.
 type Controller interface {
 	// Submit schedules a group on the configured fleet cluster. This is done by
-	// setting the units target state to loaded.
+	// setting the state of the units in the group to loaded.
 	Submit(group string) error
 
 	// Start starts a group on the configured fleet cluster. This is done by
-	// setting the units target state to launched.
+	// setting the state of the units in the group to launched.
 	Start(group string) error
 
 	// Stop stops a group on the configured fleet cluster. This is done by
-	// setting the unit's target state to loaded.
+	// setting the state of the units in the group to loaded.
 	Stop(group string) error
 
 	// Destroy delets a group on the configured fleet cluster. This is done by
-	// setting the unit's target state to inactive.
+	// setting the state of the units in the group to inactive.
 	Destroy(group string) error
 
 	// GetStatus fetches the current status of a group. If the unit cannot be
