@@ -13,13 +13,13 @@ COMMIT := $(shell git rev-parse --short HEAD)
 
 SOURCE=$(shell find . -name '*.go')
 
-BUILD_COMMAND=go build -o formicactl/$(BIN) github.com/giantswarm/formica/$(BIN)
+BUILD_COMMAND=go build -o $(BIN)
 TEST_COMMAND=go test ./... -cover
 
-all: formica/$(BIN)
+all: $(BIN)
 
 clean:
-	rm -rf $(BUILD_PATH) formicactl/$(BIN)
+	rm -rf $(BUILD_PATH) $(BIN)
 
 .gobuild:
 	@mkdir -p $(GS_PATH)
@@ -34,7 +34,7 @@ clean:
 deps:
 	@${MAKE} -B -s .gobuild
 
-formica/$(BIN): $(SOURCE) VERSION .gobuild
+$(BIN): $(SOURCE) VERSION .gobuild
 	@echo Building inside Docker container for $(GOOS)/$(GOARCH)
 	docker run \
 	    --rm \
@@ -46,8 +46,8 @@ formica/$(BIN): $(SOURCE) VERSION .gobuild
 	    golang:1.5 \
 	    $(BUILD_COMMAND)
 
-test:
-	echo Testing inside Docker container for $(GOOS)/$(GOARCH)
+test: $(SOURCE) VERSION .gobuild
+	@echo Testing inside Docker container for $(GOOS)/$(GOARCH)
 	docker run \
 	    --rm \
 	    -v $(shell pwd):/usr/code \
@@ -65,6 +65,6 @@ ci-build: $(SOURCE) VERSION .gobuild
 	echo Building for $(GOOS)/$(GOARCH)
 	$(BUILD_COMMAND)
 
-ci-test:
+ci-test: $(SOURCE) VERSION .gobuild
 	echo Testing for $(GOOS)/$(GOARCH)
 	$(TEST_COMMAND)

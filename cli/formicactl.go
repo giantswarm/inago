@@ -1,6 +1,6 @@
 // Package formicactl implements a command line client for formica. Cobra CLI
 // is used as framework.
-package main
+package cli
 
 import (
 	"net/url"
@@ -19,7 +19,7 @@ var (
 	newController controller.Controller
 	newFleet      fleet.Fleet
 
-	mainCmd = &cobra.Command{
+	MainCmd = &cobra.Command{
 		Use:   "formicactl",
 		Short: "orchestrate groups of unit files on Fleet clusters",
 		Long:  "orchestrate groups of unit files on Fleet clusters",
@@ -48,16 +48,12 @@ var (
 )
 
 func init() {
-	mainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "file:///var/run/fleet.sock", "endpoint used to connect to fleet")
+	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "file:///var/run/fleet.sock", "endpoint used to connect to fleet")
+
+	MainCmd.AddCommand(createCmd)
+	MainCmd.AddCommand(statusCmd)
 }
 
 func mainRun(cmd *cobra.Command, args []string) {
 	cmd.Help()
-}
-
-func main() {
-	mainCmd.AddCommand(createCmd)
-	mainCmd.AddCommand(statusCmd)
-
-	mainCmd.Execute()
 }
