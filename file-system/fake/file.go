@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-var (
-	ErrFileOperationNotPermitted = errors.New("fake file does not exist and therefore this operation is not permitted")
-	ErrFileDoesNotExist          = errors.New("fake file does not exist")
-)
-
 // Fake represents are readable in memory version of os.File which
 // can be used for testing.
 type file struct {
