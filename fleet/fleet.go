@@ -14,11 +14,15 @@ import (
 	"github.com/coreos/fleet/unit"
 )
 
+// Config provides all necessary and injectable configurations for a new
+// fleet client.
 type Config struct {
 	Client   *http.Client
 	Endpoint url.URL
 }
 
+// DefaultConfig provides a set of configurations with default values by best
+// effort.
 func DefaultConfig() Config {
 	URL, err := url.Parse("file:///var/run/fleet.sock")
 	if err != nil {
@@ -86,6 +90,12 @@ type Fleet interface {
 	GetStatus(name string) (UnitStatus, error)
 }
 
+// NewFleet creates a new Fleet that is configured with the given settings.
+//
+//   newConfig := fleet.DefaultConfig()
+//   newConfig.Endpoint = myCustomEndpoint
+//   newFleet := fleet.NewFleet(newConfig)
+//
 func NewFleet(config Config) (Fleet, error) {
 	var trans http.RoundTripper
 
