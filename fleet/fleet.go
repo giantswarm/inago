@@ -256,8 +256,3 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 
 	return nil, maskAny(ipNotFoundError)
 }
-
-// TODO
-func PrintStatus(UnitStatus) error {
-	return nil
-}

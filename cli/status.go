@@ -5,8 +5,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-
-	"github.com/giantswarm/formica/fleet"
 )
 
 var (
@@ -24,15 +22,21 @@ func statusRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	status, err := newController.GetStatus(args[0])
+	req, err := createRequest(args[0])
 	if err != nil {
-		fmt.Printf("%#v\n", err)
+		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 
-	err = fleet.PrintStatus(status)
+	status, err := newController.GetStatus(req)
 	if err != nil {
-		fmt.Printf("%#v\n", err)
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+
+	err = printStatus(status)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 }
