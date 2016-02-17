@@ -4,6 +4,7 @@
 package fleet
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,11 +14,15 @@ import (
 	"github.com/coreos/fleet/unit"
 )
 
+// Config provides all necessary and injectable configurations for a new
+// fleet client.
 type Config struct {
 	Client   *http.Client
 	Endpoint url.URL
 }
 
+// DefaultConfig provides a set of configurations with default values by best
+// effort.
 func DefaultConfig() Config {
 	URL, err := url.Parse("file:///var/run/fleet.sock")
 	if err != nil {
@@ -85,7 +90,51 @@ type Fleet interface {
 	GetStatus(name string) (UnitStatus, error)
 }
 
+// NewFleet creates a new Fleet that is configured with the given settings.
+//
+//   newConfig := fleet.DefaultConfig()
+//   newConfig.Endpoint = myCustomEndpoint
+//   newFleet := fleet.NewFleet(newConfig)
+//
 func NewFleet(config Config) (Fleet, error) {
+	var trans http.RoundTripper
+
+	switch config.Endpoint.Scheme {
+	case "unix", "file":
+		if len(config.Endpoint.Host) > 0 {
+			// This commonly happens if the user misses the leading slash after the
+			// scheme. For example, "unix://var/run/fleet.sock" would be parsed as
+			// host "var".
+			return nil, maskAny(fmt.Errorf("unable to connect to host %q with scheme %q", config.Endpoint.Host, config.Endpoint.Scheme))
+		}
+
+		// The Path field is only used for dialing and should not be used when
+		// building any further HTTP requests.
+		sockPath := config.Endpoint.Path
+		config.Endpoint.Path = ""
+
+		// http.Client doesn't support the schemes "unix" or "file", but it
+		// is safe to use "http" as dialFunc ignores it anyway.
+		config.Endpoint.Scheme = "http"
+
+		// The Host field is not used for dialing, but will be exposed in debug logs.
+		config.Endpoint.Host = "domain-sock"
+
+		trans = &http.Transport{
+			Dial: func(s, t string) (net.Conn, error) {
+				// http.Client does not natively support dialing a unix domain socket,
+				// so the dial function must be overridden.
+				return net.Dial("unix", sockPath)
+			},
+		}
+	case "http", "https":
+		trans = http.DefaultTransport
+	default:
+		return nil, maskAny(fmt.Errorf("invalid scheme in fleet endpoint: %s", config.Endpoint.Scheme))
+	}
+
+	config.Client.Transport = trans
+
 	client, err := client.NewHTTPClient(config.Client, config.Endpoint)
 	if err != nil {
 		return nil, maskAny(err)
