@@ -10,10 +10,14 @@ import (
 	"github.com/giantswarm/formica/fleet"
 )
 
+// Config provides all necessary and injectable configurations for a new
+// controller.
 type Config struct {
 	Fleet fleet.Fleet
 }
 
+// DefaultConfig provides a set of configurations with default values by best
+// effort.
 func DefaultConfig() Config {
 	newFleetConfig := fleet.DefaultConfig()
 	newFleet, err := fleet.NewFleet(newFleetConfig)
@@ -52,6 +56,13 @@ type Controller interface {
 	GetStatus(req Request) ([]fleet.UnitStatus, error)
 }
 
+// NewController creates a new Controller that is configured with the given
+// settings.
+//
+//   newConfig := controller.DefaultConfig()
+//   newConfig.Fleet = myCustomFleetClient
+//   newController := controller.NewController(newConfig)
+//
 func NewController(config Config) Controller {
 	newController := controller{
 		Config: config,
@@ -64,22 +75,39 @@ type controller struct {
 	Config
 }
 
+// Unit represents a systemd unit file.
 type Unit struct {
 	// Name is something like "appd@.service". It needs to be extended using the
 	// slice ID before submitting to fleet.
-	Name    string
+	Name string
+
+	// Content represents normal systemd unit file content.
 	Content string
 }
 
+// Request represents a controller request. This is used to process some action
+// on the controller.
 type Request struct {
 	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
 	// "5", etc..
 	SliceIDs []string
-	Units    []Unit
+
+	// Units represents a list of unit files that is supposed to be extended
+	// using the provided slice IDs.
+	Units []Unit
 }
 
 var unitExp = regexp.MustCompile("@.service")
 
+// ExtendSlices extends unit files with respect to the given slice IDs. Having
+// slice IDs "1" and "2" and having unit files "foo@.service" and
+// "bar@.service" results in the following extended unit files.
+//
+// 	 foo@1.service
+// 	 bar@1.service
+// 	 foo@2.service
+// 	 bar@2.service
+//
 func (r Request) ExtendSlices() (Request, error) {
 	newRequest := Request{
 		SliceIDs: r.SliceIDs,
