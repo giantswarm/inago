@@ -2,25 +2,53 @@ package filesystemfake
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/giantswarm/formica/file-system/spec"
 )
 
-func NewFileSystem() spec.FileSystem {
+func NewFileSystem() filesystemspec.FileSystem {
 	newFileSystem := &fake{
-		Storage: map[string][]byte{},
+		Storages: map[string]map[string][]byte{},
 	}
 
 	return newFileSystem
 }
 
 type fake struct {
-	Storage map[string][]byte
+	Storages map[string]map[string][]byte
+}
+
+func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
+	newFileInfos := []os.FileInfo{}
+
+	if s, ok := f.Storages[dirname]; ok {
+		for filename, content := range s {
+			newFileInfos = append(newFileInfos, newFileInfo(filename, content))
+		}
+	}
+
+	if len(newFileInfos) > 0 {
+		return newFileInfos, nil
+	}
+
+	pathErr := &os.PathError{
+		Op:   "open",
+		Path: dirname,
+		Err:  noSuchFileOrDirectoryError,
+	}
+
+	return nil, maskAny(pathErr)
 }
 
 func (f *fake) ReadFile(filename string) ([]byte, error) {
-	if bytes, ok := f.Storage[filename]; ok {
-		return bytes, nil
+	dir := filepath.Dir(filename)
+	base := filepath.Base(filename)
+
+	if s, ok := f.Storages[dir]; ok {
+		if bytes, ok := s[base]; ok {
+			return bytes, nil
+		}
 	}
 
 	pathErr := &os.PathError{
@@ -33,6 +61,13 @@ func (f *fake) ReadFile(filename string) ([]byte, error) {
 }
 
 func (f *fake) WriteFile(filename string, bytes []byte, perm os.FileMode) error {
-	f.Storage[filename] = bytes
+	dir := filepath.Dir(filename)
+	base := filepath.Base(filename)
+
+	if _, ok := f.Storages[dir]; !ok {
+		f.Storages[dir] = map[string][]byte{}
+	}
+
+	f.Storages[dir][base] = bytes
 	return nil
 }
