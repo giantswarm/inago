@@ -1,3 +1,5 @@
+// Package filesystemreal implements a fiile system that operates against the
+// underlying os.
 package filesystemreal
 
 import (
@@ -7,6 +9,8 @@ import (
 	"github.com/giantswarm/formica/file-system/spec"
 )
 
+// NewFileSystem creates a new real filesystem. Operations are made against the
+// underlying os.
 func NewFileSystem() filesystemspec.FileSystem {
 	newFileSystem := &real{}
 

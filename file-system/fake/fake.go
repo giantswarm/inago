@@ -1,3 +1,5 @@
+// Package filesystemfake implements a fiile system that operates against in
+// memory content.
 package filesystemfake
 
 import (
@@ -7,6 +9,8 @@ import (
 	"github.com/giantswarm/formica/file-system/spec"
 )
 
+// NewFileSystem creates a new fake filesystem. Operations are made against in
+// memory content.
 func NewFileSystem() filesystemspec.FileSystem {
 	newFileSystem := &fake{
 		Storages: map[string]map[string][]byte{},
