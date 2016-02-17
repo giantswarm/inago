@@ -14,6 +14,12 @@ import (
 	"github.com/coreos/fleet/unit"
 )
 
+const (
+	unitStateInactive = "inactive"
+	unitStateLoaded   = "loaded"
+	unitStateLaunched = "launched"
+)
+
 // Config provides all necessary and injectable configurations for a new
 // fleet client.
 type Config struct {
@@ -174,7 +180,7 @@ func (f fleet) Submit(name, content string) error {
 }
 
 func (f fleet) Start(name string) error {
-	err := f.Client.SetUnitTargetState(name, "launched")
+	err := f.Client.SetUnitTargetState(name, unitStateLaunched)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -183,7 +189,7 @@ func (f fleet) Start(name string) error {
 }
 
 func (f fleet) Stop(name string) error {
-	err := f.Client.SetUnitTargetState(name, "loaded")
+	err := f.Client.SetUnitTargetState(name, unitStateLoaded)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -192,7 +198,7 @@ func (f fleet) Stop(name string) error {
 }
 
 func (f fleet) Destroy(name string) error {
-	err := f.Client.SetUnitTargetState(name, "inactive")
+	err := f.Client.SetUnitTargetState(name, unitStateInactive)
 	if err != nil {
 		return maskAny(err)
 	}
