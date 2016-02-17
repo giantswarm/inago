@@ -1,0 +1,19 @@
+#compdef formicactl
+
+local -a options
+options=(
+  '-h'
+  '--help'
+  'help'
+  '--fleet-endpoint'
+)
+_describe 'values' options
+
+_arguments \
+    '1: :->business-logic'
+
+case $state in
+    business-logic)
+        _arguments '1:business logic:(create status)'
+    ;;
+esac

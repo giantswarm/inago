@@ -15,6 +15,6 @@ before_install:
 
 script:
 - make lint
-- make ci-build
 - make ci-test
-- ./formica
+- make ci-build
+- ./formicactl
