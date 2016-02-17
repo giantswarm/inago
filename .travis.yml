@@ -18,3 +18,7 @@ script:
 - make ci-build
 - make ci-test
 - ./formica
+
+# codecov
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

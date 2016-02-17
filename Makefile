@@ -14,7 +14,7 @@ COMMIT := $(shell git rev-parse --short HEAD)
 SOURCE=$(shell find . -name '*.go')
 
 BUILD_COMMAND=go build -a -o $(BIN)
-TEST_COMMAND=go test ./... -cover
+TEST_COMMAND=./go.test.sh
 
 all: $(BIN)
 
