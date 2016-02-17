@@ -55,6 +55,45 @@ func Test_Request_ExtendSlices(t *testing.T) {
 			},
 		},
 
+		// This test ensures that the request is extended when multiple slice IDs
+		// and multiple unit files are given.
+		{
+			Input: Request{
+				SliceIDs: []string{"1", "2"},
+				Units: []Unit{
+					{
+						Name:    "foo@.service",
+						Content: "some foo content",
+					},
+					{
+						Name:    "bar@.service",
+						Content: "some bar content",
+					},
+				},
+			},
+			Expected: Request{
+				SliceIDs: []string{"1", "2"},
+				Units: []Unit{
+					{
+						Name:    "foo@1.service",
+						Content: "some foo content",
+					},
+					{
+						Name:    "bar@1.service",
+						Content: "some bar content",
+					},
+					{
+						Name:    "foo@2.service",
+						Content: "some foo content",
+					},
+					{
+						Name:    "bar@2.service",
+						Content: "some bar content",
+					},
+				},
+			},
+		},
+
 		// This test ensures that the request is extended when arbitrary slice IDs
 		// are given.
 		{
