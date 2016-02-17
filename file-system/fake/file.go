@@ -2,7 +2,6 @@ package filesystemfake
 
 import (
 	"bytes"
-	"errors"
 	"os"
 	"time"
 )
