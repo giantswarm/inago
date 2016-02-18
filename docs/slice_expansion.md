@@ -20,17 +20,17 @@ Formica takes these arguments and looks up the directory `myapp`. Then the
 slice IDs `1`, `2` and `3` are used to create the unit file names accordingly.
 So lets imagine there are this two unit files within `myapp`.
 ```
-some_unit_name@.service
-some_other_unit_name@.service
+myapp_some_unit_name@.service
+myapp_some_other_unit_name@.service
 ```
 
 Given the 3 slice IDs and the unit file names the resulting unit file names
 that are going to be created for our `submit` command are the following.
 ```
-some_unit_name@1.service
-some_other_unit_name@1.service
-some_unit_name@2.service
-some_other_unit_name@2.service
-some_unit_name@3.service
-some_other_unit_name@3.service
+myapp_some_unit_name@1.service
+myapp_some_other_unit_name@1.service
+myapp_some_unit_name@2.service
+myapp_some_other_unit_name@2.service
+myapp_some_unit_name@3.service
+myapp_some_other_unit_name@3.service
 ```
