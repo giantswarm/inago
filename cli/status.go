@@ -9,7 +9,7 @@ import (
 
 var (
 	statusCmd = &cobra.Command{
-		Use:   "status [group]",
+		Use:   "status [group-slice] ...",
 		Short: "status of a group",
 		Long:  "status of a group",
 		Run:   statusRun,
@@ -17,12 +17,7 @@ var (
 )
 
 func statusRun(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		cmd.Help()
-		os.Exit(1)
-	}
-
-	req, err := createRequest(args[0])
+	req, err := createRequest(args)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

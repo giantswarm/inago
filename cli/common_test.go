@@ -17,7 +17,7 @@ type testFileSystemSetup struct {
 func Test_Common_createRequest(t *testing.T) {
 	testCases := []struct {
 		Setup    []testFileSystemSetup
-		Input    string
+		Input    []string
 		Expected controller.Request
 	}{
 		// This test ensures that loading a single unit from a directory results in
@@ -30,7 +30,7 @@ func Test_Common_createRequest(t *testing.T) {
 					FilePerm:    os.FileMode(0644),
 				},
 			},
-			Input: "dirname",
+			Input: []string{"dirname"},
 			Expected: controller.Request{
 				SliceIDs: []string{},
 				Units: []controller.Unit{
@@ -52,9 +52,32 @@ func Test_Common_createRequest(t *testing.T) {
 					FilePerm:    os.FileMode(0644),
 				},
 			},
-			Input: "dirname@1",
+			Input: []string{"dirname@1"},
 			Expected: controller.Request{
 				SliceIDs: []string{"1"},
+				Units: []controller.Unit{
+					{
+						Name:    "dirname_unit@.service",
+						Content: "some unit content",
+					},
+				},
+			},
+		},
+
+		// This test ensures that loading a single unit from a directory with the
+		// slice expression "@1", "@foo" and "@5" results in the expected
+		// controller request.
+		{
+			Setup: []testFileSystemSetup{
+				{
+					FileName:    "dirname/dirname_unit@.service",
+					FileContent: []byte("some unit content"),
+					FilePerm:    os.FileMode(0644),
+				},
+			},
+			Input: []string{"dirname@1"},
+			Expected: controller.Request{
+				SliceIDs: []string{"1", "foo", "5"},
 				Units: []controller.Unit{
 					{
 						Name:    "dirname_unit@.service",
