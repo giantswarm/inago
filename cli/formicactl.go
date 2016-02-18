@@ -55,7 +55,7 @@ var (
 func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
 
-	MainCmd.AddCommand(createCmd)
+	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)
 }
 
