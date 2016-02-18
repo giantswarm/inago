@@ -88,6 +88,9 @@ type Unit struct {
 // Request represents a controller request. This is used to process some action
 // on the controller.
 type Request struct {
+	// Group represents the plain group name without any slice expression.
+	Group string
+
 	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
 	// "5", etc..
 	SliceIDs []string
@@ -144,13 +147,18 @@ func (c controller) Submit(req Request) error {
 }
 
 func (c controller) Start(req Request) error {
-	extended, err := req.ExtendSlices()
+	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
 	if err != nil {
 		return maskAny(err)
 	}
 
-	for _, unit := range extended.Units {
-		err := c.Fleet.Start(unit.Name)
+	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	if err != nil {
+		return maskAny(err)
+	}
+
+	for _, unitStatus := range unitStatusList {
+		err := c.Fleet.Start(unitStatus.Name)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -162,13 +170,18 @@ func (c controller) Start(req Request) error {
 }
 
 func (c controller) Stop(req Request) error {
-	extended, err := req.ExtendSlices()
+	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
 	if err != nil {
 		return maskAny(err)
 	}
 
-	for _, unit := range extended.Units {
-		err := c.Fleet.Stop(unit.Name)
+	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	if err != nil {
+		return maskAny(err)
+	}
+
+	for _, unitStatus := range unitStatusList {
+		err := c.Fleet.Stop(unitStatus.Name)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -180,13 +193,18 @@ func (c controller) Stop(req Request) error {
 }
 
 func (c controller) Destroy(req Request) error {
-	extended, err := req.ExtendSlices()
+	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
 	if err != nil {
 		return maskAny(err)
 	}
 
-	for _, unit := range extended.Units {
-		err := c.Fleet.Destroy(unit.Name)
+	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	if err != nil {
+		return maskAny(err)
+	}
+
+	for _, unitStatus := range unitStatusList {
+		err := c.Fleet.Destroy(unitStatus.Name)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -198,22 +216,17 @@ func (c controller) Destroy(req Request) error {
 }
 
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
-	extended, err := req.ExtendSlices()
+	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
 	if err != nil {
 		return []fleet.UnitStatus{}, maskAny(err)
 	}
 
-	list := []fleet.UnitStatus{}
-	for _, unit := range extended.Units {
-		status, err := c.Fleet.GetStatus(unit.Name)
-		if err != nil {
-			return []fleet.UnitStatus{}, maskAny(err)
-		}
-
-		list = append(list, status)
+	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	if err != nil {
+		return []fleet.UnitStatus{}, maskAny(err)
 	}
 
 	// TODO retry operations
 
-	return list, nil
+	return unitStatusList, nil
 }

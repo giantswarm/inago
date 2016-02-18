@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/schema"
@@ -70,6 +71,9 @@ type UnitStatus struct {
 	// multiple MachineStatus returned. If a unit is not yet scheduled to any
 	// machine, this will be empty.
 	Machine []MachineStatus
+
+	// Name represents the unit file name.
+	Name string
 }
 
 // Fleet defines the interface a fleet client needs to implement to provide
@@ -94,6 +98,10 @@ type Fleet interface {
 	// GetStatus fetches the current status of a unit. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
 	GetStatus(name string) (UnitStatus, error)
+
+	// GetStatusWithExpression fetches the current status of units based on a
+	// regular expression instead of a plain string.
+	GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 }
 
 // NewFleet creates a new Fleet that is configured with the given settings.
@@ -207,55 +215,77 @@ func (f fleet) Destroy(name string) error {
 }
 
 func (f fleet) GetStatus(name string) (UnitStatus, error) {
-	// Lookup fleet cluster state.
-	fleetUnits, err := f.Client.Units()
+	exp, err := regexp.Compile(fmt.Sprintf("^%s$", name))
 	if err != nil {
 		return UnitStatus{}, maskAny(err)
 	}
-	var foundFleetUnit *schema.Unit
+
+	unitStatus, err := f.GetStatusWithExpression(exp)
+	if err != nil {
+		return UnitStatus{}, maskAny(err)
+	}
+
+	if len(unitStatus) != 1 {
+		return UnitStatus{}, maskAny(invalidUnitStatusError)
+	}
+
+	return unitStatus[0], nil
+}
+
+func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error) {
+	// Lookup fleet cluster state.
+	fleetUnits, err := f.Client.Units()
+	if err != nil {
+		return []UnitStatus{}, maskAny(err)
+	}
+	foundFleetUnits := []*schema.Unit{}
 	for _, fu := range fleetUnits {
-		if name == fu.Name {
-			foundFleetUnit = fu
-			break
+		if exp.MatchString(fu.Name) {
+			foundFleetUnits = append(foundFleetUnits, fu)
 		}
 	}
 
-	if foundFleetUnit == nil {
-		return UnitStatus{}, maskAny(unitNotFoundError)
+	if len(foundFleetUnits) == 0 {
+		return []UnitStatus{}, maskAny(unitNotFoundError)
 	}
 
 	// Lookup machine states.
 	fleetUnitStates, err := f.Client.UnitStates()
 	if err != nil {
-		return UnitStatus{}, maskAny(err)
+		return []UnitStatus{}, maskAny(err)
 	}
 	var foundFleetUnitStates []*schema.UnitState
 	for _, fus := range fleetUnitStates {
-		if name == fus.Name {
+		if exp.MatchString(fus.Name) {
 			foundFleetUnitStates = append(foundFleetUnitStates, fus)
 		}
 	}
 
-	// Aggregate our own unit status.
-	ourUnitStatus := UnitStatus{
-		Current: foundFleetUnit.CurrentState,
-		Desired: foundFleetUnit.DesiredState,
-		Machine: []MachineStatus{},
-	}
-	for _, ffus := range foundFleetUnitStates {
-		IP, err := f.ipFromUnitState(ffus)
-		if err != nil {
-			return UnitStatus{}, maskAny(err)
+	// Create our own unit status.
+	ourStatusList := []UnitStatus{}
+	for _, ffu := range foundFleetUnits {
+		ourUnitStatus := UnitStatus{
+			Current: ffu.CurrentState,
+			Desired: ffu.DesiredState,
+			Machine: []MachineStatus{},
+			Name:    ffu.Name,
 		}
-		ourMachineStatus := MachineStatus{
-			ID:            ffus.MachineID,
-			IP:            IP,
-			SystemdActive: ffus.SystemdActiveState,
+		for _, ffus := range foundFleetUnitStates {
+			IP, err := f.ipFromUnitState(ffus)
+			if err != nil {
+				return []UnitStatus{}, maskAny(err)
+			}
+			ourMachineStatus := MachineStatus{
+				ID:            ffus.MachineID,
+				IP:            IP,
+				SystemdActive: ffus.SystemdActiveState,
+			}
+			ourUnitStatus.Machine = append(ourUnitStatus.Machine, ourMachineStatus)
 		}
-		ourUnitStatus.Machine = append(ourUnitStatus.Machine, ourMachineStatus)
+		ourStatusList = append(ourStatusList, ourUnitStatus)
 	}
 
-	return ourUnitStatus, nil
+	return ourStatusList, nil
 }
 
 func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
