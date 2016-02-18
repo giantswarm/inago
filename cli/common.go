@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"regexp"
 
@@ -14,7 +13,7 @@ var groupExp = regexp.MustCompile("@(.*)")
 func readUnitFiles(dirName string) (map[string]string, error) {
 	dirName = groupExp.ReplaceAllString(dirName, "")
 
-	fileInfos, err := ioutil.ReadDir(dirName)
+	fileInfos, err := newFileSystem.ReadDir(dirName)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -25,7 +24,7 @@ func readUnitFiles(dirName string) (map[string]string, error) {
 			continue
 		}
 
-		raw, err := ioutil.ReadFile(filepath.Join(dirName, fileInfo.Name()))
+		raw, err := newFileSystem.ReadFile(filepath.Join(dirName, fileInfo.Name()))
 		if err != nil {
 			return nil, maskAny(err)
 		}

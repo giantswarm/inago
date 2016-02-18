@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/formica/controller"
+	"github.com/giantswarm/formica/file-system/real"
+	"github.com/giantswarm/formica/file-system/spec"
 	"github.com/giantswarm/formica/fleet"
 )
 
@@ -17,6 +19,7 @@ var (
 	}
 
 	newController controller.Controller
+	newFileSystem filesystemspec.FileSystem
 	newFleet      fleet.Fleet
 
 	MainCmd = &cobra.Command{
@@ -43,12 +46,14 @@ var (
 			newControllerConfig := controller.DefaultConfig()
 			newControllerConfig.Fleet = newFleet
 			newController = controller.NewController(newControllerConfig)
+
+			newFileSystem = filesystemreal.NewFileSystem()
 		},
 	}
 )
 
 func init() {
-	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "file:///var/run/fleet.sock", "endpoint used to connect to fleet")
+	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
 
 	MainCmd.AddCommand(createCmd)
 	MainCmd.AddCommand(statusCmd)
