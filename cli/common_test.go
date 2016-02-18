@@ -98,9 +98,9 @@ func Test_Common_createRequest(t *testing.T) {
 			}
 		}
 
-		output, err := createRequest(testCase.Input)
+		output, err := createRequestWithContent(testCase.Input)
 		if err != nil {
-			t.Fatalf("createRequest returned error: %#v", err)
+			t.Fatalf("createRequestWithContent returned error: %#v", err)
 		}
 
 		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {

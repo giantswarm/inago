@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -16,8 +17,15 @@ var (
 )
 
 func submitRun(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		cmd.Help()
+	req, err := createRequestWithContent(args)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+
+	err = newController.Submit(req)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 }

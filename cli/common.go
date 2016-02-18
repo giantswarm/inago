@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"path/filepath"
 	"regexp"
 
@@ -10,11 +11,16 @@ import (
 
 var groupExp = regexp.MustCompile("@(.*)")
 
-func readUnitFiles(slices []string) (map[string]string, error) {
+func dirnameFromSlices(slices []string) string {
 	slice := slices[0]
-	dirName := groupExp.ReplaceAllString(slice, "")
+	dirname := groupExp.ReplaceAllString(slice, "")
+	return dirname
+}
 
-	fileInfos, err := newFileSystem.ReadDir(dirName)
+func readUnitFiles(slices []string) (map[string]string, error) {
+	dirname := dirnameFromSlices(slices)
+
+	fileInfos, err := newFileSystem.ReadDir(dirname)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -25,7 +31,7 @@ func readUnitFiles(slices []string) (map[string]string, error) {
 			continue
 		}
 
-		raw, err := newFileSystem.ReadFile(filepath.Join(dirName, fileInfo.Name()))
+		raw, err := newFileSystem.ReadFile(filepath.Join(dirname, fileInfo.Name()))
 		if err != nil {
 			return nil, maskAny(err)
 		}
@@ -74,13 +80,14 @@ func createSliceIDs(slices []string) ([]string, error) {
 	return sliceIDs, nil
 }
 
-func createRequest(slices []string) (controller.Request, error) {
+func createRequestWithContent(slices []string) (controller.Request, error) {
 	err := validateArgs(slices)
 	if err != nil {
 		return controller.Request{}, maskAny(err)
 	}
 
 	req := controller.Request{
+		Group:    dirnameFromSlices(slices),
 		SliceIDs: []string{},
 		Units:    []controller.Unit{},
 	}
@@ -102,6 +109,27 @@ func createRequest(slices []string) (controller.Request, error) {
 	return req, nil
 }
 
+func createRequest(slices []string) (controller.Request, error) {
+	err := validateArgs(slices)
+	if err != nil {
+		return controller.Request{}, maskAny(err)
+	}
+
+	req := controller.Request{
+		Group:    dirnameFromSlices(slices),
+		SliceIDs: []string{},
+	}
+
+	sliceIDs, err := createSliceIDs(slices)
+	if err != nil {
+		return controller.Request{}, maskAny(err)
+	}
+	req.SliceIDs = sliceIDs
+
+	return req, nil
+}
+
 func printStatus(groupStatus []fleet.UnitStatus) error {
+	fmt.Printf("%#v\n", groupStatus)
 	return nil
 }
