@@ -18,6 +18,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 	testCases := []struct {
 		Setup    []testFileSystemSetup
 		Input    []string
+		Error    error
 		Expected controller.Request
 	}{
 		// This test ensures that loading a single unit from a directory results in
@@ -31,6 +32,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 				},
 			},
 			Input: []string{"dirname"},
+			Error: nil,
 			Expected: controller.Request{
 				SliceIDs: []string{},
 				Units: []controller.Unit{
@@ -40,6 +42,15 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 					},
 				},
 			},
+		},
+
+		// This test ensures that trying to load unit files with invalid input
+		// throws an error.
+		{
+			Setup:    []testFileSystemSetup{},
+			Input:    []string{},
+			Error:    invalidArgumentsError,
+			Expected: controller.Request{},
 		},
 
 		// This test ensures that loading a single unit from a directory with the
@@ -53,6 +64,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 				},
 			},
 			Input: []string{"dirname@1"},
+			Error: nil,
 			Expected: controller.Request{
 				SliceIDs: []string{"1"},
 				Units: []controller.Unit{
@@ -76,6 +88,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 				},
 			},
 			Input: []string{"dirname@1", "dirname@foo", "dirname@5"},
+			Error: nil,
 			Expected: controller.Request{
 				SliceIDs: []string{"1", "foo", "5"},
 				Units: []controller.Unit{
@@ -99,8 +112,8 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 		}
 
 		output, err := createRequestWithContent(testCase.Input)
-		if err != nil {
-			t.Fatalf("createRequestWithContent returned error: %#v", err)
+		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
+			t.Fatalf("createRequestWithContent was expected to return error: %#v", testCase.Error)
 		}
 
 		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
@@ -118,12 +131,14 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 func Test_Common_createRequest(t *testing.T) {
 	testCases := []struct {
 		Input    []string
+		Error    error
 		Expected controller.Request
 	}{
 		// This test ensures that loading a single unit from a directory results in
 		// the expected controller request.
 		{
 			Input: []string{"dirname"},
+			Error: nil,
 			Expected: controller.Request{
 				SliceIDs: []string{},
 				Units: []controller.Unit{
@@ -135,10 +150,19 @@ func Test_Common_createRequest(t *testing.T) {
 			},
 		},
 
+		// This test ensures that trying to load unit files with invalid input
+		// throws an error.
+		{
+			Input:    []string{},
+			Error:    invalidArgumentsError,
+			Expected: controller.Request{},
+		},
+
 		// This test ensures that loading a single unit from a directory with the
 		// slice expression "@1" results in the expected controller request.
 		{
 			Input: []string{"dirname@1"},
+			Error: nil,
 			Expected: controller.Request{
 				SliceIDs: []string{"1"},
 				Units: []controller.Unit{
@@ -169,8 +193,8 @@ func Test_Common_createRequest(t *testing.T) {
 
 	for i, testCase := range testCases {
 		output, err := createRequest(testCase.Input)
-		if err != nil {
-			t.Fatalf("createRequestWithContent returned error: %#v", err)
+		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
+			t.Fatalf("createRequest was expected to return error: %#v", testCase.Error)
 		}
 
 		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
