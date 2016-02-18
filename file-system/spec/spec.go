@@ -14,6 +14,9 @@ type FileSystem interface {
 	// ReadFile is the equivalent to ioutil.ReadFile.
 	ReadFile(filename string) ([]byte, error)
 
-	// WriteFile is the equivalent to ioutil.WriteFile.
+	// WriteFile is the equivalent to ioutil.WriteFile with one additional
+	// behavior. It will automatically create a directory structure using
+	// os.MkdirAll for the real implementation in case the file path provides a
+	// nested file within a directory structure.
 	WriteFile(filename string, bytes []byte, perm os.FileMode) error
 }

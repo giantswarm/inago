@@ -27,7 +27,7 @@ func Test_Common_createRequest(t *testing.T) {
 				{
 					FileName:    "dirname/dirname_unit@.service",
 					FileContent: []byte("some unit content"),
-					FilePerm:    os.FileMode(0777),
+					FilePerm:    os.FileMode(0644),
 				},
 			},
 			Input: "dirname",
@@ -49,7 +49,7 @@ func Test_Common_createRequest(t *testing.T) {
 				{
 					FileName:    "dirname/dirname_unit@.service",
 					FileContent: []byte("some unit content"),
-					FilePerm:    os.FileMode(0777),
+					FilePerm:    os.FileMode(0644),
 				},
 			},
 			Input: "dirname@1",

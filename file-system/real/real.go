@@ -5,6 +5,7 @@ package filesystemreal
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/giantswarm/formica/file-system/spec"
 )
@@ -38,7 +39,13 @@ func (r *real) ReadFile(filename string) ([]byte, error) {
 }
 
 func (r *real) WriteFile(filename string, bytes []byte, perm os.FileMode) error {
-	err := ioutil.WriteFile(filename, bytes, perm)
+	dir := filepath.Dir(filename)
+	err := os.MkdirAll(dir, os.FileMode(0755))
+	if err != nil {
+		return maskAny(err)
+	}
+
+	err = ioutil.WriteFile(filename, bytes, perm)
 	if err != nil {
 		return maskAny(err)
 	}
