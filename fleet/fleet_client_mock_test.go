@@ -19,6 +19,10 @@ type mockCall struct {
 	Args []interface{}
 }
 
+// containCall returns a new GomegaMatcher to test if a given call was made.
+//
+//     Expect(callRecorderObj).To(containCall("functionName", arg1, arg2))
+//
 func containCall(name string, args ...interface{}) types.GomegaMatcher {
 	return &containsCallMatcher{mockCall{
 		name, args,
