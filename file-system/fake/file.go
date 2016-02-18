@@ -39,13 +39,13 @@ func (f file) Read(p []byte) (n int, err error) {
 	return f.Buffer.Read(p)
 }
 
-// ReadAt wraps io.ReaderAt's functionality around the internalt bytes.Reader
+// ReadAt wraps io.ReaderAt's functionality around the internal bytes.Reader
 // instance.
 func (f file) ReadAt(p []byte, off int64) (n int, err error) {
 	return f.Buffer.ReadAt(p, off)
 }
 
-// Seek wraps io.Seeker's functionality around the internalt bytes.Reader
+// Seek wraps io.Seeker's functionality around the internal bytes.Reader
 // instance.
 func (f file) Seek(offset int64, whence int) (int64, error) {
 	return f.Buffer.Seek(offset, whence)
