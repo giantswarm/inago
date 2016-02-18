@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"testing"
+
+	"github.com/juju/errgo"
 
 	"github.com/giantswarm/formica/controller"
 	"github.com/giantswarm/formica/file-system/fake"
@@ -50,6 +53,19 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 			Setup:    []testFileSystemSetup{},
 			Input:    []string{},
 			Error:    invalidArgumentsError,
+			Expected: controller.Request{},
+		},
+
+		// This test ensures that trying to load unit files when no files are in
+		// the file system throws an error.
+		{
+			Setup: []testFileSystemSetup{},
+			Input: []string{"dirname"},
+			Error: &os.PathError{
+				Op:   "open",
+				Path: "dirname",
+				Err:  errgo.New("no such file or directory"),
+			},
 			Expected: controller.Request{},
 		},
 
@@ -112,8 +128,10 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 		}
 
 		output, err := createRequestWithContent(testCase.Input)
+		fmt.Printf("output: %#v\n", output)
+		fmt.Printf("err: %#v\n", err)
 		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
-			t.Fatalf("createRequestWithContent was expected to return error: %#v", testCase.Error)
+			t.Fatalf("(test case %d) createRequestWithContent was expected to return error: %#v", i+1, testCase.Error)
 		}
 
 		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
