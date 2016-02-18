@@ -7,3 +7,5 @@ import (
 var (
 	maskAny = errgo.MaskFunc(errgo.Any)
 )
+
+var invalidArgumentsError = errgo.Newf("invalid arguments")
