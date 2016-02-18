@@ -198,7 +198,7 @@ func (f fleet) Stop(name string) error {
 }
 
 func (f fleet) Destroy(name string) error {
-	err := f.Client.SetUnitTargetState(name, unitStateInactive)
+	err := f.Client.DestroyUnit(name)
 	if err != nil {
 		return maskAny(err)
 	}

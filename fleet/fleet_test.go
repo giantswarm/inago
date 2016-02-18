@@ -24,7 +24,7 @@ func GivenMockedFleet() (*fleetClientMock, *fleet) {
 	}
 }
 
-func TestFleetSubmit(t *testing.T) {
+func TestFleetStart_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
@@ -32,4 +32,24 @@ func TestFleetSubmit(t *testing.T) {
 
 	Expect(err).To(Not(HaveOccurred()))
 	Expect(mock).To(containCall("SetUnitTargetState", "unit.service", unitStateLaunched))
+}
+
+func TestFleetStop_Success(t *testing.T) {
+	RegisterTestingT(t)
+
+	mock, fleet := GivenMockedFleet()
+	err := fleet.Stop("unit.service")
+
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(mock).To(containCall("SetUnitTargetState", "unit.service", unitStateLoaded))
+}
+
+func TestFleetDestroy_Success(t *testing.T) {
+	RegisterTestingT(t)
+
+	mock, fleet := GivenMockedFleet()
+	err := fleet.Destroy("unit.service")
+
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(mock).To(containCall("DestroyUnit", "unit.service"))
 }
