@@ -65,8 +65,8 @@ func createSliceIDs(slices []string) ([]string, error) {
 		}
 		if len(found) == 0 {
 			// When there is no slice expression "@" given, we are dealing with a
-			// normal dirname, so we take the slice as it is.
-			found = []string{slice}
+			// normal dirname, so there is no slice ID required.
+			continue
 		}
 		sliceIDs = append(sliceIDs, atExp.ReplaceAllString(found[0], ""))
 	}
