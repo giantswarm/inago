@@ -11,7 +11,7 @@ import (
 
 // callRecorder returns the recorded calls
 type callRecorder interface {
-	Mock() mock.Mock
+	TestifyMock() mock.Mock
 }
 
 // containCall returns a new GomegaMatcher to test if a given call was made.
@@ -31,7 +31,7 @@ type containsCallMatcher struct {
 
 func (matcher *containsCallMatcher) Match(actual interface{}) (success bool, err error) {
 	client := actual.(callRecorder)
-	mock := client.Mock()
+	mock := client.TestifyMock()
 
 	for _, call := range mock.Calls {
 		if call.Method != matcher.Method {
@@ -55,40 +55,40 @@ func (matcher *containsCallMatcher) NegatedFailureMessage(actual interface{}) (m
 }
 
 type fleetClientMock struct {
-	mock mock.Mock
+	mock.Mock
 }
 
-func (fleet *fleetClientMock) Mock() mock.Mock {
-	return fleet.mock
+func (fleet *fleetClientMock) TestifyMock() mock.Mock {
+	return fleet.Mock
 }
 
 func (fleet *fleetClientMock) Machines() ([]machine.MachineState, error) {
-	args := fleet.mock.Called()
+	args := fleet.Called()
 	return args.Get(0).([]machine.MachineState), args.Error(1)
 }
 
 func (fleet *fleetClientMock) Unit(unit string) (*schema.Unit, error) {
-	args := fleet.mock.Called(unit)
+	args := fleet.Called(unit)
 	return args.Get(0).(*schema.Unit), args.Error(1)
 }
 func (fleet *fleetClientMock) Units() ([]*schema.Unit, error) {
-	args := fleet.mock.Called()
+	args := fleet.Called()
 	return args.Get(0).([]*schema.Unit), args.Error(1)
 }
 func (fleet *fleetClientMock) UnitStates() ([]*schema.UnitState, error) {
-	args := fleet.mock.Called()
+	args := fleet.Called()
 	return args.Get(0).([]*schema.UnitState), args.Error(1)
 }
 
 func (fleet *fleetClientMock) SetUnitTargetState(name, target string) error {
-	args := fleet.mock.Called(name, target)
+	args := fleet.Called(name, target)
 	return args.Error(0)
 }
 func (fleet *fleetClientMock) CreateUnit(unit *schema.Unit) error {
-	args := fleet.mock.Called(unit)
+	args := fleet.Called(unit)
 	return args.Error(0)
 }
 func (fleet *fleetClientMock) DestroyUnit(unit string) error {
-	args := fleet.mock.Called(unit)
+	args := fleet.Called(unit)
 	return args.Error(0)
 }

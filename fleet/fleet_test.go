@@ -31,7 +31,7 @@ func GivenMockedFleet() (*fleetClientMock, *fleet) {
 
 func GivenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClientMock, *fleet) {
 	fleetClientMock, fleet := GivenMockedFleet()
-	fleetClientMock.mock.On("Machines").Return(machines, nil)
+	fleetClientMock.On("Machines").Return(machines, nil)
 	return fleetClientMock, fleet
 }
 
@@ -39,7 +39,7 @@ func TestFleetSubmit_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	fleetClientMock, fleet := GivenMockedFleet()
-	fleetClientMock.mock.On("CreateUnit", mock.AnythingOfType("*schema.Unit")).Once().Return(nil, nil)
+	fleetClientMock.On("CreateUnit", mock.AnythingOfType("*schema.Unit")).Once().Return(nil, nil)
 	err := fleet.Submit("unit.service", "[Unit]\n"+
 		"Description=This is a test unit\n"+
 		"[Service]\n"+
@@ -47,7 +47,7 @@ func TestFleetSubmit_Success(t *testing.T) {
 
 	Expect(err).To(Not(HaveOccurred()))
 
-	fleetClientMock.mock.AssertCalled(
+	fleetClientMock.AssertCalled(
 		t,
 		"CreateUnit",
 		mock.MatchedBy(func(unit *schema.Unit) bool {
@@ -61,34 +61,34 @@ func TestFleetStart_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
-	mock.mock.On("SetUnitTargetState", "unit.service", unitStateLaunched).Once().Return(nil)
+	mock.On("SetUnitTargetState", "unit.service", unitStateLaunched).Once().Return(nil)
 
 	err := fleet.Start("unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
-	mock.mock.AssertExpectations(t)
+	mock.AssertExpectations(t)
 }
 
 func TestFleetStop_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
-	mock.mock.On("SetUnitTargetState", "unit.service", unitStateLoaded).Once().Return(nil)
+	mock.On("SetUnitTargetState", "unit.service", unitStateLoaded).Once().Return(nil)
 	err := fleet.Stop("unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
-	mock.mock.AssertExpectations(t)
+	mock.AssertExpectations(t)
 }
 
 func TestFleetDestroy_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
-	mock.mock.On("DestroyUnit", "unit.service").Once().Return(nil)
+	mock.On("DestroyUnit", "unit.service").Once().Return(nil)
 	err := fleet.Destroy("unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
-	mock.mock.AssertExpectations(t)
+	mock.AssertExpectations(t)
 }
 
 func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
@@ -98,11 +98,11 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 
 	// Mocking
 	fleetClientMock, fleet := GivenMockedFleet()
-	fleetClientMock.mock.On("Units").Return([]*schema.Unit{
+	fleetClientMock.On("Units").Return([]*schema.Unit{
 		{Name: "unit.service", CurrentState: unitStateLaunched, DesiredState: unitStateLaunched},
 		{Name: "other.service", CurrentState: unitStateInactive, DesiredState: unitStateInactive},
 	}, nil).Once()
-	fleetClientMock.mock.On("UnitStates").Return([]*schema.UnitState{
+	fleetClientMock.On("UnitStates").Return([]*schema.UnitState{
 		{
 			Name:               "unit.service",
 			MachineID:          machineID,
@@ -111,7 +111,7 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 		// other.service is not scheduled
 	}, nil).Once()
 
-	fleetClientMock.mock.On("Machines").Return([]machine.MachineState{
+	fleetClientMock.On("Machines").Return([]machine.MachineState{
 		{ID: machineID, PublicIP: "10.0.0.100"},
 		{ID: "otherID", PublicIP: "10.0.0.254"},
 	}, nil).Once()
