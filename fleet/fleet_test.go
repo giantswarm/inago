@@ -29,12 +29,6 @@ func GivenMockedFleet() (*fleetClientMock, *fleet) {
 	}
 }
 
-func GivenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClientMock, *fleet) {
-	fleetClientMock, fleet := GivenMockedFleet()
-	fleetClientMock.On("Machines").Return(machines, nil)
-	return fleetClientMock, fleet
-}
-
 func TestFleetSubmit_Success(t *testing.T) {
 	RegisterTestingT(t)
 
@@ -217,8 +211,8 @@ func Test_Fleet_createOurStatusList(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		_, fleet := GivenMockedFleetWithMachines(testCase.FleetMachines)
-		ourStatusList, err := fleet.createOurStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates)
+		_, fleet := GivenMockedFleet()
+		ourStatusList, err := fleet.createOurStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates, testCase.FleetMachines)
 
 		Expect(err).To(Not(HaveOccurred()))
 		Expect(ourStatusList).To(Equal(testCase.UnitStatusList))
