@@ -217,7 +217,7 @@ func (f fleet) Destroy(name string) error {
 func (f fleet) GetStatus(name string) (UnitStatus, error) {
 	matcher := func(s string) bool {
 		return name == s
-	}	
+	}
 	unitStatus, err := f.GetStatusWithMatcher(matcher)
 	if err != nil {
 		return UnitStatus{}, maskAny(err)

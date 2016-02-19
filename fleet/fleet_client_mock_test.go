@@ -20,7 +20,7 @@ type callRecorder interface {
 //
 func containCall(name string, args ...interface{}) types.GomegaMatcher {
 	return &containsCallMatcher{mock.Call{
-		Method: name,
+		Method:    name,
 		Arguments: args,
 	}}
 }

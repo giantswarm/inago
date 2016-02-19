@@ -1,14 +1,14 @@
 package fleet
 
 import (
-	"testing"
 	"net"
+	"testing"
 
 	. "github.com/onsi/gomega"
 
+	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 	"github.com/stretchr/testify/mock"
-	"github.com/coreos/fleet/machine"
 )
 
 // TestDefaultConfig verifies that the default config contains a basic valid fleet config
@@ -98,8 +98,8 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 	}, nil).Once()
 	fleetClientMock.mock.On("UnitStates").Return([]*schema.UnitState{
 		{
-			Name: "unit.service",
-			MachineID: machineID,
+			Name:               "unit.service",
+			MachineID:          machineID,
 			SystemdActiveState: "running",
 		},
 		// other.service is not scheduled
@@ -114,19 +114,19 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 	matcher := func(s string) bool {
 		return s == "unit.service"
 	}
+	status, err := fleet.GetStatusWithMatcher(matcher)
 
 	// Assertion
-	status, err := fleet.GetStatusWithMatcher(matcher)
 	Expect(err).To(Not(HaveOccurred()))
 	Expect(len(status)).To(Equal(1))
 	Expect(status[0]).To(Equal(UnitStatus{
-		Name: "unit.service",
+		Name:    "unit.service",
 		Current: unitStateLaunched,
 		Desired: unitStateLaunched,
 		Machine: []MachineStatus{
 			{
-				ID: machineID,
-				IP: net.ParseIP("10.0.0.100"),
+				ID:            machineID,
+				IP:            net.ParseIP("10.0.0.100"),
 				SystemdActive: "running",
 			},
 		},
