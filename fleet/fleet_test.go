@@ -2,11 +2,13 @@ package fleet
 
 import (
 	"testing"
+	"net"
 
 	. "github.com/onsi/gomega"
 
 	"github.com/coreos/fleet/schema"
 	"github.com/stretchr/testify/mock"
+	"github.com/coreos/fleet/machine"
 )
 
 // TestDefaultConfig verifies that the default config contains a basic valid fleet config
@@ -42,7 +44,7 @@ func TestFleetSubmit_Success(t *testing.T) {
 	fleetClientMock.mock.AssertCalled(
 		t,
 		"CreateUnit",
-		mock.MatchedBy(func (unit *schema.Unit) bool {
+		mock.MatchedBy(func(unit *schema.Unit) bool {
 			return unit.Name == "unit.service" &&
 				unit.DesiredState == unitStateLoaded
 		}),
@@ -81,4 +83,52 @@ func TestFleetDestroy_Success(t *testing.T) {
 
 	Expect(err).To(Not(HaveOccurred()))
 	mock.mock.AssertExpectations(t)
+}
+
+func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
+	machineID := "12345"
+
+	RegisterTestingT(t)
+
+	// Mocking
+	fleetClientMock, fleet := GivenMockedFleet()
+	fleetClientMock.mock.On("Units").Return([]*schema.Unit{
+		{Name: "unit.service", CurrentState: unitStateLaunched, DesiredState: unitStateLaunched},
+		{Name: "other.service", CurrentState: unitStateInactive, DesiredState: unitStateInactive},
+	}, nil).Once()
+	fleetClientMock.mock.On("UnitStates").Return([]*schema.UnitState{
+		{
+			Name: "unit.service",
+			MachineID: machineID,
+			SystemdActiveState: "running",
+		},
+		// other.service is not scheduled
+	}, nil).Once()
+
+	fleetClientMock.mock.On("Machines").Return([]machine.MachineState{
+		{ID: machineID, PublicIP: "10.0.0.100"},
+		{ID: "otherID", PublicIP: "10.0.0.254"},
+	}, nil).Once()
+
+	// Action
+	matcher := func(s string) bool {
+		return s == "unit.service"
+	}
+
+	// Assertion
+	status, err := fleet.GetStatusWithMatcher(matcher)
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(len(status)).To(Equal(1))
+	Expect(status[0]).To(Equal(UnitStatus{
+		Name: "unit.service",
+		Current: unitStateLaunched,
+		Desired: unitStateLaunched,
+		Machine: []MachineStatus{
+			{
+				ID: machineID,
+				IP: net.ParseIP("10.0.0.100"),
+				SystemdActive: "running",
+			},
+		},
+	}))
 }
