@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"github.com/coreos/fleet/client"
+	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
 )
@@ -262,8 +263,14 @@ func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 		}
 	}
 
+	// Lookup machines
+	machineStates, err := f.Client.Machines()
+	if err != nil {
+		return nil, maskAny(err)
+	}
+
 	// Create our own unit status.
-	ourStatusList, err := f.createOurStatusList(foundFleetUnits, foundFleetUnitStates)
+	ourStatusList, err := f.createOurStatusList(foundFleetUnits, foundFleetUnitStates, machineStates)
 	if err != nil {
 		return []UnitStatus{}, maskAny(err)
 	}
@@ -271,12 +278,7 @@ func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 	return ourStatusList, nil
 }
 
-func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
-	machineStates, err := f.Client.Machines()
-	if err != nil {
-		return nil, maskAny(err)
-	}
-
+func (f fleet) ipFromUnitState(unitState *schema.UnitState, machineStates []machine.MachineState) (net.IP, error) {
 	for _, ms := range machineStates {
 		if unitState.MachineID == ms.ID {
 			return net.ParseIP(ms.PublicIP), nil
@@ -286,7 +288,7 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 	return nil, maskAny(ipNotFoundError)
 }
 
-func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState) ([]UnitStatus, error) {
+func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState, machines []machine.MachineState) ([]UnitStatus, error) {
 	ourStatusList := []UnitStatus{}
 
 	for _, ffu := range foundFleetUnits {
@@ -300,7 +302,7 @@ func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 			if ffu.Name != ffus.Name {
 				continue
 			}
-			IP, err := f.ipFromUnitState(ffus)
+			IP, err := f.ipFromUnitState(ffus, machines)
 			if err != nil {
 				return []UnitStatus{}, maskAny(err)
 			}
