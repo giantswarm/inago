@@ -51,7 +51,8 @@ func (matcher *containsCallMatcher) NegatedFailureMessage(actual interface{}) (m
 }
 
 type fleetClientMock struct {
-	calls []mockCall
+	calls    []mockCall
+	machines []machine.MachineState
 }
 
 func (fleet *fleetClientMock) Calls() []mockCall {
@@ -60,7 +61,7 @@ func (fleet *fleetClientMock) Calls() []mockCall {
 
 func (fleet *fleetClientMock) Machines() ([]machine.MachineState, error) {
 	fleet.calls = append(fleet.calls, mockCall{"Machines", []interface{}{}})
-	return nil, nil
+	return fleet.machines, nil
 }
 
 func (fleet *fleetClientMock) Unit(unit string) (*schema.Unit, error) {

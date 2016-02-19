@@ -1,10 +1,13 @@
 package fleet
 
 import (
+	"net"
+	"reflect"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
+	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 )
 
@@ -20,6 +23,16 @@ func TestDefaultConfig(t *testing.T) {
 
 func GivenMockedFleet() (*fleetClientMock, *fleet) {
 	mock := &fleetClientMock{}
+	return mock, &fleet{
+		Client: mock,
+		Config: DefaultConfig(),
+	}
+}
+
+func GivenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClientMock, *fleet) {
+	mock := &fleetClientMock{
+		machines: machines,
+	}
 	return mock, &fleet{
 		Client: mock,
 		Config: DefaultConfig(),
@@ -75,4 +88,94 @@ func TestFleetDestroy_Success(t *testing.T) {
 
 	Expect(err).To(Not(HaveOccurred()))
 	Expect(mock).To(containCall("DestroyUnit", "unit.service"))
+}
+
+func Test_Fleet_createOurStatusList(t *testing.T) {
+	testCases := []struct {
+		Error                error
+		FoundFleetUnits      []*schema.Unit
+		FoundFleetUnitStates []*schema.UnitState
+		FleetMachines        []machine.MachineState
+		UnitStatusList       []UnitStatus
+	}{
+		// This test ensures that creating our own status structures works as
+		// expected.
+		{
+			Error: nil,
+			FoundFleetUnits: []*schema.Unit{
+				{
+					CurrentState: "current-state-1",
+					DesiredState: "desired-state-1",
+					MachineID:    "machine-ID-1",
+					Name:         "name-1",
+				},
+				{
+					CurrentState: "current-state-2",
+					DesiredState: "desired-state-2",
+					MachineID:    "machine-ID-2",
+					Name:         "name-2",
+				},
+			},
+			FoundFleetUnitStates: []*schema.UnitState{
+				{
+					MachineID:          "machine-ID-1",
+					Name:               "name-1",
+					SystemdActiveState: "systemd-active-state-1",
+				},
+				{
+					MachineID:          "machine-ID-2",
+					Name:               "name-2",
+					SystemdActiveState: "systemd-active-state-2",
+				},
+			},
+			FleetMachines: []machine.MachineState{
+				{
+					ID:       "machine-ID-1",
+					PublicIP: "10.0.0.1",
+				},
+				{
+					ID:       "machine-ID-2",
+					PublicIP: "10.0.0.2",
+				},
+			},
+			UnitStatusList: []UnitStatus{
+				{
+					Current: "current-state-1",
+					Desired: "desired-state-1",
+					Machine: []MachineStatus{
+						{
+							ID:            "machine-ID-1",
+							IP:            net.ParseIP("10.0.0.1"),
+							SystemdActive: "systemd-active-state-1",
+						},
+					},
+					Name: "name-1",
+				},
+				{
+					Current: "current-state-2",
+					Desired: "desired-state-2",
+					Machine: []MachineStatus{
+						{
+							ID:            "machine-ID-2",
+							IP:            net.ParseIP("10.0.0.2"),
+							SystemdActive: "systemd-active-state-2",
+						},
+					},
+					Name: "name-2",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		_, fleet := GivenMockedFleetWithMachines(testCase.FleetMachines)
+		ourStatusList, err := fleet.createOurStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates)
+		if err != nil {
+			t.Fatalf("Fleet.createOurStatusList returned error: %#v", err)
+		}
+
+		if !reflect.DeepEqual(ourStatusList, testCase.UnitStatusList) {
+			t.Fatalf("generated status list '%#v' is not equal to expected status list '%#v'", ourStatusList, testCase.UnitStatusList)
+		}
+	}
 }
