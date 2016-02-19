@@ -216,12 +216,10 @@ func (f fleet) Destroy(name string) error {
 }
 
 func (f fleet) GetStatus(name string) (UnitStatus, error) {
-	exp, err := regexp.Compile(fmt.Sprintf("^%s$", name))
-	if err != nil {
-		return UnitStatus{}, maskAny(err)
+	matcher := func(s string) bool {
+		return name == s
 	}
-
-	unitStatus, err := f.GetStatusWithExpression(exp)
+	unitStatus, err := f.GetStatusWithMatcher(matcher)
 	if err != nil {
 		return UnitStatus{}, maskAny(err)
 	}
@@ -234,6 +232,13 @@ func (f fleet) GetStatus(name string) (UnitStatus, error) {
 }
 
 func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error) {
+	status, err := f.GetStatusWithMatcher(exp.MatchString)
+	return status, maskAny(err)
+}
+
+// GetStatusWithMatcher returns a UnitStatus for each unit where the given matcher
+// returns true.
+func (f fleet) GetStatusWithMatcher(matcher func(s string) bool) ([]UnitStatus, error) {
 	// Lookup fleet cluster state.
 	fleetUnits, err := f.Client.Units()
 	if err != nil {
@@ -241,7 +246,7 @@ func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 	}
 	foundFleetUnits := []*schema.Unit{}
 	for _, fu := range fleetUnits {
-		if exp.MatchString(fu.Name) {
+		if matcher(fu.Name) {
 			foundFleetUnits = append(foundFleetUnits, fu)
 		}
 	}
@@ -258,7 +263,7 @@ func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 	}
 	var foundFleetUnitStates []*schema.UnitState
 	for _, fus := range fleetUnitStates {
-		if exp.MatchString(fus.Name) {
+		if matcher(fus.Name) {
 			foundFleetUnitStates = append(foundFleetUnitStates, fus)
 		}
 	}
