@@ -23,13 +23,14 @@ func statusRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	status, err := newController.GetStatus(req)
+	statusList, err := newController.GetStatus(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 
-	err = printStatus(status)
+	group := dirnameFromSlices(args)
+	err = printStatus(group, statusList)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

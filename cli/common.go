@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/ryanuber/columnize"
+
 	"github.com/giantswarm/formica/controller"
 	"github.com/giantswarm/formica/fleet"
 )
@@ -129,7 +131,32 @@ func createRequest(slices []string) (controller.Request, error) {
 	return req, nil
 }
 
-func printStatus(groupStatus []fleet.UnitStatus) error {
-	fmt.Printf("%#v\n", groupStatus)
+var (
+	statusHeader = "Group | Units | FDState | FCState | SAState | IP | Machine"
+	statusBody   = "%s | %s | %s | %s | %s | %s | %s"
+)
+
+func printStatus(group string, groupStatus []fleet.UnitStatus) error {
+	data := []string{
+		statusHeader,
+		"",
+	}
+
+	for _, us := range groupStatus {
+		for _, ms := range us.Machine {
+			row := fmt.Sprintf(
+				statusBody,
+				group,
+				us.Name,
+				us.Desired,
+				us.Current,
+				ms.SystemdActive,
+				ms.IP,
+				ms.ID,
+			)
+			data = append(data, row)
+		}
+	}
+	fmt.Println(columnize.SimpleFormat(data))
 	return nil
 }

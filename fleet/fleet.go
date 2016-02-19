@@ -245,6 +245,7 @@ func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 		}
 	}
 
+	// Return not found error if there is no unit as requested.
 	if len(foundFleetUnits) == 0 {
 		return []UnitStatus{}, maskAny(unitNotFoundError)
 	}
@@ -262,27 +263,9 @@ func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 	}
 
 	// Create our own unit status.
-	ourStatusList := []UnitStatus{}
-	for _, ffu := range foundFleetUnits {
-		ourUnitStatus := UnitStatus{
-			Current: ffu.CurrentState,
-			Desired: ffu.DesiredState,
-			Machine: []MachineStatus{},
-			Name:    ffu.Name,
-		}
-		for _, ffus := range foundFleetUnitStates {
-			IP, err := f.ipFromUnitState(ffus)
-			if err != nil {
-				return []UnitStatus{}, maskAny(err)
-			}
-			ourMachineStatus := MachineStatus{
-				ID:            ffus.MachineID,
-				IP:            IP,
-				SystemdActive: ffus.SystemdActiveState,
-			}
-			ourUnitStatus.Machine = append(ourUnitStatus.Machine, ourMachineStatus)
-		}
-		ourStatusList = append(ourStatusList, ourUnitStatus)
+	ourStatusList, err := f.createOurStatusList(foundFleetUnits, foundFleetUnitStates)
+	if err != nil {
+		return []UnitStatus{}, maskAny(err)
 	}
 
 	return ourStatusList, nil
@@ -301,4 +284,35 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 	}
 
 	return nil, maskAny(ipNotFoundError)
+}
+
+func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState) ([]UnitStatus, error) {
+	ourStatusList := []UnitStatus{}
+
+	for _, ffu := range foundFleetUnits {
+		ourUnitStatus := UnitStatus{
+			Current: ffu.CurrentState,
+			Desired: ffu.DesiredState,
+			Machine: []MachineStatus{},
+			Name:    ffu.Name,
+		}
+		for _, ffus := range foundFleetUnitStates {
+			if ffu.Name != ffus.Name {
+				continue
+			}
+			IP, err := f.ipFromUnitState(ffus)
+			if err != nil {
+				return []UnitStatus{}, maskAny(err)
+			}
+			ourMachineStatus := MachineStatus{
+				ID:            ffus.MachineID,
+				IP:            IP,
+				SystemdActive: ffus.SystemdActiveState,
+			}
+			ourUnitStatus.Machine = append(ourUnitStatus.Machine, ourMachineStatus)
+		}
+		ourStatusList = append(ourStatusList, ourUnitStatus)
+	}
+
+	return ourStatusList, nil
 }
