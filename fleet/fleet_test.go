@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/coreos/fleet/schema"
+	"github.com/stretchr/testify/mock"
 )
 
 // TestDefaultConfig verifies that the default config contains a basic valid fleet config
@@ -29,50 +30,55 @@ func GivenMockedFleet() (*fleetClientMock, *fleet) {
 func TestFleetSubmit_Success(t *testing.T) {
 	RegisterTestingT(t)
 
-	mock, fleet := GivenMockedFleet()
+	fleetClientMock, fleet := GivenMockedFleet()
+	fleetClientMock.mock.On("CreateUnit", mock.AnythingOfType("*schema.Unit")).Once().Return(nil, nil)
 	err := fleet.Submit("unit.service", "[Unit]\n"+
 		"Description=This is a test unit\n"+
 		"[Service]\n"+
 		"ExecStart=/bin/echo Hello World!\n")
 
 	Expect(err).To(Not(HaveOccurred()))
-	Expect(len(mock.Calls())).To(Equal(1))
-	call := mock.Calls()[0]
-	Expect(call.Name).To(Equal("CreateUnit"))
-	Expect(len(call.Args)).To(Equal(1))
 
-	unit := call.Args[0].(*schema.Unit)
-	Expect(unit.Name).To(Equal("unit.service"))
-	Expect(unit.Options).To(Not(BeZero()))
-	Expect(unit.DesiredState).To(Equal(unitStateLoaded))
+	fleetClientMock.mock.AssertCalled(
+		t,
+		"CreateUnit",
+		mock.MatchedBy(func (unit *schema.Unit) bool {
+			return unit.Name == "unit.service" &&
+				unit.DesiredState == unitStateLoaded
+		}),
+	)
 }
 
 func TestFleetStart_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
+	mock.mock.On("SetUnitTargetState", "unit.service", unitStateLaunched).Once().Return(nil)
+
 	err := fleet.Start("unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
-	Expect(mock).To(containCall("SetUnitTargetState", "unit.service", unitStateLaunched))
+	mock.mock.AssertExpectations(t)
 }
 
 func TestFleetStop_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
+	mock.mock.On("SetUnitTargetState", "unit.service", unitStateLoaded).Once().Return(nil)
 	err := fleet.Stop("unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
-	Expect(mock).To(containCall("SetUnitTargetState", "unit.service", unitStateLoaded))
+	mock.mock.AssertExpectations(t)
 }
 
 func TestFleetDestroy_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	mock, fleet := GivenMockedFleet()
+	mock.mock.On("DestroyUnit", "unit.service").Once().Return(nil)
 	err := fleet.Destroy("unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
-	Expect(mock).To(containCall("DestroyUnit", "unit.service"))
+	mock.mock.AssertExpectations(t)
 }
