@@ -6,6 +6,7 @@ package controller
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/giantswarm/formica/fleet"
 )
@@ -222,6 +223,13 @@ func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
 	}
 
 	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	if fleet.IsUnitNotFound(err) {
+		return []fleet.UnitStatus{}, maskAny(unitNotFoundError)
+	} else if err != nil {
+		return []fleet.UnitStatus{}, maskAny(err)
+	}
+
+	err = validateUnitStatusWithRequest(unitStatusList, req)
 	if err != nil {
 		return []fleet.UnitStatus{}, maskAny(err)
 	}
@@ -229,4 +237,26 @@ func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
 	// TODO retry operations
 
 	return unitStatusList, nil
+}
+
+func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Request) error {
+	for _, sliceID := range req.SliceIDs {
+		if !containsUnitStatusSliceID(unitStatusList, sliceID) {
+			return maskAnyf(unitSliceNotFoundError, "slice ID '%s'", sliceID)
+		}
+	}
+
+	return nil
+}
+
+func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string) bool {
+	sliceID = fmt.Sprintf("@%s.service", sliceID)
+
+	for _, us := range unitStatusList {
+		if strings.HasSuffix(us.Name, sliceID) {
+			return true
+		}
+	}
+
+	return false
 }

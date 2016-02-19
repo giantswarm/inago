@@ -3,8 +3,11 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/giantswarm/formica/controller"
 )
 
 var (
@@ -23,13 +26,19 @@ func statusRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	group := dirnameFromSlices(args)
 	statusList, err := newController.GetStatus(req)
-	if err != nil {
+	if controller.IsUnitNotFound(err) {
+		fmt.Printf("No unit found for group slice(s) '%s'.\n", args)
+		os.Exit(1)
+	} else if controller.IsUnitSliceNotFound(err) {
+		fmt.Printf("%s%s.\n", strings.ToUpper(err.Error()[0:1]), err.Error()[1:])
+		os.Exit(1)
+	} else if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 
-	group := dirnameFromSlices(args)
 	err = printStatus(group, statusList)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))

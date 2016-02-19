@@ -98,7 +98,8 @@ func Test_Fleet_createOurStatusList(t *testing.T) {
 		FleetMachines        []machine.MachineState
 		UnitStatusList       []UnitStatus
 	}{
-		// ..
+		// This test ensures that creating our own status structures works as
+		// expected.
 		{
 			Error: nil,
 			FoundFleetUnits: []*schema.Unit{
