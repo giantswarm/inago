@@ -2,6 +2,10 @@ package controller
 
 import (
 	"testing"
+
+	"github.com/juju/errgo"
+
+	"github.com/giantswarm/formica/fleet"
 )
 
 func Test_Request_ExtendSlices(t *testing.T) {
@@ -136,6 +140,55 @@ func Test_Request_ExtendSlices(t *testing.T) {
 			if outputUnit.Name != testCase.Expected.Units[i].Name {
 				t.Fatalf("output unit name '%s' is not equal to expected unit name '%s'", outputUnit.Name, testCase.Expected.Units[i].Name)
 			}
+		}
+	}
+}
+
+func Test_validateUnitStatusWithRequest(t *testing.T) {
+	testCases := []struct {
+		Error          error
+		Request        Request
+		UnitStatusList []fleet.UnitStatus
+	}{
+		// This test ensures that validating a unit status list against given slice
+		// IDs works as expected.
+		{
+			Error: nil,
+			Request: Request{
+				SliceIDs: []string{"1", "2"},
+			},
+			UnitStatusList: []fleet.UnitStatus{
+				{
+					Name: "name@1.service",
+				},
+				{
+					Name: "name@2.service",
+				},
+			},
+		},
+
+		// This test ensures that validating a unit status list against given slice
+		// IDs throws an error in case there is a unit missing
+		{
+			Error: errgo.New("unit slice not found: slice ID '3'"),
+			Request: Request{
+				SliceIDs: []string{"1", "2", "3"},
+			},
+			UnitStatusList: []fleet.UnitStatus{
+				{
+					Name: "name@1.service",
+				},
+				{
+					Name: "name@2.service",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		err := validateUnitStatusWithRequest(testCase.UnitStatusList, testCase.Request)
+		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
+			t.Fatalf("validateUnitStatusWithRequest returned error: %#v", err)
 		}
 	}
 }

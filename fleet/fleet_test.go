@@ -29,6 +29,12 @@ func GivenMockedFleet() (*fleetClientMock, *fleet) {
 	}
 }
 
+func GivenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClientMock, *fleet) {
+	fleetClientMock, fleet := GivenMockedFleet()
+	fleetClientMock.mock.On("Machines").Return(machines, nil)
+	return fleetClientMock, fleet
+}
+
 func TestFleetSubmit_Success(t *testing.T) {
 	RegisterTestingT(t)
 
@@ -131,4 +137,90 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 			},
 		},
 	}))
+}
+
+func Test_Fleet_createOurStatusList(t *testing.T) {
+	testCases := []struct {
+		Error                error
+		FoundFleetUnits      []*schema.Unit
+		FoundFleetUnitStates []*schema.UnitState
+		FleetMachines        []machine.MachineState
+		UnitStatusList       []UnitStatus
+	}{
+		// This test ensures that creating our own status structures works as
+		// expected.
+		{
+			Error: nil,
+			FoundFleetUnits: []*schema.Unit{
+				{
+					CurrentState: "current-state-1",
+					DesiredState: "desired-state-1",
+					MachineID:    "machine-ID-1",
+					Name:         "name-1",
+				},
+				{
+					CurrentState: "current-state-2",
+					DesiredState: "desired-state-2",
+					MachineID:    "machine-ID-2",
+					Name:         "name-2",
+				},
+			},
+			FoundFleetUnitStates: []*schema.UnitState{
+				{
+					MachineID:          "machine-ID-1",
+					Name:               "name-1",
+					SystemdActiveState: "systemd-active-state-1",
+				},
+				{
+					MachineID:          "machine-ID-2",
+					Name:               "name-2",
+					SystemdActiveState: "systemd-active-state-2",
+				},
+			},
+			FleetMachines: []machine.MachineState{
+				{
+					ID:       "machine-ID-1",
+					PublicIP: "10.0.0.1",
+				},
+				{
+					ID:       "machine-ID-2",
+					PublicIP: "10.0.0.2",
+				},
+			},
+			UnitStatusList: []UnitStatus{
+				{
+					Current: "current-state-1",
+					Desired: "desired-state-1",
+					Machine: []MachineStatus{
+						{
+							ID:            "machine-ID-1",
+							IP:            net.ParseIP("10.0.0.1"),
+							SystemdActive: "systemd-active-state-1",
+						},
+					},
+					Name: "name-1",
+				},
+				{
+					Current: "current-state-2",
+					Desired: "desired-state-2",
+					Machine: []MachineStatus{
+						{
+							ID:            "machine-ID-2",
+							IP:            net.ParseIP("10.0.0.2"),
+							SystemdActive: "systemd-active-state-2",
+						},
+					},
+					Name: "name-2",
+				},
+			},
+		},
+	}
+
+	for _, testCase := range testCases {
+		_, fleet := GivenMockedFleetWithMachines(testCase.FleetMachines)
+		ourStatusList, err := fleet.createOurStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates)
+
+		Expect(err).To(Not(HaveOccurred()))
+		Expect(ourStatusList).To(Equal(testCase.UnitStatusList))
+	}
 }
