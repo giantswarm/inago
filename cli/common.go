@@ -6,7 +6,6 @@ import (
 	"regexp"
 
 	"github.com/giantswarm/formica/controller"
-	"github.com/giantswarm/formica/fleet"
 )
 
 var groupExp = regexp.MustCompile("@(.*)")
@@ -134,7 +133,7 @@ var (
 	statusBody   = "%s | %s | %s | %s | %s | %s | %s"
 )
 
-func createStatus(group string, usl fleet.UnitStatusList) ([]string, error) {
+func createStatus(group string, usl controller.UnitStatusList) ([]string, error) {
 	data := []string{
 		statusHeader,
 		"",
