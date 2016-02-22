@@ -112,25 +112,45 @@ func (usl UnitStatusList) Group() ([]UnitStatus, error) {
 	return newList, nil
 }
 
-var groupExp = regexp.MustCompile("@(.*)")
-
 func groupUnitStatus(usl []UnitStatus, groupMember UnitStatus) ([]UnitStatus, string, error) {
-	suffix, err := sliceSuffix(groupMember.Name)
+	ID, err := sliceID(groupMember.Name)
 	if err != nil {
 		return nil, "", maskAny(invalidUnitStatusError)
 	}
 
 	newList := []UnitStatus{}
 	for _, us := range usl {
-		if !strings.HasSuffix(us.Name, suffix) {
+		exp := extExp.ReplaceAllString(us.Name, "")
+		if !strings.HasSuffix(exp, ID) {
 			continue
 		}
 
 		newList = append(newList, us)
 	}
 
-	return newList, suffix, nil
+	return newList, ID, nil
 }
+
+// extExp matches unit file extensions.
+//
+//   app@1.service  =>  .service
+//   app@1.mount    =>  .mount
+//   app.service    =>  .service
+//   app.mount      =>  .mount
+//
+var extExp = regexp.MustCompile(`(?m)\.[a-z]*$`)
+
+func sliceID(name string) (string, error) {
+	suffix, err := sliceSuffix(name)
+	if err != nil {
+		return "", maskAny(err)
+	}
+	ID := extExp.ReplaceAllString(suffix, "")
+
+	return ID, nil
+}
+
+var groupExp = regexp.MustCompile("@(.*)")
 
 func sliceSuffix(name string) (string, error) {
 	found := groupExp.FindAllString(name, -1)
@@ -374,31 +394,21 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 	return nil, maskAny(ipNotFoundError)
 }
 
-// extExp matches unit file extensions.
-//
-//   app@1.service  =>  .service
-//   app@1.mount    =>  .mount
-//   app.service    =>  .service
-//   app.mount      =>  .mount
-//
-var extExp = regexp.MustCompile(`(?m)\.[a-z]*$`)
-
 func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState) ([]UnitStatus, error) {
 	ourStatusList := []UnitStatus{}
 
 	for _, ffu := range foundFleetUnits {
-		suffix, err := sliceSuffix(ffu.Name)
+		ID, err := sliceID(ffu.Name)
 		if err != nil {
-			return []UnitStatus{}, maskAny(err)
+			return nil, maskAny(invalidUnitStatusError)
 		}
-		slice := extExp.ReplaceAllString(suffix, "")
 
 		ourUnitStatus := UnitStatus{
 			Current: ffu.CurrentState,
 			Desired: ffu.DesiredState,
 			Machine: []MachineStatus{},
 			Name:    ffu.Name,
-			Slice:   slice,
+			Slice:   ID,
 		}
 		for _, ffus := range foundFleetUnitStates {
 			if ffu.Name != ffus.Name {
