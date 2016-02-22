@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/schema"
@@ -74,6 +75,93 @@ type UnitStatus struct {
 
 	// Name represents the unit file name.
 	Name string
+
+	// Slice represents the slice expression. E.g. @1, or @foo, or @5., etc..
+	Slice string
+}
+
+type UnitStatusList []UnitStatus
+
+func (usl UnitStatusList) Group() ([]UnitStatus, error) {
+	matchers := map[string]struct{}{}
+	newList := []UnitStatus{}
+
+	for _, us := range usl {
+		// Group unit status
+		grouped, suffix, err := groupUnitStatus(usl, us)
+		if err != nil {
+			return nil, maskAny(err)
+		}
+
+		// Prevent doubled aggregation.
+		if _, ok := matchers[suffix]; ok {
+			continue
+		}
+		matchers[suffix] = struct{}{}
+
+		// Aggregate.
+		if allStatesEqual(grouped) {
+			newStatus := grouped[0]
+			newStatus.Name = "*"
+			newList = append(newList, newStatus)
+		} else {
+			newList = append(newList, grouped...)
+		}
+	}
+
+	return newList, nil
+}
+
+var groupExp = regexp.MustCompile("@(.*)")
+
+func groupUnitStatus(usl []UnitStatus, groupMember UnitStatus) ([]UnitStatus, string, error) {
+	suffix, err := sliceSuffix(groupMember.Name)
+	if err != nil {
+		return nil, "", maskAny(invalidUnitStatusError)
+	}
+
+	newList := []UnitStatus{}
+	for _, us := range usl {
+		if !strings.HasSuffix(us.Name, suffix) {
+			continue
+		}
+
+		newList = append(newList, us)
+	}
+
+	return newList, suffix, nil
+}
+
+func sliceSuffix(name string) (string, error) {
+	found := groupExp.FindAllString(name, -1)
+	if len(found) == 0 {
+		return "", nil
+	} else if len(found) > 1 {
+		return "", maskAny(invalidUnitStatusError)
+	}
+	return found[0], nil
+}
+
+func allStatesEqual(usl []UnitStatus) bool {
+	for _, us1 := range usl {
+		for _, us2 := range usl {
+			if us1.Current != us2.Current {
+				return false
+			}
+			if us1.Desired != us2.Desired {
+				return false
+			}
+			for _, m1 := range us1.Machine {
+				for _, m2 := range us2.Machine {
+					if m1.SystemdActive != m2.SystemdActive {
+						return false
+					}
+				}
+			}
+		}
+	}
+
+	return true
 }
 
 // Fleet defines the interface a fleet client needs to implement to provide
@@ -286,15 +374,31 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState) (net.IP, error) {
 	return nil, maskAny(ipNotFoundError)
 }
 
+// extExp matches unit file extensions.
+//
+//   app@1.service  =>  .service
+//   app@1.mount    =>  .mount
+//   app.service    =>  .service
+//   app.mount      =>  .mount
+//
+var extExp = regexp.MustCompile(`(?m)\.[a-z]*$`)
+
 func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState) ([]UnitStatus, error) {
 	ourStatusList := []UnitStatus{}
 
 	for _, ffu := range foundFleetUnits {
+		suffix, err := sliceSuffix(ffu.Name)
+		if err != nil {
+			return []UnitStatus{}, maskAny(err)
+		}
+		slice := extExp.ReplaceAllString(suffix, "")
+
 		ourUnitStatus := UnitStatus{
 			Current: ffu.CurrentState,
 			Desired: ffu.DesiredState,
 			Machine: []MachineStatus{},
 			Name:    ffu.Name,
+			Slice:   slice,
 		}
 		for _, ffus := range foundFleetUnitStates {
 			if ffu.Name != ffus.Name {
