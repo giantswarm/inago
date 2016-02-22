@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/juju/errgo"
+	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/giantswarm/formica/fleet"
 )
@@ -191,4 +193,147 @@ func Test_validateUnitStatusWithRequest(t *testing.T) {
 			t.Fatalf("validateUnitStatusWithRequest returned error: %#v", err)
 		}
 	}
+}
+
+func Test_matchesGroupSlices(t *testing.T) {
+	testCases := []struct {
+		InputUnitName string
+		InputRequest  Request
+		Output        bool
+	}{
+		{
+			InputUnitName: "demo-main@1.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: []string{"1", "2"},
+			},
+			Output: true,
+		},
+		{
+			InputUnitName: "demo-main@1.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: []string{"3"},
+			},
+			Output: false,
+		},
+		{
+			InputUnitName: "other-main@1.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: []string{"1"},
+			},
+			Output: false,
+		},
+		{
+			InputUnitName: "other-main@1.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: []string{"2"},
+			},
+			Output: false,
+		},
+
+		{
+			InputUnitName: "demo-main.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: nil,
+			},
+			Output: true,
+		},
+
+		{
+			InputUnitName: "other-main.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: []string{"1", "2"},
+			},
+			Output: false,
+		},
+		{
+			InputUnitName: "other-main.service",
+			InputRequest: Request{
+				Group:    "demo",
+				SliceIDs: nil,
+			},
+			Output: false,
+		},
+	}
+
+	for id, test := range testCases {
+		matcher := matchesGroupSlices(test.InputRequest)
+		result := matcher(test.InputUnitName)
+
+		if result != test.Output {
+			t.Errorf("TestCase %d: Failed to match: Input '%s', expected %v, got %v", id, test.InputUnitName, test.Output, result)
+		}
+	}
+}
+
+// GivenController returns a controller where the fleet backend is replaced
+// with a mock.
+func GivenController() (Controller, *fleetMock) {
+	fleetMock := fleetMock{}
+	cfg := Config{
+		Fleet: &fleetMock,
+	}
+	return NewController(cfg), &fleetMock
+}
+
+func TestController_Start(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := GivenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+			{
+				Name: "test-sidekick@1.service",
+			},
+		},
+		nil,
+	).Once()
+	fleetMock.On("Start", "test-main@1.service").Return(nil).Once()
+	fleetMock.On("Start", "test-sidekick@1.service").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+	}
+	err := controller.Start(req)
+
+	// Assert
+	Expect(err).To(BeNil())
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := GivenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+		},
+		nil,
+	).Once()
+
+	// Execute
+	status, err := controller.GetStatus(Request{
+		Group: "test",
+		SliceIDs: []string{"1","2"},
+	})
+
+	// Assert
+	Expect(IsUnitSliceNotFound(err)).To(Equal(true))
+	Expect(status).To(BeEmpty())
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
