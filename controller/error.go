@@ -41,3 +41,14 @@ var unitSliceNotFoundError = errgo.New("unit slice not found")
 func IsUnitSliceNotFound(err error) bool {
 	return errgo.Cause(err) == unitSliceNotFoundError
 }
+
+var invalidUnitStatusError = errgo.New("invalid unit status")
+
+// IsInvalidUnitStatus checks whether the given error indicates the problem of
+// an unexpected unit status response. In case you want to lookup the state of
+// a unit that cannot be found on any machine or exists multiple times (what
+// should never happen), an error that you can identify using this method is
+// returned.
+func IsInvalidUnitStatus(err error) bool {
+	return errgo.Cause(err) == invalidUnitStatusError
+}

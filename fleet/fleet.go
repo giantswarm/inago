@@ -14,6 +14,8 @@ import (
 	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
+
+	"github.com/giantswarm/formica/common"
 )
 
 const (
@@ -75,6 +77,9 @@ type UnitStatus struct {
 
 	// Name represents the unit file name.
 	Name string
+
+	// Slice represents the slice expression. E.g. @1, or @foo, or @5., etc..
+	Slice string
 }
 
 // Fleet defines the interface a fleet client needs to implement to provide
@@ -301,11 +306,17 @@ func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 	ourStatusList := []UnitStatus{}
 
 	for _, ffu := range foundFleetUnits {
+		ID, err := common.SliceID(ffu.Name)
+		if err != nil {
+			return nil, maskAny(invalidUnitStatusError)
+		}
+
 		ourUnitStatus := UnitStatus{
 			Current: ffu.CurrentState,
 			Desired: ffu.DesiredState,
 			Machine: []MachineStatus{},
 			Name:    ffu.Name,
+			Slice:   ID,
 		}
 		for _, ffus := range foundFleetUnitStates {
 			if ffu.Name != ffus.Name {

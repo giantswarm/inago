@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/formica/controller"
@@ -39,9 +40,10 @@ func statusRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	err = printStatus(group, statusList)
+	data, err := createStatus(group, statusList)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
+	fmt.Println(columnize.SimpleFormat(data))
 }
