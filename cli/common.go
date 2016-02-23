@@ -139,9 +139,12 @@ func createStatus(group string, usl controller.UnitStatusList) ([]string, error)
 		"",
 	}
 
-	usl, err := usl.Group()
-	if err != nil {
-		return nil, maskAny(err)
+	if !globalFlags.Verbose {
+		var err error
+		usl, err = usl.Group()
+		if err != nil {
+			return nil, maskAny(err)
+		}
 	}
 
 	for _, us := range usl {
