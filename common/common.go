@@ -1,4 +1,4 @@
-// Paxckage common provides implementation of general interest for certain sub
+// Package common provides implementation of general interest for certain sub
 // packages of formica.
 package common
 
@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-// extExp matches unit file extensions.
+// ExtExp matches unit file extensions.
 //
 //   app@1.service  =>  .service
 //   app@1.mount    =>  .mount
