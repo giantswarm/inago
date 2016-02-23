@@ -69,7 +69,7 @@ func NewController(config Config) Controller {
 		Config: config,
 	}
 
-	return newController
+	return &newController
 }
 
 type controller struct {
@@ -148,12 +148,7 @@ func (c controller) Submit(req Request) error {
 }
 
 func (c controller) Start(req Request) error {
-	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
-	if err != nil {
-		return maskAny(err)
-	}
-
-	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	unitStatusList, err := c.groupStatus(req)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -171,12 +166,7 @@ func (c controller) Start(req Request) error {
 }
 
 func (c controller) Stop(req Request) error {
-	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
-	if err != nil {
-		return maskAny(err)
-	}
-
-	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	unitStatusList, err := c.groupStatus(req)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -194,12 +184,7 @@ func (c controller) Stop(req Request) error {
 }
 
 func (c controller) Destroy(req Request) error {
-	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
-	if err != nil {
-		return maskAny(err)
-	}
-
-	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+	unitStatusList, err := c.groupStatus(req)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -217,12 +202,12 @@ func (c controller) Destroy(req Request) error {
 }
 
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
-	exp, err := regexp.Compile(fmt.Sprintf("^%s", req.Group))
-	if err != nil {
-		return []fleet.UnitStatus{}, maskAny(err)
-	}
+	status, err := c.groupStatus(req)
+	return status, maskAny(err)
+}
 
-	unitStatusList, err := c.Fleet.GetStatusWithExpression(exp)
+func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
+	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesGroupSlices(req))
 	if fleet.IsUnitNotFound(err) {
 		return []fleet.UnitStatus{}, maskAny(unitNotFoundError)
 	} else if err != nil {
@@ -259,4 +244,30 @@ func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string
 	}
 
 	return false
+}
+
+// matchesGroupSlices returns a matcher compatible with fleet.GetStatusWithMatcher
+// that matches for each unitfiles that belongs to the group specified by
+// request.Group and request.SliceIDs
+func matchesGroupSlices(request Request) func(string) bool {
+	// If only the group name is of interest, return shorter version
+	if request.SliceIDs == nil || len(request.SliceIDs) == 0 {
+		return func(name string) bool {
+			return strings.HasPrefix(name, request.Group)
+		}
+	}
+
+	// Normal version that matches on group prefix and slice ID suffix.
+	return func(unitname string) bool {
+		if !strings.HasPrefix(unitname, request.Group) {
+			return false
+		}
+
+		for _, sliceID := range request.SliceIDs {
+			if strings.HasSuffix(unitname, "@"+sliceID+".service") {
+				return true
+			}
+		}
+		return false
+	}
 }

@@ -103,6 +103,10 @@ type Fleet interface {
 	// GetStatusWithExpression fetches the current status of units based on a
 	// regular expression instead of a plain string.
 	GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
+
+	// GetStatusWithMatcher returns a []UnitStatus, with an element for
+	// each unit where the given matcher returns true.
+	GetStatusWithMatcher(func(string) bool) ([]UnitStatus, error)
 }
 
 // NewFleet creates a new Fleet that is configured with the given settings.
