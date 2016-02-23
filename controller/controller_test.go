@@ -312,6 +312,70 @@ func TestController_Start(t *testing.T) {
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
+
+func TestController_Destroy(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := GivenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+			{
+				Name: "test-sidekick@1.service",
+			},
+		},
+		nil,
+	).Once()
+	fleetMock.On("Destroy", "test-main@1.service").Return(nil).Once()
+	fleetMock.On("Destroy", "test-sidekick@1.service").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+	}
+	err := controller.Destroy(req)
+
+	// Assert
+	Expect(err).To(BeNil())
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+
+func TestController_Stop(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := GivenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+			{
+				Name: "test-sidekick@1.service",
+			},
+		},
+		nil,
+	).Once()
+	fleetMock.On("Stop", "test-main@1.service").Return(nil).Once()
+	fleetMock.On("Stop", "test-sidekick@1.service").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+	}
+	err := controller.Stop(req)
+
+	// Assert
+	Expect(err).To(BeNil())
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
 func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	RegisterTestingT(t)
 

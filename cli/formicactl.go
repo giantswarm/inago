@@ -58,6 +58,8 @@ func init() {
 	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)
 	MainCmd.AddCommand(startCmd)
+	MainCmd.AddCommand(stopCmd)
+	MainCmd.AddCommand(destroyCmd)
 }
 
 func mainRun(cmd *cobra.Command, args []string) {
