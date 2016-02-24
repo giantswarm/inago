@@ -11,17 +11,20 @@ import (
 	"github.com/giantswarm/formica/file-system/real"
 	"github.com/giantswarm/formica/file-system/spec"
 	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/formica/task"
 )
 
 var (
 	globalFlags struct {
 		FleetEndpoint string
+		NoBlock       bool
 		Verbose       bool
 	}
 
 	newController controller.Controller
 	newFileSystem filesystemspec.FileSystem
 	newFleet      fleet.Fleet
+	newTask       task.Task
 
 	MainCmd = &cobra.Command{
 		Use:   "formicactl",
@@ -49,12 +52,16 @@ var (
 			newController = controller.NewController(newControllerConfig)
 
 			newFileSystem = filesystemreal.NewFileSystem()
+
+			newTaskConfig := task.DefaultTaskConfig()
+			newTask = task.NewTask(newTaskConfig)
 		},
 	}
 )
 
 func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
+	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on syncronous actions or not")
 	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output or not")
 
 	MainCmd.AddCommand(submitCmd)
