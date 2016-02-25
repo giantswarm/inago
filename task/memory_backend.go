@@ -4,6 +4,8 @@ import (
 	"sync"
 )
 
+// NewMemoryBackend creates a backend implementation  for pseudo in-memory
+// persistence.
 func NewMemoryBackend() Backend {
 	newBackend := &memoryBackend{
 		Mutex:   sync.Mutex{},
