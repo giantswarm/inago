@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 
 	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/formica/task"
 )
 
 func Test_Request_ExtendSlices(t *testing.T) {
@@ -275,8 +276,13 @@ func Test_matchesGroupSlices(t *testing.T) {
 // with a mock.
 func GivenController() (Controller, *fleetMock) {
 	fleetMock := fleetMock{}
+
+	newTaskServiceConfig := task.DefaultTaskServiceConfig()
+	newTaskService := task.NewTaskService(newTaskServiceConfig)
+
 	cfg := Config{
-		Fleet: &fleetMock,
+		Fleet:       &fleetMock,
+		TaskService: newTaskService,
 	}
 	return NewController(cfg), &fleetMock
 }
@@ -305,13 +311,15 @@ func TestController_Start(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	err := controller.Start(req)
+	taskObject, err := controller.Start(req)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(taskObject, nil)
+	Expect(err).To(BeNil())
 
 	// Assert
-	Expect(err).To(BeNil())
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
-
 
 func TestController_Destroy(t *testing.T) {
 	RegisterTestingT(t)
@@ -337,13 +345,15 @@ func TestController_Destroy(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	err := controller.Destroy(req)
+	taskObject, err := controller.Destroy(req)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(taskObject, nil)
+	Expect(err).To(BeNil())
 
 	// Assert
-	Expect(err).To(BeNil())
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
-
 
 func TestController_Stop(t *testing.T) {
 	RegisterTestingT(t)
@@ -369,10 +379,13 @@ func TestController_Stop(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	err := controller.Stop(req)
+	taskObject, err := controller.Stop(req)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(taskObject, nil)
+	Expect(err).To(BeNil())
 
 	// Assert
-	Expect(err).To(BeNil())
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
@@ -392,8 +405,8 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 
 	// Execute
 	status, err := controller.GetStatus(Request{
-		Group: "test",
-		SliceIDs: []string{"1","2"},
+		Group:    "test",
+		SliceIDs: []string{"1", "2"},
 	})
 
 	// Assert
