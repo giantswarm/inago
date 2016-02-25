@@ -177,7 +177,7 @@ func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{})
 		select {
 		case <-closer:
 			return nil, nil
-		default:
+		case <-time.After(1 * time.Second):
 			taskObject, err := ts.FetchState(taskID)
 			if err != nil {
 				return nil, maskAny(err)
@@ -187,7 +187,5 @@ func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{})
 				return taskObject, nil
 			}
 		}
-
-		time.Sleep(ts.WaitSleep)
 	}
 }

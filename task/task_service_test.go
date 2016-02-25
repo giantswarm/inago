@@ -113,11 +113,13 @@ func Test_Task_TastService_Create_Wait(t *testing.T) {
 	newTaskService := NewTaskService(newConfig)
 
 	action := func() error {
+		// Just something to do, so the task blocks
 		time.Sleep(300 * time.Millisecond)
+
 		return nil
 	}
 
-	taskObject, err := newTaskService.Create(action)
+	originalTaskObject, err := newTaskService.Create(action)
 	if err != nil {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
@@ -129,14 +131,17 @@ func Test_Task_TastService_Create_Wait(t *testing.T) {
 		closer <- struct{}{}
 	}()
 
-	_, err = newTaskService.WaitForFinalStatus(taskObject.ID, closer)
+	taskObject, err := newTaskService.WaitForFinalStatus(originalTaskObject.ID, closer)
 	if err != nil {
 		t.Fatalf("TaskService.WaitForFinalStatus did return error: %#v", err)
 	}
+	if taskObject != nil {
+		t.Fatalf("Expected canceled WaitForFinalStatus to return nil, nil")
+	}
 
-	taskObject, err = newTaskService.FetchState(taskObject.ID)
+	taskObject, err = newTaskService.FetchState(originalTaskObject.ID)
 	if err != nil {
-		t.Fatalf("TaskService.Create did return error: %#v", err)
+		t.Fatalf("TaskService.FetchState did return error: %#v", err)
 	}
 
 	// When we use the closer to end waiting before the task is finished, the
