@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Test_Task_TastService_Create_Success(t *testing.T) {
+func Test_Task_TaskService_Create_Success(t *testing.T) {
 	newTaskService := NewTaskService(DefaultTaskServiceConfig())
 
 	testData := "invalid"
