@@ -62,13 +62,17 @@ type TaskService interface {
 // going to be created.
 type TaskServiceConfig struct {
 	Storage Storage
+
+	// WaitSleep represents the time to sleep between state-check cycles.
+	WaitSleep time.Duration
 }
 
 // DefaultTaskServiceConfig returns a best effort default configuration for the
 // task service.
 func DefaultTaskServiceConfig() TaskServiceConfig {
 	newConfig := TaskServiceConfig{
-		Storage: NewMemoryStorage(),
+		Storage:   NewMemoryStorage(),
+		WaitSleep: 1 * time.Second,
 	}
 
 	return newConfig

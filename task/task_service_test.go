@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Test_Task_TastService_Create_Success(t *testing.T) {
+func Test_Task_TaskService_Create_Success(t *testing.T) {
 	newTaskService := NewTaskService(DefaultTaskServiceConfig())
 
 	testData := "invalid"
@@ -40,7 +40,9 @@ func Test_Task_TastService_Create_Success(t *testing.T) {
 }
 
 func Test_Task_TastService_Create_Error(t *testing.T) {
-	newTaskService := NewTaskService(DefaultTaskServiceConfig())
+	newConfig := DefaultTaskServiceConfig()
+	newConfig.WaitSleep = 10 * time.Millisecond
+	newTaskService := NewTaskService(newConfig)
 
 	action := func() error {
 		return fmt.Errorf("test error")
@@ -66,7 +68,9 @@ func Test_Task_TastService_Create_Error(t *testing.T) {
 }
 
 func Test_Task_TastService_Create_FetchState(t *testing.T) {
-	newTaskService := NewTaskService(DefaultTaskServiceConfig())
+	newConfig := DefaultTaskServiceConfig()
+	newConfig.WaitSleep = 10 * time.Millisecond
+	newTaskService := NewTaskService(newConfig)
 
 	action := func() error {
 		return nil
@@ -104,11 +108,13 @@ func Test_Task_TastService_Create_FetchState(t *testing.T) {
 }
 
 func Test_Task_TastService_Create_Wait(t *testing.T) {
-	newTaskService := NewTaskService(DefaultTaskServiceConfig())
+	newConfig := DefaultTaskServiceConfig()
+	newConfig.WaitSleep = 10 * time.Millisecond
+	newTaskService := NewTaskService(newConfig)
 
 	action := func() error {
 		// Just something to do, so the task blocks
-		time.Sleep(1 * time.Second)
+		time.Sleep(300 * time.Millisecond)
 
 		return nil
 	}
