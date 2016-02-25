@@ -33,7 +33,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 		Request:    req,
 		Descriptor: "submit",
 		NoBlock:    globalFlags.NoBlock,
-		TaskObject: taskObject,
+		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})
 }

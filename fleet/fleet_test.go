@@ -229,5 +229,4 @@ func Test_Fleet_createOurStatusList(t *testing.T) {
 			t.Fatalf("generated status list '%#v' is not equal to expected status list '%#v'", ourStatusList, testCase.UnitStatusList)
 		}
 	}
-
 }

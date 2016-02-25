@@ -33,7 +33,7 @@ func stopRun(cmd *cobra.Command, args []string) {
 		Request:    req,
 		Descriptor: "stop",
 		NoBlock:    globalFlags.NoBlock,
-		TaskObject: taskObject,
+		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})
 }

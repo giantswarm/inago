@@ -172,13 +172,13 @@ type blockWithFeedbackCtx struct {
 	Request    controller.Request
 	Descriptor string
 	NoBlock    bool
-	TaskObject *task.TaskObject
+	TaskID     string
 	Closer     chan struct{}
 }
 
 func maybeBlockWithFeedback(ctx blockWithFeedbackCtx) {
 	if !ctx.NoBlock {
-		taskObject, err := newController.WaitForTask(ctx.TaskObject, ctx.Closer)
+		taskObject, err := newController.WaitForTask(ctx.TaskID, ctx.Closer)
 		if err != nil {
 			fmt.Printf("%#v\n", maskAny(err))
 			os.Exit(1)

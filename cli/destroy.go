@@ -33,7 +33,7 @@ func destroyRun(cmd *cobra.Command, args []string) {
 		Request:    req,
 		Descriptor: "destroy",
 		NoBlock:    globalFlags.NoBlock,
-		TaskObject: taskObject,
+		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})
 }

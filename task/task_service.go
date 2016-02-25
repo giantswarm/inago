@@ -36,9 +36,8 @@ type TaskService interface {
 	Create(action Action) (*TaskObject, error)
 
 	// FetchState fetches and returns the current state and status for the given
-	// task object. The returned task object is actually the refreshed version of
-	// the provided one.
-	FetchState(taskObject *TaskObject) (*TaskObject, error)
+	// task ID.
+	FetchState(taskID string) (*TaskObject, error)
 
 	// MarkAsSucceeded marks the task object as succeeded and persists its state.
 	// The returned task object is actually the refreshed version of the provided
@@ -55,9 +54,8 @@ type TaskService interface {
 
 	// WaitForFinalStatus blocks and waits for the given task to reach a final
 	// status. The given closer can end the waiting and thus stop blocking the
-	// call to WaitForFinalStatus. The returned task object is actually the
-	// refreshed version of the provided one.
-	WaitForFinalStatus(taskObject *TaskObject, closer <-chan struct{}) (*TaskObject, error)
+	// call to WaitForFinalStatus.
+	WaitForFinalStatus(taskID string, closer <-chan struct{}) (*TaskObject, error)
 }
 
 // TaskServiceConfig represents the configurations for the task service that is
@@ -122,10 +120,10 @@ func (ts *taskService) Create(action Action) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (ts *taskService) FetchState(taskObject *TaskObject) (*TaskObject, error) {
+func (ts *taskService) FetchState(taskID string) (*TaskObject, error) {
 	var err error
 
-	taskObject, err = ts.Backend.Get(taskObject.ID)
+	taskObject, err := ts.Backend.Get(taskID)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -167,13 +165,16 @@ func (ts *taskService) PersistState(taskObject *TaskObject) error {
 	return nil
 }
 
-func (ts *taskService) WaitForFinalStatus(taskObject *TaskObject, closer <-chan struct{}) (*TaskObject, error) {
+// WaitForFinalStatus acts as described in the interface comments. Note that
+// both, task object and error will be nil in case the closer ends waiting for
+// the task to reach a final state.
+func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{}) (*TaskObject, error) {
 	for {
 		select {
 		case <-closer:
-			return taskObject, nil
+			return nil, nil
 		default:
-			taskObject, err := ts.FetchState(taskObject)
+			taskObject, err := ts.FetchState(taskID)
 			if err != nil {
 				return nil, maskAny(err)
 			}
@@ -185,6 +186,4 @@ func (ts *taskService) WaitForFinalStatus(taskObject *TaskObject, closer <-chan 
 
 		time.Sleep(1 * time.Second)
 	}
-
-	return taskObject, nil
 }

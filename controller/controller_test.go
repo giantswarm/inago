@@ -314,7 +314,7 @@ func TestController_Start(t *testing.T) {
 	taskObject, err := controller.Start(req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject, nil)
+	_, err = controller.WaitForTask(taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert
@@ -348,7 +348,7 @@ func TestController_Destroy(t *testing.T) {
 	taskObject, err := controller.Destroy(req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject, nil)
+	_, err = controller.WaitForTask(taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert
@@ -382,7 +382,7 @@ func TestController_Stop(t *testing.T) {
 	taskObject, err := controller.Stop(req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject, nil)
+	_, err = controller.WaitForTask(taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert

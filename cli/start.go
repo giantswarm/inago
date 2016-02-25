@@ -33,7 +33,7 @@ func startRun(cmd *cobra.Command, args []string) {
 		Request:    req,
 		Descriptor: "start",
 		NoBlock:    globalFlags.NoBlock,
-		TaskObject: taskObject,
+		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})
 }

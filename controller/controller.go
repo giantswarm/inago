@@ -65,7 +65,7 @@ type Controller interface {
 	// WaitForTask waits for the given task to reach a final status. Once the
 	// given task has reached the final status, the final task representation is
 	// returned.
-	WaitForTask(taskObject *task.TaskObject, closer <-chan struct{}) (*task.TaskObject, error)
+	WaitForTask(taskID string, closer <-chan struct{}) (*task.TaskObject, error)
 }
 
 // NewController creates a new Controller that is configured with the given
@@ -253,8 +253,8 @@ func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
 	return status, maskAny(err)
 }
 
-func (c controller) WaitForTask(taskObject *task.TaskObject, closer <-chan struct{}) (*task.TaskObject, error) {
-	taskObject, err := c.TaskService.WaitForFinalStatus(taskObject, closer)
+func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.TaskObject, error) {
+	taskObject, err := c.TaskService.WaitForFinalStatus(taskID, closer)
 	return taskObject, maskAny(err)
 }
 
