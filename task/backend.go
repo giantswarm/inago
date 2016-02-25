@@ -1,6 +1,6 @@
 package task
 
 type Backend interface {
-	Get(string) (*TaskObject, error)
-	Set(*TaskObject) error
+	Get(taskID string) (*TaskObject, error)
+	Set(taskObject *TaskObject) error
 }

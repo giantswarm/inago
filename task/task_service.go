@@ -10,46 +10,46 @@ import (
 type Action func() error
 
 type TaskObject struct {
-	ID string
-
+	ID           string
 	ActiveStatus ActiveStatus
+	Error        string
 	FinalStatus  FinalStatus
 }
 
-type Task interface {
+type TaskService interface {
 	Create(action Action) (*TaskObject, error)
 	FetchState(taskObject *TaskObject) (*TaskObject, error)
 	MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, error)
-	MarkAsFailed(taskObject *TaskObject) (*TaskObject, error)
+	MarkAsFailedWithError(taskObject *TaskObject, err error) (*TaskObject, error)
 	PersistState(taskObject *TaskObject) error
 	WaitForFinalStatus(taskObject *TaskObject, closer <-chan struct{}) (*TaskObject, error)
 }
 
-type TaskConfig struct {
+type TaskServiceConfig struct {
 	Backend Backend
 }
 
-func DefaultTaskConfig() TaskConfig {
-	newConfig := TaskConfig{
+func DefaultTaskServiceConfig() TaskServiceConfig {
+	newConfig := TaskServiceConfig{
 		Backend: NewMemoryBackend(),
 	}
 
 	return newConfig
 }
 
-func NewTask(config TaskConfig) Task {
-	newTask := &task{
-		TaskConfig: config,
+func NewTaskService(config TaskServiceConfig) TaskService {
+	newTaskService := &taskService{
+		TaskServiceConfig: config,
 	}
 
-	return newTask
+	return newTaskService
 }
 
-type task struct {
-	TaskConfig
+type taskService struct {
+	TaskServiceConfig
 }
 
-func (t *task) Create(action Action) (*TaskObject, error) {
+func (ts *taskService) Create(action Action) (*TaskObject, error) {
 	taskObject := &TaskObject{
 		ID:           uuid.NewV4().String(),
 		ActiveStatus: StatusStarted,
@@ -59,24 +59,22 @@ func (t *task) Create(action Action) (*TaskObject, error) {
 	go func() {
 		err := action()
 		if err != nil {
-			fmt.Printf("[E] Task.Action failed: %#v\n", maskAny(err))
+			_, markErr := ts.MarkAsFailedWithError(taskObject, err)
+			if markErr != nil {
+				fmt.Printf("[E] Task.MarkAsFailed failed: %#v\n", maskAny(markErr))
+				return
+			}
 			return
 		}
 
-		_, err = t.MarkAsFailed(taskObject)
-		if err != nil {
-			fmt.Printf("[E] Task.MarkAsFailed failed: %#v\n", maskAny(err))
-			return
-		}
-
-		_, err = t.MarkAsSucceeded(taskObject)
+		_, err = ts.MarkAsSucceeded(taskObject)
 		if err != nil {
 			fmt.Printf("[E] Task.MarkAsSucceeded failed: %#v\n", maskAny(err))
 			return
 		}
 	}()
 
-	err := t.PersistState(taskObject)
+	err := ts.PersistState(taskObject)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -84,10 +82,10 @@ func (t *task) Create(action Action) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (t *task) FetchState(taskObject *TaskObject) (*TaskObject, error) {
+func (ts *taskService) FetchState(taskObject *TaskObject) (*TaskObject, error) {
 	var err error
 
-	taskObject, err = t.Backend.Get(taskObject.ID)
+	taskObject, err = ts.Backend.Get(taskObject.ID)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -95,11 +93,12 @@ func (t *task) FetchState(taskObject *TaskObject) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (t *task) MarkAsFailed(taskObject *TaskObject) (*TaskObject, error) {
+func (ts *taskService) MarkAsFailedWithError(taskObject *TaskObject, err error) (*TaskObject, error) {
 	taskObject.ActiveStatus = StatusStopped
+	taskObject.Error = err.Error()
 	taskObject.FinalStatus = StatusFailed
 
-	err := t.PersistState(taskObject)
+	err = ts.PersistState(taskObject)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -107,11 +106,11 @@ func (t *task) MarkAsFailed(taskObject *TaskObject) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (t *task) MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, error) {
+func (ts *taskService) MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, error) {
 	taskObject.ActiveStatus = StatusStopped
 	taskObject.FinalStatus = StatusSucceeded
 
-	err := t.PersistState(taskObject)
+	err := ts.PersistState(taskObject)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -119,8 +118,8 @@ func (t *task) MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (t *task) PersistState(taskObject *TaskObject) error {
-	err := t.Backend.Set(taskObject)
+func (ts *taskService) PersistState(taskObject *TaskObject) error {
+	err := ts.Backend.Set(taskObject)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -128,13 +127,13 @@ func (t *task) PersistState(taskObject *TaskObject) error {
 	return nil
 }
 
-func (t *task) WaitForFinalStatus(taskObject *TaskObject, closer <-chan struct{}) (*TaskObject, error) {
+func (ts *taskService) WaitForFinalStatus(taskObject *TaskObject, closer <-chan struct{}) (*TaskObject, error) {
 	for {
 		select {
 		case <-closer:
 			return taskObject, nil
 		default:
-			taskObject, err := t.FetchState(taskObject)
+			taskObject, err := ts.FetchState(taskObject)
 			if err != nil {
 				return nil, maskAny(err)
 			}

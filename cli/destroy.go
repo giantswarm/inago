@@ -23,17 +23,17 @@ func destroyRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	err = newController.Destroy(req)
+	taskObject, err := newController.Destroy(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 
-	if req.SliceIDs == nil {
-		fmt.Printf("Destroyed group '%s'\n", req.Group)
-	} else if len(req.SliceIDs) == 0 {
-		fmt.Printf("Destroyed all slices of group '%s'\n", req.Group)
-	} else {
-		fmt.Printf("Destroyed %d slices for group '%s': %v", len(req.SliceIDs), req.Group, req.SliceIDs)
-	}
+	maybeBlockWithFeedback(blockWithFeedbackCtx{
+		Request:    req,
+		Descriptor: "destroy",
+		NoBlock:    globalFlags.NoBlock,
+		TaskObject: taskObject,
+		Closer:     nil,
+	})
 }

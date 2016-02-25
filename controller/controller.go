@@ -9,12 +9,14 @@ import (
 	"strings"
 
 	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/formica/task"
 )
 
 // Config provides all necessary and injectable configurations for a new
 // controller.
 type Config struct {
-	Fleet fleet.Fleet
+	Fleet       fleet.Fleet
+	TaskService task.TaskService
 }
 
 // DefaultConfig provides a set of configurations with default values by best
@@ -26,8 +28,12 @@ func DefaultConfig() Config {
 		panic(err)
 	}
 
+	newTaskServiceConfig := task.DefaultTaskServiceConfig()
+	newTaskService := task.NewTaskService(newTaskServiceConfig)
+
 	newConfig := Config{
-		Fleet: newFleet,
+		Fleet:       newFleet,
+		TaskService: newTaskService,
 	}
 
 	return newConfig
@@ -38,23 +44,28 @@ func DefaultConfig() Config {
 type Controller interface {
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Submit(req Request) error
+	Submit(req Request) (*task.TaskObject, error)
 
 	// Start starts a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to launched.
-	Start(req Request) error
+	Start(req Request) (*task.TaskObject, error)
 
 	// Stop stops a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Stop(req Request) error
+	Stop(req Request) (*task.TaskObject, error)
 
 	// Destroy delets a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to inactive.
-	Destroy(req Request) error
+	Destroy(req Request) (*task.TaskObject, error)
 
 	// GetStatus fetches the current status of a group. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
 	GetStatus(req Request) ([]fleet.UnitStatus, error)
+
+	// WaitForTask waits for the given task to reach a final status. Once the
+	// given task has reached the final status, the final task representation is
+	// returned.
+	WaitForTask(taskObject *task.TaskObject, closer <-chan struct{}) (*task.TaskObject, error)
 }
 
 // NewController creates a new Controller that is configured with the given
@@ -129,81 +140,122 @@ func (r Request) ExtendSlices() (Request, error) {
 	return newRequest, nil
 }
 
-func (c controller) Submit(req Request) error {
-	extended, err := req.ExtendSlices()
-	if err != nil {
-		return maskAny(err)
-	}
-
-	for _, unit := range extended.Units {
-		err := c.Fleet.Submit(unit.Name, unit.Content)
+func (c controller) Submit(req Request) (*task.TaskObject, error) {
+	action := func() error {
+		extended, err := req.ExtendSlices()
 		if err != nil {
 			return maskAny(err)
 		}
+
+		for _, unit := range extended.Units {
+			err := c.Fleet.Submit(unit.Name, unit.Content)
+			if err != nil {
+				return maskAny(err)
+			}
+		}
+
+		// TODO retry operations
+
+		return nil
 	}
 
-	// TODO retry operations
+	taskObject, err := c.TaskService.Create(action)
+	if err != nil {
+		return nil, maskAny(err)
+	}
 
-	return nil
+	return taskObject, nil
 }
 
-func (c controller) Start(req Request) error {
-	unitStatusList, err := c.groupStatus(req)
-	if err != nil {
-		return maskAny(err)
-	}
-
-	for _, unitStatus := range unitStatusList {
-		err := c.Fleet.Start(unitStatus.Name)
+func (c controller) Start(req Request) (*task.TaskObject, error) {
+	action := func() error {
+		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
 			return maskAny(err)
 		}
+
+		for _, unitStatus := range unitStatusList {
+			err := c.Fleet.Start(unitStatus.Name)
+			if err != nil {
+				return maskAny(err)
+			}
+		}
+
+		// TODO retry operations
+
+		return nil
 	}
 
-	// TODO retry operations
+	taskObject, err := c.TaskService.Create(action)
+	if err != nil {
+		return nil, maskAny(err)
+	}
 
-	return nil
+	return taskObject, nil
 }
 
-func (c controller) Stop(req Request) error {
-	unitStatusList, err := c.groupStatus(req)
-	if err != nil {
-		return maskAny(err)
-	}
-
-	for _, unitStatus := range unitStatusList {
-		err := c.Fleet.Stop(unitStatus.Name)
+func (c controller) Stop(req Request) (*task.TaskObject, error) {
+	action := func() error {
+		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
 			return maskAny(err)
 		}
+
+		for _, unitStatus := range unitStatusList {
+			err := c.Fleet.Stop(unitStatus.Name)
+			if err != nil {
+				return maskAny(err)
+			}
+		}
+
+		// TODO retry operations
+
+		return nil
 	}
 
-	// TODO retry operations
+	taskObject, err := c.TaskService.Create(action)
+	if err != nil {
+		return nil, maskAny(err)
+	}
 
-	return nil
+	return taskObject, nil
 }
 
-func (c controller) Destroy(req Request) error {
-	unitStatusList, err := c.groupStatus(req)
-	if err != nil {
-		return maskAny(err)
-	}
-
-	for _, unitStatus := range unitStatusList {
-		err := c.Fleet.Destroy(unitStatus.Name)
+func (c controller) Destroy(req Request) (*task.TaskObject, error) {
+	action := func() error {
+		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
 			return maskAny(err)
 		}
+
+		for _, unitStatus := range unitStatusList {
+			err := c.Fleet.Destroy(unitStatus.Name)
+			if err != nil {
+				return maskAny(err)
+			}
+		}
+
+		// TODO retry operations
+
+		return nil
 	}
 
-	// TODO retry operations
+	taskObject, err := c.TaskService.Create(action)
+	if err != nil {
+		return nil, maskAny(err)
+	}
 
-	return nil
+	return taskObject, nil
 }
 
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
 	status, err := c.groupStatus(req)
 	return status, maskAny(err)
+}
+
+func (c controller) WaitForTask(taskObject *task.TaskObject, closer <-chan struct{}) (*task.TaskObject, error) {
+	taskObject, err := c.TaskService.WaitForFinalStatus(taskObject, closer)
+	return taskObject, maskAny(err)
 }
 
 func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
