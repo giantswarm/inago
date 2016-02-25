@@ -12,9 +12,6 @@ type Action func() error
 
 // TaskObject represents a task that is executable.
 type TaskObject struct {
-	// ID represents the task identifier.
-	ID string
-
 	// ActiveStatus represents a status indicating activation or deactivation.
 	ActiveStatus ActiveStatus
 
@@ -25,6 +22,9 @@ type TaskObject struct {
 	// FinalStatus represents any status that is final. A task having this status
 	// will not change its status anymore.
 	FinalStatus FinalStatus
+
+	// ID represents the task identifier.
+	ID string
 }
 
 // TaskService represents a task managing unit being able to act on task
