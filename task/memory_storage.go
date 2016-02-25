@@ -4,23 +4,23 @@ import (
 	"sync"
 )
 
-// NewMemoryBackend creates a backend implementation  for pseudo in-memory
+// NewMemoryStorage creates a backend implementation for pseudo in-memory
 // persistence.
-func NewMemoryBackend() Backend {
-	newBackend := &memoryBackend{
+func NewMemoryStorage() Storage {
+	newStorage := &memoryStorage{
 		Mutex:   sync.Mutex{},
 		Storage: map[string]*TaskObject{},
 	}
 
-	return newBackend
+	return newStorage
 }
 
-type memoryBackend struct {
+type memoryStorage struct {
 	Mutex   sync.Mutex
 	Storage map[string]*TaskObject
 }
 
-func (mb *memoryBackend) Get(taskID string) (*TaskObject, error) {
+func (mb *memoryStorage) Get(taskID string) (*TaskObject, error) {
 	mb.Mutex.Lock()
 	defer mb.Mutex.Unlock()
 
@@ -31,7 +31,7 @@ func (mb *memoryBackend) Get(taskID string) (*TaskObject, error) {
 	return nil, maskAny(taskObjectNotFoundError)
 }
 
-func (mb *memoryBackend) Set(taskObject *TaskObject) error {
+func (mb *memoryStorage) Set(taskObject *TaskObject) error {
 	mb.Mutex.Lock()
 	defer mb.Mutex.Unlock()
 

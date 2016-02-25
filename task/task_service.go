@@ -49,7 +49,7 @@ type TaskService interface {
 	// object is actually the refreshed version of the provided one.
 	MarkAsFailedWithError(taskObject *TaskObject, err error) (*TaskObject, error)
 
-	// PersistState writes the given task object to the configured Backend.
+	// PersistState writes the given task object to the configured Storage.
 	PersistState(taskObject *TaskObject) error
 
 	// WaitForFinalStatus blocks and waits for the given task to reach a final
@@ -61,14 +61,14 @@ type TaskService interface {
 // TaskServiceConfig represents the configurations for the task service that is
 // going to be created.
 type TaskServiceConfig struct {
-	Backend Backend
+	Storage Storage
 }
 
 // DefaultTaskServiceConfig returns a best effort default configuration for the
 // task service.
 func DefaultTaskServiceConfig() TaskServiceConfig {
 	newConfig := TaskServiceConfig{
-		Backend: NewMemoryBackend(),
+		Storage: NewMemoryStorage(),
 	}
 
 	return newConfig
@@ -123,7 +123,7 @@ func (ts *taskService) Create(action Action) (*TaskObject, error) {
 func (ts *taskService) FetchState(taskID string) (*TaskObject, error) {
 	var err error
 
-	taskObject, err := ts.Backend.Get(taskID)
+	taskObject, err := ts.Storage.Get(taskID)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -157,7 +157,7 @@ func (ts *taskService) MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, err
 }
 
 func (ts *taskService) PersistState(taskObject *TaskObject) error {
-	err := ts.Backend.Set(taskObject)
+	err := ts.Storage.Set(taskObject)
 	if err != nil {
 		return maskAny(err)
 	}
