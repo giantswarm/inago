@@ -16,6 +16,7 @@ import (
 var (
 	globalFlags struct {
 		FleetEndpoint string
+		NoBlock       bool
 		Verbose       bool
 	}
 
@@ -55,6 +56,7 @@ var (
 
 func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
+	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on synchronous actions or not")
 	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output or not")
 
 	MainCmd.AddCommand(submitCmd)

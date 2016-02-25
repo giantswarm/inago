@@ -23,9 +23,17 @@ func submitRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	err = newController.Submit(req)
+	taskObject, err := newController.Submit(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
+
+	maybeBlockWithFeedback(blockWithFeedbackCtx{
+		Request:    req,
+		Descriptor: "submit",
+		NoBlock:    globalFlags.NoBlock,
+		TaskID:     taskObject.ID,
+		Closer:     nil,
+	})
 }

@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
@@ -29,11 +28,14 @@ func statusRun(cmd *cobra.Command, args []string) {
 
 	group := dirnameFromSlices(args)
 	statusList, err := newController.GetStatus(req)
-	if controller.IsUnitNotFound(err) {
-		fmt.Printf("No unit found for group slice(s) '%s'.\n", args)
-		os.Exit(1)
-	} else if controller.IsUnitSliceNotFound(err) {
-		fmt.Printf("%s%s.\n", strings.ToUpper(err.Error()[0:1]), err.Error()[1:])
+	if controller.IsUnitNotFound(err) || controller.IsUnitSliceNotFound(err) {
+		if req.SliceIDs == nil {
+			fmt.Printf("Failed to find group '%s'.\n", req.Group)
+		} else if len(req.SliceIDs) == 0 {
+			fmt.Printf("Failed to find all slices of group '%s'.\n", req.Group)
+		} else {
+			fmt.Printf("Failed to find %d slices for group '%s': %v.\n", len(req.SliceIDs), req.Group, req.SliceIDs)
+		}
 		os.Exit(1)
 	} else if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))

@@ -47,9 +47,11 @@ func (matcher *containsCallMatcher) Match(actual interface{}) (success bool, err
 	}
 	return false, nil
 }
+
 func (matcher *containsCallMatcher) FailureMessage(actual interface{}) (message string) {
 	return fmt.Sprintf("Expected\n\t%#v\nto contain call\n\t%#v", actual, matcher.Call)
 }
+
 func (matcher *containsCallMatcher) NegatedFailureMessage(actual interface{}) (message string) {
 	return fmt.Sprintf("Expected\n\t%#v\nnot to contain call\n\t%#v", actual, matcher.Call)
 }
@@ -71,10 +73,12 @@ func (fleet *fleetClientMock) Unit(unit string) (*schema.Unit, error) {
 	args := fleet.Called(unit)
 	return args.Get(0).(*schema.Unit), args.Error(1)
 }
+
 func (fleet *fleetClientMock) Units() ([]*schema.Unit, error) {
 	args := fleet.Called()
 	return args.Get(0).([]*schema.Unit), args.Error(1)
 }
+
 func (fleet *fleetClientMock) UnitStates() ([]*schema.UnitState, error) {
 	args := fleet.Called()
 	return args.Get(0).([]*schema.UnitState), args.Error(1)
@@ -84,10 +88,12 @@ func (fleet *fleetClientMock) SetUnitTargetState(name, target string) error {
 	args := fleet.Called(name, target)
 	return args.Error(0)
 }
+
 func (fleet *fleetClientMock) CreateUnit(unit *schema.Unit) error {
 	args := fleet.Called(unit)
 	return args.Error(0)
 }
+
 func (fleet *fleetClientMock) DestroyUnit(unit string) error {
 	args := fleet.Called(unit)
 	return args.Error(0)
