@@ -12,9 +12,6 @@ type Action func() error
 
 // TaskObject represents a task that is executable.
 type TaskObject struct {
-	// ID represents the task identifier.
-	ID string
-
 	// ActiveStatus represents a status indicating activation or deactivation.
 	ActiveStatus ActiveStatus
 
@@ -25,6 +22,9 @@ type TaskObject struct {
 	// FinalStatus represents any status that is final. A task having this status
 	// will not change its status anymore.
 	FinalStatus FinalStatus
+
+	// ID represents the task identifier.
+	ID string
 }
 
 // TaskService represents a task managing unit being able to act on task
@@ -62,13 +62,17 @@ type TaskService interface {
 // going to be created.
 type TaskServiceConfig struct {
 	Storage Storage
+
+	// WaitSleep represents the time to sleep between state-check cycles.
+	WaitSleep time.Duration
 }
 
 // DefaultTaskServiceConfig returns a best effort default configuration for the
 // task service.
 func DefaultTaskServiceConfig() TaskServiceConfig {
 	newConfig := TaskServiceConfig{
-		Storage: NewMemoryStorage(),
+		Storage:   NewMemoryStorage(),
+		WaitSleep: 1 * time.Second,
 	}
 
 	return newConfig
@@ -173,7 +177,7 @@ func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{})
 		select {
 		case <-closer:
 			return nil, nil
-		default:
+		case <-time.After(ts.WaitSleep):
 			taskObject, err := ts.FetchState(taskID)
 			if err != nil {
 				return nil, maskAny(err)
@@ -183,7 +187,5 @@ func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{})
 				return taskObject, nil
 			}
 		}
-
-		time.Sleep(1 * time.Second)
 	}
 }
