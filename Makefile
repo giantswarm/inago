@@ -68,9 +68,8 @@ test: $(SOURCE) VERSION .gobuild
 	    $(TEST_COMMAND)
 
 lint:
-	for source_file in $(SOURCE); do \
-		go vet -x $$source_file ; \
-	done
+	go vet -x ./...
+	golint ./...
 
 ci-build: $(SOURCE) VERSION .gobuild
 	echo Building for $(GOOS)/$(GOARCH)

@@ -12,6 +12,7 @@ before_install:
 - wget https://downloads.giantswarm.io/builder/0.11.0/builder
 - chmod +x ./builder
 - export PATH=$PATH:$PWD
+- go get -u github.com/golang/lint/golint
 
 script:
 - make lint
