@@ -52,3 +52,12 @@ var invalidUnitStatusError = errgo.New("invalid unit status")
 func IsInvalidUnitStatus(err error) bool {
 	return errgo.Cause(err) == invalidUnitStatusError
 }
+
+
+var invalidArgumentError = errgo.Newf("invalid argument")
+
+// IsInvalidArgument checks whether the given error indicates a invalid argument
+// to the operation that was performed.
+func IsInvalidArgument(err error) bool {
+	return errgo.Cause(err) == invalidArgumentError
+}

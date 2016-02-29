@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/juju/errgo"
 	"github.com/giantswarm/formica/fleet"
 	"github.com/giantswarm/formica/task"
 )
@@ -124,6 +125,9 @@ var unitExp = regexp.MustCompile("@.service")
 // 	 bar@2.service
 //
 func (r Request) ExtendSlices() (Request, error) {
+	if len(r.SliceIDs) == 0 {
+		return r, nil
+	}
 	newRequest := Request{
 		SliceIDs: r.SliceIDs,
 		Units:    []Unit{},
@@ -141,6 +145,9 @@ func (r Request) ExtendSlices() (Request, error) {
 }
 
 func (c controller) Submit(req Request) (*task.TaskObject, error) {
+	if (len(req.Units) == 0) {
+		return nil, errgo.WithCausef(nil, maskAny(invalidArgumentError) , "invalid argument: Units must not be empty")
+	}
 	action := func() error {
 		extended, err := req.ExtendSlices()
 		if err != nil {
