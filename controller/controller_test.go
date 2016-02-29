@@ -307,16 +307,16 @@ func Test_matchesGroupSlices(t *testing.T) {
 	}
 }
 
-// GivenController returns a controller where the fleet backend is replaced
+// givenController returns a controller where the fleet backend is replaced
 // with a mock.
-func GivenController() (Controller, *fleetMock) {
+func givenController() (Controller, *fleetMock) {
 	fleetMock := fleetMock{}
 
-	newTaskServiceConfig := task.DefaultTaskServiceConfig()
+	newTaskServiceConfig := task.DefaultConfig()
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
 	cfg := Config{
-		Fleet:       &fleetMock,
+		Fleet:   &fleetMock,
 		TaskService: newTaskService,
 	}
 	return NewController(cfg), &fleetMock
@@ -325,7 +325,7 @@ func GivenController() (Controller, *fleetMock) {
 func TestController_Submit_Error(t *testing.T) {
 	RegisterTestingT(t)
 
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 
 	// Execute
 	req := Request{
@@ -347,7 +347,7 @@ func TestController_Start(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -381,7 +381,7 @@ func TestController_Destroy(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -415,7 +415,7 @@ func TestController_Stop(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -449,7 +449,7 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
