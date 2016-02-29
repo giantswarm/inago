@@ -131,12 +131,47 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 		},
+
+		// This test ensures we generate the correct units for group instances,
+		// so groups that do not want slices.
+		{
+			Input: Request{
+				SliceIDs: nil,
+				Units: []Unit{
+					{
+						Name:    "single-1.service",
+						Content: "some unit content",
+					},
+					{
+						Name:    "single-2.service",
+						Content: "some unit content",
+					},
+				},
+			},
+			Expected: Request{
+				SliceIDs: nil,
+				Units: []Unit{
+					{
+						Name:    "single-1.service",
+						Content: "some unit content",
+					},
+					{
+						Name:    "single-2.service",
+						Content: "some unit content",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		output, err := testCase.Input.ExtendSlices()
 		if err != nil {
 			t.Fatalf("Request.ExtendSlices returned error: %#v", err)
+		}
+
+		if len(output.Units) != len(testCase.Expected.Units) {
+			t.Fatalf("Number of units in expected output differed from received units: %d != %d", len(output.Units), len(testCase.Expected.Units))
 		}
 
 		for i, outputUnit := range output.Units {
