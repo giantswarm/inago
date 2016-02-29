@@ -54,10 +54,10 @@ func IsInvalidUnitStatus(err error) bool {
 }
 
 
-var illegalArgumentError = errgo.Newf("illegal argument")
+var invalidArgumentError = errgo.Newf("invalid argument")
 
-// IsIllegalArgument checks whether the given error indicates a invalid argument
+// IsInvalidArgument checks whether the given error indicates a invalid argument
 // to the operation that was performed.
-func IsIllegalArgument(err error) bool {
-	return errgo.Cause(err) == illegalArgumentError
+func IsInvalidArgument(err error) bool {
+	return errgo.Cause(err) == invalidArgumentError
 }

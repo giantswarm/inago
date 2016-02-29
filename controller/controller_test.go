@@ -322,6 +322,27 @@ func GivenController() (Controller, *fleetMock) {
 	return NewController(cfg), &fleetMock
 }
 
+func TestController_Submit_Error(t *testing.T) {
+	RegisterTestingT(t)
+
+	controller, fleetMock := GivenController()
+
+	// Execute
+	req := Request{
+		Group: "single",
+		SliceIDs: nil,
+		Units: []Unit{}, // Intentionally left empty!
+	}
+
+	task, err := controller.Submit(req)
+
+	// Assert
+	Expect(task).To(BeNil())
+	Expect(err).To(HaveOccurred())
+	Expect(err.Error()).To(Equal("invalid argument: Units must not be empty"))
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
 func TestController_Start(t *testing.T) {
 	RegisterTestingT(t)
 
