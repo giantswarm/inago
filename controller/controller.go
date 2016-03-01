@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/juju/errgo"
 	"github.com/giantswarm/formica/fleet"
 	"github.com/giantswarm/formica/task"
 )
@@ -146,7 +145,7 @@ func (r Request) ExtendSlices() (Request, error) {
 
 func (c controller) Submit(req Request) (*task.Task, error) {
 	if (len(req.Units) == 0) {
-		return nil, errgo.WithCausef(nil, maskAny(invalidArgumentError) , "invalid argument: Units must not be empty")
+		return nil, maskAnyf(invalidArgumentError, "Units must not be empty")
 	}
 	action := func() error {
 		extended, err := req.ExtendSlices()

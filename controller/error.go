@@ -10,6 +10,12 @@ var (
 	maskAny = errgo.MaskFunc(errgo.Any)
 )
 
+// maskAnyf returns a new github.com/juju/errgo error wrapping the given one.
+// The message will contain the message of f and v (see fmt.Printf), prefixed
+// with the message of err.
+//
+// Examples:
+//   maskAnyf(unitNotFoundError, "%s", unit.ID) => "unit not found: 12345abcdef.service"
 func maskAnyf(err error, f string, v ...interface{}) error {
 	f = fmt.Sprintf("%s: %s", err.Error(), f)
 	newErr := errgo.WithCausef(nil, errgo.Cause(err), f, v...)
