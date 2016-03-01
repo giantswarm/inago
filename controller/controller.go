@@ -201,7 +201,7 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 
 func (c controller) Start(req Request) (*task.Task, error) {
 	action := func() error {
-		unitStatusList, err := c.groupStatus(req)
+		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -234,7 +234,7 @@ func (c controller) Start(req Request) (*task.Task, error) {
 
 func (c controller) Stop(req Request) (*task.Task, error) {
 	action := func() error {
-		unitStatusList, err := c.groupStatus(req)
+		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -267,7 +267,7 @@ func (c controller) Stop(req Request) (*task.Task, error) {
 
 func (c controller) Destroy(req Request) (*task.Task, error) {
 	action := func() error {
-		unitStatusList, err := c.groupStatus(req)
+		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -299,7 +299,7 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 }
 
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
-	status, err := c.groupStatus(req)
+	status, err := c.groupStatusWithValidate(req)
 	return status, maskAny(err)
 }
 
@@ -370,17 +370,36 @@ func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Ta
 	return taskObject, maskAny(err)
 }
 
+// groupStatus fetches the group status using information provided
+// by req. Note that this methods throws a unitNotFoundError in case no unit
+// can be found.
 func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesGroupSlices(req))
 	if fleet.IsUnitNotFound(err) {
-		return []fleet.UnitStatus{}, maskAny(unitNotFoundError)
+		// This happens when no unit is found.
+		return nil, maskAny(unitNotFoundError)
 	} else if err != nil {
-		return []fleet.UnitStatus{}, maskAny(err)
+		return nil, maskAny(err)
+	}
+
+	// TODO retry operations
+
+	return unitStatusList, nil
+}
+
+// groupStatusWithValidate fetches the group status using information provided
+// by req. Note that this methods throws a unitNotFoundError in case no unit
+// can be found, and a unitSliceNotFoundError in case at least one unit cannot
+// be found.
+func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, error) {
+	unitStatusList, err := c.groupStatus(req)
+	if err != nil {
+		return nil, maskAny(err)
 	}
 
 	err = validateUnitStatusWithRequest(unitStatusList, req)
 	if err != nil {
-		return []fleet.UnitStatus{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 
 	// TODO retry operations
@@ -391,6 +410,7 @@ func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Request) error {
 	for _, sliceID := range req.SliceIDs {
 		if !containsUnitStatusSliceID(unitStatusList, sliceID) {
+			// This happens when at least one of the units is not found.
 			return maskAnyf(unitSliceNotFoundError, "slice ID '%s'", sliceID)
 		}
 	}
