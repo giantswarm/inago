@@ -24,6 +24,12 @@ type Config struct {
 
 	// Settings.
 
+	// WaitCount represents the amount of times a desired status is required to
+	// be seen to interpret it as final. E.g. when WaitCount is 3 and you start a
+	// group, all statuses of units of that group need to be seen as "running" 3
+	// times in a row.
+	WaitCount int
+
 	// WaitSleep represents the time to sleep between status-check cycles.
 	WaitSleep time.Duration
 
@@ -48,6 +54,7 @@ func DefaultConfig() Config {
 	newConfig := Config{
 		Fleet:       newFleet,
 		TaskService: newTaskService,
+		WaitCount:   3,
 		WaitSleep:   1 * time.Second,
 		WaitTimeout: 5 * time.Minute,
 	}
@@ -342,7 +349,7 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 
 		C1:
 			count++
-			if count == 3 {
+			if count == c.WaitCount {
 				// In case the desired state was seen 3 times in a row, we assume we
 				// finally reached the state we want to have.
 				break
