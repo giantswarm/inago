@@ -60,19 +60,19 @@ func DefaultConfig() Config {
 type Controller interface {
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Submit(req Request, closer <-chan struct{}) (*task.Task, error)
+	Submit(req Request) (*task.Task, error)
 
 	// Start starts a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to launched.
-	Start(req Request, closer <-chan struct{}) (*task.Task, error)
+	Start(req Request) (*task.Task, error)
 
 	// Stop stops a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Stop(req Request, closer <-chan struct{}) (*task.Task, error)
+	Stop(req Request) (*task.Task, error)
 
 	// Destroy delets a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to inactive.
-	Destroy(req Request, closer <-chan struct{}) (*task.Task, error)
+	Destroy(req Request) (*task.Task, error)
 
 	// GetStatus fetches the current status of a group. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
@@ -162,7 +162,7 @@ func (r Request) ExtendSlices() (Request, error) {
 	return newRequest, nil
 }
 
-func (c controller) Submit(req Request, closer <-chan struct{}) (*task.Task, error) {
+func (c controller) Submit(req Request) (*task.Task, error) {
 	if len(req.Units) == 0 {
 		return nil, maskAnyf(invalidArgumentError, "units must not be empty")
 	}
@@ -180,6 +180,7 @@ func (c controller) Submit(req Request, closer <-chan struct{}) (*task.Task, err
 			}
 		}
 
+		closer := make(chan struct{})
 		err = c.WaitForStatus(req, StatusStopped, closer)
 		if err != nil {
 			return maskAny(err)
@@ -198,7 +199,7 @@ func (c controller) Submit(req Request, closer <-chan struct{}) (*task.Task, err
 	return taskObject, nil
 }
 
-func (c controller) Start(req Request, closer <-chan struct{}) (*task.Task, error) {
+func (c controller) Start(req Request) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
@@ -212,6 +213,7 @@ func (c controller) Start(req Request, closer <-chan struct{}) (*task.Task, erro
 			}
 		}
 
+		closer := make(chan struct{})
 		err = c.WaitForStatus(req, StatusRunning, closer)
 		if err != nil {
 			return maskAny(err)
@@ -230,7 +232,7 @@ func (c controller) Start(req Request, closer <-chan struct{}) (*task.Task, erro
 	return taskObject, nil
 }
 
-func (c controller) Stop(req Request, closer <-chan struct{}) (*task.Task, error) {
+func (c controller) Stop(req Request) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
@@ -244,6 +246,7 @@ func (c controller) Stop(req Request, closer <-chan struct{}) (*task.Task, error
 			}
 		}
 
+		closer := make(chan struct{})
 		err = c.WaitForStatus(req, StatusStopped, closer)
 		if err != nil {
 			return maskAny(err)
@@ -262,7 +265,7 @@ func (c controller) Stop(req Request, closer <-chan struct{}) (*task.Task, error
 	return taskObject, nil
 }
 
-func (c controller) Destroy(req Request, closer <-chan struct{}) (*task.Task, error) {
+func (c controller) Destroy(req Request) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
@@ -276,6 +279,7 @@ func (c controller) Destroy(req Request, closer <-chan struct{}) (*task.Task, er
 			}
 		}
 
+		closer := make(chan struct{})
 		err = c.WaitForStatus(req, StatusNotFound, closer)
 		if err != nil {
 			return maskAny(err)

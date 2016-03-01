@@ -17,15 +17,15 @@ var (
 // Examples:
 //   maskAnyf(unitNotFoundError, "%s", unit.ID) => "unit not found: 12345abcdef.service"
 func maskAnyf(err error, f string, v ...interface{}) error {
-	f = fmt.Sprintf("%s: %s", err.Error(), f)
-	newErr := errgo.WithCausef(nil, errgo.Cause(err), f, v...)
-
-	if e, _ := newErr.(*errgo.Err); e != nil {
-		e.SetLocation(1)
-		return e
+	if err == nil {
+		return nil
 	}
 
-	return err
+	f = fmt.Sprintf("%s: %s", err.Error(), f)
+	newErr := errgo.WithCausef(nil, errgo.Cause(err), f, v...)
+	newErr.(*errgo.Err).SetLocation(1)
+
+	return newErr
 }
 
 var unitNotFoundError = errgo.New("unit not found")

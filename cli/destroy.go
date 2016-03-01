@@ -23,8 +23,7 @@ func destroyRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	closer := make(chan struct{}, 1)
-	taskObject, err := newController.Destroy(req, closer)
+	taskObject, err := newController.Destroy(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

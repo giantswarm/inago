@@ -334,9 +334,7 @@ func TestController_Submit_Error(t *testing.T) {
 		Units:    []Unit{}, // Intentionally left empty!
 	}
 
-	closer := make(chan struct{}, 1)
-	closer <- struct{}{}
-	task, err := controller.Submit(req, closer)
+	task, err := controller.Submit(req)
 
 	// Assert
 	Expect(task).To(BeNil())
@@ -369,9 +367,7 @@ func TestController_Start(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	closer := make(chan struct{}, 1)
-	closer <- struct{}{}
-	taskObject, err := controller.Start(req, closer)
+	taskObject, err := controller.Start(req)
 	Expect(err).To(BeNil())
 
 	_, err = controller.WaitForTask(taskObject.ID, nil)
@@ -405,9 +401,7 @@ func TestController_Destroy(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	closer := make(chan struct{}, 1)
-	closer <- struct{}{}
-	taskObject, err := controller.Destroy(req, closer)
+	taskObject, err := controller.Destroy(req)
 	Expect(err).To(BeNil())
 
 	_, err = controller.WaitForTask(taskObject.ID, nil)
@@ -441,9 +435,7 @@ func TestController_Stop(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	closer := make(chan struct{}, 1)
-	closer <- struct{}{}
-	taskObject, err := controller.Stop(req, closer)
+	taskObject, err := controller.Stop(req)
 	Expect(err).To(BeNil())
 
 	_, err = controller.WaitForTask(taskObject.ID, nil)
