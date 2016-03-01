@@ -1,4 +1,4 @@
-// Package formicactl implements a command line client for formica. Cobra CLI
+// Package cli implements a command line client for formica. Cobra CLI
 // is used as framework.
 package cli
 
@@ -24,6 +24,7 @@ var (
 	newFileSystem filesystemspec.FileSystem
 	newFleet      fleet.Fleet
 
+	// MainCmd contains the cobra.Command to execute formicactl.
 	MainCmd = &cobra.Command{
 		Use:   "formicactl",
 		Short: "orchestrate groups of unit files on Fleet clusters",

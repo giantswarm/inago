@@ -22,7 +22,7 @@ func TestDefaultConfig(t *testing.T) {
 	Expect(cfg.Client).To(Not(BeZero()))
 }
 
-func GivenMockedFleet() (*fleetClientMock, *fleet) {
+func givenMockedFleet() (*fleetClientMock, *fleet) {
 	mock := &fleetClientMock{}
 	return mock, &fleet{
 		Client: mock,
@@ -30,8 +30,8 @@ func GivenMockedFleet() (*fleetClientMock, *fleet) {
 	}
 }
 
-func GivenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClientMock, *fleet) {
-	fleetClientMock, fleet := GivenMockedFleet()
+func givenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClientMock, *fleet) {
+	fleetClientMock, fleet := givenMockedFleet()
 	fleetClientMock.On("Machines").Return(machines, nil)
 	return fleetClientMock, fleet
 }
@@ -39,7 +39,7 @@ func GivenMockedFleetWithMachines(machines []machine.MachineState) (*fleetClient
 func TestFleetSubmit_Success(t *testing.T) {
 	RegisterTestingT(t)
 
-	fleetClientMock, fleet := GivenMockedFleet()
+	fleetClientMock, fleet := givenMockedFleet()
 	fleetClientMock.On("CreateUnit", mock.AnythingOfType("*schema.Unit")).Once().Return(nil, nil)
 	err := fleet.Submit("unit.service", "[Unit]\n"+
 		"Description=This is a test unit\n"+
@@ -61,7 +61,7 @@ func TestFleetSubmit_Success(t *testing.T) {
 func TestFleetStart_Success(t *testing.T) {
 	RegisterTestingT(t)
 
-	mock, fleet := GivenMockedFleet()
+	mock, fleet := givenMockedFleet()
 	mock.On("SetUnitTargetState", "unit.service", unitStateLaunched).Once().Return(nil)
 
 	err := fleet.Start("unit.service")
@@ -73,7 +73,7 @@ func TestFleetStart_Success(t *testing.T) {
 func TestFleetStop_Success(t *testing.T) {
 	RegisterTestingT(t)
 
-	mock, fleet := GivenMockedFleet()
+	mock, fleet := givenMockedFleet()
 	mock.On("SetUnitTargetState", "unit.service", unitStateLoaded).Once().Return(nil)
 	err := fleet.Stop("unit.service")
 
@@ -84,7 +84,7 @@ func TestFleetStop_Success(t *testing.T) {
 func TestFleetDestroy_Success(t *testing.T) {
 	RegisterTestingT(t)
 
-	mock, fleet := GivenMockedFleet()
+	mock, fleet := givenMockedFleet()
 	mock.On("DestroyUnit", "unit.service").Once().Return(nil)
 	err := fleet.Destroy("unit.service")
 
@@ -99,7 +99,7 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocking
-	fleetClientMock, fleet := GivenMockedFleet()
+	fleetClientMock, fleet := givenMockedFleet()
 	fleetClientMock.On("Units").Return([]*schema.Unit{
 		{Name: "unit.service", CurrentState: unitStateLaunched, DesiredState: unitStateLaunched},
 		{Name: "other.service", CurrentState: unitStateInactive, DesiredState: unitStateInactive},
@@ -219,7 +219,7 @@ func Test_Fleet_createOurStatusList(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		_, fleet := GivenMockedFleet()
+		_, fleet := givenMockedFleet()
 		ourStatusList, err := fleet.createOurStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates, testCase.FleetMachines)
 		if err != nil {
 			t.Fatalf("Fleet.createOurStatusList returned error: %#v", err)

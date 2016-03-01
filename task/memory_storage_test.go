@@ -14,7 +14,7 @@ func Test_Task_Storage_Memory(t *testing.T) {
 		t.Fatalf("Storage.Get did NOT return proper error")
 	}
 
-	taskObject := &TaskObject{
+	taskObject := &Task{
 		ID: taskID,
 	}
 
