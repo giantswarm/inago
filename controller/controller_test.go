@@ -341,7 +341,7 @@ func TestController_Submit_Error(t *testing.T) {
 	// Assert
 	Expect(task).To(BeNil())
 	Expect(err).To(HaveOccurred())
-	Expect(err.Error()).To(Equal("invalid argument: Units must not be empty"))
+	Expect(err.Error()).To(Equal("invalid argument: units must not be empty"))
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 

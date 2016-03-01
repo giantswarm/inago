@@ -11,7 +11,6 @@ import (
 
 	"github.com/giantswarm/formica/fleet"
 	"github.com/giantswarm/formica/task"
-	"github.com/juju/errgo"
 )
 
 // Config provides all necessary and injectable configurations for a new
@@ -165,7 +164,7 @@ func (r Request) ExtendSlices() (Request, error) {
 
 func (c controller) Submit(req Request, closer <-chan struct{}) (*task.Task, error) {
 	if len(req.Units) == 0 {
-		return nil, errgo.WithCausef(nil, maskAny(invalidArgumentError), "invalid argument: Units must not be empty")
+		return nil, maskAnyf(invalidArgumentError, "units must not be empty")
 	}
 
 	action := func() error {
