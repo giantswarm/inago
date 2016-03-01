@@ -52,3 +52,10 @@ var invalidUnitStatusError = errgo.New("invalid unit status")
 func IsInvalidUnitStatus(err error) bool {
 	return errgo.Cause(err) == invalidUnitStatusError
 }
+
+var waitTimeoutReachedError = errgo.New("wait timeout reached")
+
+// IsWaitTimeoutReached asserts waitTimeoutReachedError.
+func IsWaitTimeoutReached(err error) bool {
+	return errgo.Cause(err) == waitTimeoutReachedError
+}

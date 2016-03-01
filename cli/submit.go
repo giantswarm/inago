@@ -23,7 +23,8 @@ func submitRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	taskObject, err := newController.Submit(req)
+	closer := make(<-chan struct{})
+	taskObject, err := newController.Submit(req, closer)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
