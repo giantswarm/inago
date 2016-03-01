@@ -59,3 +59,11 @@ var waitTimeoutReachedError = errgo.New("wait timeout reached")
 func IsWaitTimeoutReached(err error) bool {
 	return errgo.Cause(err) == waitTimeoutReachedError
 }
+
+var invalidArgumentError = errgo.Newf("invalid argument")
+
+// IsInvalidArgument checks whether the given error indicates a invalid argument
+// to the operation that was performed.
+func IsInvalidArgument(err error) bool {
+	return errgo.Cause(err) == invalidArgumentError
+}

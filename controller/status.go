@@ -7,8 +7,11 @@ import (
 	"github.com/giantswarm/formica/fleet"
 )
 
+// UnitStatusList represents a list of UnitStatus.
 type UnitStatusList []fleet.UnitStatus
 
+// Group returns a shortened version of usl where equal status
+// are replaced by one UnitStatus where the Name is replaced with "*".
 func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 	matchers := map[string]struct{}{}
 	newList := []fleet.UnitStatus{}

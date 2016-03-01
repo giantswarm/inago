@@ -9,7 +9,7 @@ import (
 func NewMemoryStorage() Storage {
 	newStorage := &memoryStorage{
 		Mutex:   sync.Mutex{},
-		Storage: map[string]TaskObject{},
+		Storage: map[string]Task{},
 	}
 
 	return newStorage
@@ -17,10 +17,10 @@ func NewMemoryStorage() Storage {
 
 type memoryStorage struct {
 	Mutex   sync.Mutex
-	Storage map[string]TaskObject
+	Storage map[string]Task
 }
 
-func (mb *memoryStorage) Get(taskID string) (*TaskObject, error) {
+func (mb *memoryStorage) Get(taskID string) (*Task, error) {
 	mb.Mutex.Lock()
 	defer mb.Mutex.Unlock()
 
@@ -31,7 +31,7 @@ func (mb *memoryStorage) Get(taskID string) (*TaskObject, error) {
 	return nil, maskAny(taskObjectNotFoundError)
 }
 
-func (mb *memoryStorage) Set(taskObject *TaskObject) error {
+func (mb *memoryStorage) Set(taskObject *Task) error {
 	mb.Mutex.Lock()
 	defer mb.Mutex.Unlock()
 

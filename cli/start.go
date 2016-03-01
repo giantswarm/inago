@@ -23,7 +23,7 @@ func startRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	closer := make(<-chan struct{})
+	closer := make(chan struct{}, 1)
 	taskObject, err := newController.Start(req, closer)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))

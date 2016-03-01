@@ -10,8 +10,8 @@ import (
 // Action represents any work to be done when executing a task.
 type Action func() error
 
-// TaskObject represents a task that is executable.
-type TaskObject struct {
+// Task represents a task that is executable.
+type Task struct {
 	// ActiveStatus represents a status indicating activation or deactivation.
 	ActiveStatus ActiveStatus
 
@@ -27,50 +27,50 @@ type TaskObject struct {
 	ID string
 }
 
-// TaskService represents a task managing unit being able to act on task
+// Service represents a task managing unit being able to act on task
 // objects.
-type TaskService interface {
+type Service interface {
 	// Create creates a new task object configured with the given action. The
 	// task object is immediately returned and its corresponding action is
 	// executed asynchronously.
-	Create(action Action) (*TaskObject, error)
+	Create(action Action) (*Task, error)
 
 	// FetchState fetches and returns the current state and status for the given
 	// task ID.
-	FetchState(taskID string) (*TaskObject, error)
+	FetchState(taskID string) (*Task, error)
 
 	// MarkAsSucceeded marks the task object as succeeded and persists its state.
 	// The returned task object is actually the refreshed version of the provided
 	// one.
-	MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, error)
+	MarkAsSucceeded(taskObject *Task) (*Task, error)
 
 	// MarkAsFailedWithError marks the task object as failed, adds information of
 	// thegiven error and persists the task objects's state. The returned task
 	// object is actually the refreshed version of the provided one.
-	MarkAsFailedWithError(taskObject *TaskObject, err error) (*TaskObject, error)
+	MarkAsFailedWithError(taskObject *Task, err error) (*Task, error)
 
 	// PersistState writes the given task object to the configured Storage.
-	PersistState(taskObject *TaskObject) error
+	PersistState(taskObject *Task) error
 
 	// WaitForFinalStatus blocks and waits for the given task to reach a final
 	// status. The given closer can end the waiting and thus stop blocking the
 	// call to WaitForFinalStatus.
-	WaitForFinalStatus(taskID string, closer <-chan struct{}) (*TaskObject, error)
+	WaitForFinalStatus(taskID string, closer <-chan struct{}) (*Task, error)
 }
 
-// TaskServiceConfig represents the configurations for the task service that is
+// Config represents the configurations for the task service that is
 // going to be created.
-type TaskServiceConfig struct {
+type Config struct {
 	Storage Storage
 
 	// WaitSleep represents the time to sleep between state-check cycles.
 	WaitSleep time.Duration
 }
 
-// DefaultTaskServiceConfig returns a best effort default configuration for the
+// DefaultConfig returns a best effort default configuration for the
 // task service.
-func DefaultTaskServiceConfig() TaskServiceConfig {
-	newConfig := TaskServiceConfig{
+func DefaultConfig() Config {
+	newConfig := Config{
 		Storage:   NewMemoryStorage(),
 		WaitSleep: 1 * time.Second,
 	}
@@ -79,20 +79,20 @@ func DefaultTaskServiceConfig() TaskServiceConfig {
 }
 
 // NewTaskService returns a new configured task service instance.
-func NewTaskService(config TaskServiceConfig) TaskService {
+func NewTaskService(config Config) Service {
 	newTaskService := &taskService{
-		TaskServiceConfig: config,
+		Config: config,
 	}
 
 	return newTaskService
 }
 
 type taskService struct {
-	TaskServiceConfig
+	Config
 }
 
-func (ts *taskService) Create(action Action) (*TaskObject, error) {
-	taskObject := &TaskObject{
+func (ts *taskService) Create(action Action) (*Task, error) {
+	taskObject := &Task{
 		ID:           uuid.NewV4().String(),
 		ActiveStatus: StatusStarted,
 		FinalStatus:  "",
@@ -124,7 +124,7 @@ func (ts *taskService) Create(action Action) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (ts *taskService) FetchState(taskID string) (*TaskObject, error) {
+func (ts *taskService) FetchState(taskID string) (*Task, error) {
 	var err error
 
 	taskObject, err := ts.Storage.Get(taskID)
@@ -135,7 +135,7 @@ func (ts *taskService) FetchState(taskID string) (*TaskObject, error) {
 	return taskObject, nil
 }
 
-func (ts *taskService) MarkAsFailedWithError(taskObject *TaskObject, err error) (*TaskObject, error) {
+func (ts *taskService) MarkAsFailedWithError(taskObject *Task, err error) (*Task, error) {
 	taskObject.ActiveStatus = StatusStopped
 	taskObject.Error = err.Error()
 	taskObject.FinalStatus = StatusFailed
@@ -148,7 +148,7 @@ func (ts *taskService) MarkAsFailedWithError(taskObject *TaskObject, err error) 
 	return taskObject, nil
 }
 
-func (ts *taskService) MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, error) {
+func (ts *taskService) MarkAsSucceeded(taskObject *Task) (*Task, error) {
 	taskObject.ActiveStatus = StatusStopped
 	taskObject.FinalStatus = StatusSucceeded
 
@@ -160,7 +160,7 @@ func (ts *taskService) MarkAsSucceeded(taskObject *TaskObject) (*TaskObject, err
 	return taskObject, nil
 }
 
-func (ts *taskService) PersistState(taskObject *TaskObject) error {
+func (ts *taskService) PersistState(taskObject *Task) error {
 	err := ts.Storage.Set(taskObject)
 	if err != nil {
 		return maskAny(err)
@@ -172,7 +172,7 @@ func (ts *taskService) PersistState(taskObject *TaskObject) error {
 // WaitForFinalStatus acts as described in the interface comments. Note that
 // both, task object and error will be nil in case the closer ends waiting for
 // the task to reach a final state.
-func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{}) (*TaskObject, error) {
+func (ts *taskService) WaitForFinalStatus(taskID string, closer <-chan struct{}) (*Task, error) {
 	for {
 		select {
 		case <-closer:

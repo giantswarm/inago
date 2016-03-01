@@ -6,12 +6,12 @@ import (
 
 func Test_Task_Status_HasFinalStatus(t *testing.T) {
 	testCases := []struct {
-		Input    *TaskObject
+		Input    *Task
 		Expected bool
 	}{
 		// This status combination is invalid.
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStarted,
 				Error:        "",
 				FinalStatus:  StatusFailed,
@@ -21,7 +21,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		},
 
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStopped,
 				Error:        "",
 				FinalStatus:  StatusFailed,
@@ -32,7 +32,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 
 		// This status combination is invalid.
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStarted,
 				Error:        "",
 				FinalStatus:  StatusSucceeded,
@@ -41,7 +41,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 			Expected: false,
 		},
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStopped,
 				Error:        "",
 				FinalStatus:  StatusSucceeded,
@@ -50,7 +50,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 			Expected: true,
 		},
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStarted,
 				Error:        "",
 				FinalStatus:  "",
@@ -59,7 +59,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 			Expected: false,
 		},
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStopped,
 				Error:        "",
 				FinalStatus:  "",
@@ -68,7 +68,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 			Expected: false,
 		},
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStarted,
 				Error:        "",
 				FinalStatus:  "",
@@ -77,7 +77,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 			Expected: false,
 		},
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStopped,
 				Error:        "",
 				FinalStatus:  "",
@@ -87,7 +87,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		},
 
 		{
-			Input: &TaskObject{
+			Input: &Task{
 				ActiveStatus: StatusStopped,
 				Error:        "test error",
 				FinalStatus:  "",

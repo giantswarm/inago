@@ -131,12 +131,47 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 		},
+
+		// This test ensures we generate the correct units for group instances,
+		// so groups that do not want slices.
+		{
+			Input: Request{
+				SliceIDs: nil,
+				Units: []Unit{
+					{
+						Name:    "single-1.service",
+						Content: "some unit content",
+					},
+					{
+						Name:    "single-2.service",
+						Content: "some unit content",
+					},
+				},
+			},
+			Expected: Request{
+				SliceIDs: nil,
+				Units: []Unit{
+					{
+						Name:    "single-1.service",
+						Content: "some unit content",
+					},
+					{
+						Name:    "single-2.service",
+						Content: "some unit content",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
 		output, err := testCase.Input.ExtendSlices()
 		if err != nil {
 			t.Fatalf("Request.ExtendSlices returned error: %#v", err)
+		}
+
+		if len(output.Units) != len(testCase.Expected.Units) {
+			t.Fatalf("Number of units in expected output differed from received units: %d != %d", len(output.Units), len(testCase.Expected.Units))
 		}
 
 		for i, outputUnit := range output.Units {
@@ -272,12 +307,12 @@ func Test_matchesGroupSlices(t *testing.T) {
 	}
 }
 
-// GivenController returns a controller where the fleet backend is replaced
+// givenController returns a controller where the fleet backend is replaced
 // with a mock.
-func GivenController() (Controller, *fleetMock) {
+func givenController() (Controller, *fleetMock) {
 	fleetMock := fleetMock{}
 
-	newTaskServiceConfig := task.DefaultTaskServiceConfig()
+	newTaskServiceConfig := task.DefaultConfig()
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
 	cfg := Config{
@@ -287,11 +322,34 @@ func GivenController() (Controller, *fleetMock) {
 	return NewController(cfg), &fleetMock
 }
 
+func TestController_Submit_Error(t *testing.T) {
+	RegisterTestingT(t)
+
+	controller, fleetMock := givenController()
+
+	// Execute
+	req := Request{
+		Group:    "single",
+		SliceIDs: nil,
+		Units:    []Unit{}, // Intentionally left empty!
+	}
+
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
+	task, err := controller.Submit(req, closer)
+
+	// Assert
+	Expect(task).To(BeNil())
+	Expect(err).To(HaveOccurred())
+	Expect(err.Error()).To(Equal("invalid argument: Units must not be empty"))
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
 func TestController_Start(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -311,7 +369,9 @@ func TestController_Start(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	taskObject, err := controller.Start(req)
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
+	taskObject, err := controller.Start(req, closer)
 	Expect(err).To(BeNil())
 
 	_, err = controller.WaitForTask(taskObject.ID, nil)
@@ -325,7 +385,7 @@ func TestController_Destroy(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -345,7 +405,9 @@ func TestController_Destroy(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	taskObject, err := controller.Destroy(req)
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
+	taskObject, err := controller.Destroy(req, closer)
 	Expect(err).To(BeNil())
 
 	_, err = controller.WaitForTask(taskObject.ID, nil)
@@ -359,7 +421,7 @@ func TestController_Stop(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -379,7 +441,9 @@ func TestController_Stop(t *testing.T) {
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
-	taskObject, err := controller.Stop(req)
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
+	taskObject, err := controller.Stop(req, closer)
 	Expect(err).To(BeNil())
 
 	_, err = controller.WaitForTask(taskObject.ID, nil)
@@ -393,7 +457,7 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
-	controller, fleetMock := GivenController()
+	controller, fleetMock := givenController()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{

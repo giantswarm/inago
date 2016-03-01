@@ -11,6 +11,7 @@ import (
 
 	"github.com/giantswarm/formica/fleet"
 	"github.com/giantswarm/formica/task"
+	"github.com/juju/errgo"
 )
 
 // Config provides all necessary and injectable configurations for a new
@@ -18,8 +19,9 @@ import (
 type Config struct {
 	// Dependencies.
 
-	Fleet       fleet.Fleet
-	TaskService task.TaskService
+	Fleet fleet.Fleet
+
+	TaskService task.Service
 
 	// Settings.
 
@@ -41,7 +43,7 @@ func DefaultConfig() Config {
 		panic(err)
 	}
 
-	newTaskServiceConfig := task.DefaultTaskServiceConfig()
+	newTaskServiceConfig := task.DefaultConfig()
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
 	newConfig := Config{
@@ -59,19 +61,19 @@ func DefaultConfig() Config {
 type Controller interface {
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Submit(req Request, closer <-chan struct{}) (*task.TaskObject, error)
+	Submit(req Request, closer <-chan struct{}) (*task.Task, error)
 
 	// Start starts a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to launched.
-	Start(req Request, closer <-chan struct{}) (*task.TaskObject, error)
+	Start(req Request, closer <-chan struct{}) (*task.Task, error)
 
 	// Stop stops a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Stop(req Request, closer <-chan struct{}) (*task.TaskObject, error)
+	Stop(req Request, closer <-chan struct{}) (*task.Task, error)
 
 	// Destroy delets a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to inactive.
-	Destroy(req Request, closer <-chan struct{}) (*task.TaskObject, error)
+	Destroy(req Request, closer <-chan struct{}) (*task.Task, error)
 
 	// GetStatus fetches the current status of a group. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
@@ -83,7 +85,7 @@ type Controller interface {
 	// WaitForTask waits for the given task to reach a final status. Once the
 	// given task has reached the final status, the final task representation is
 	// returned.
-	WaitForTask(taskID string, closer <-chan struct{}) (*task.TaskObject, error)
+	WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error)
 }
 
 // NewController creates a new Controller that is configured with the given
@@ -142,6 +144,9 @@ var unitExp = regexp.MustCompile("@.service")
 // 	 bar@2.service
 //
 func (r Request) ExtendSlices() (Request, error) {
+	if len(r.SliceIDs) == 0 {
+		return r, nil
+	}
 	newRequest := Request{
 		SliceIDs: r.SliceIDs,
 		Units:    []Unit{},
@@ -158,7 +163,11 @@ func (r Request) ExtendSlices() (Request, error) {
 	return newRequest, nil
 }
 
-func (c controller) Submit(req Request, closer <-chan struct{}) (*task.TaskObject, error) {
+func (c controller) Submit(req Request, closer <-chan struct{}) (*task.Task, error) {
+	if len(req.Units) == 0 {
+		return nil, errgo.WithCausef(nil, maskAny(invalidArgumentError), "invalid argument: Units must not be empty")
+	}
+
 	action := func() error {
 		extended, err := req.ExtendSlices()
 		if err != nil {
@@ -190,7 +199,7 @@ func (c controller) Submit(req Request, closer <-chan struct{}) (*task.TaskObjec
 	return taskObject, nil
 }
 
-func (c controller) Start(req Request, closer <-chan struct{}) (*task.TaskObject, error) {
+func (c controller) Start(req Request, closer <-chan struct{}) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
@@ -222,7 +231,7 @@ func (c controller) Start(req Request, closer <-chan struct{}) (*task.TaskObject
 	return taskObject, nil
 }
 
-func (c controller) Stop(req Request, closer <-chan struct{}) (*task.TaskObject, error) {
+func (c controller) Stop(req Request, closer <-chan struct{}) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
@@ -254,7 +263,7 @@ func (c controller) Stop(req Request, closer <-chan struct{}) (*task.TaskObject,
 	return taskObject, nil
 }
 
-func (c controller) Destroy(req Request, closer <-chan struct{}) (*task.TaskObject, error) {
+func (c controller) Destroy(req Request, closer <-chan struct{}) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatus(req)
 		if err != nil {
@@ -353,7 +362,7 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 	}
 }
 
-func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.TaskObject, error) {
+func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error) {
 	taskObject, err := c.TaskService.WaitForFinalStatus(taskID, closer)
 	return taskObject, maskAny(err)
 }
