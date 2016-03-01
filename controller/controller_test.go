@@ -360,7 +360,7 @@ func TestController_Start(t *testing.T) {
 			},
 		},
 		nil,
-	).Once()
+	)
 	fleetMock.On("Start", "test-main@1.service").Return(nil).Once()
 	fleetMock.On("Start", "test-sidekick@1.service").Return(nil).Once()
 
@@ -396,7 +396,7 @@ func TestController_Destroy(t *testing.T) {
 			},
 		},
 		nil,
-	).Once()
+	)
 	fleetMock.On("Destroy", "test-main@1.service").Return(nil).Once()
 	fleetMock.On("Destroy", "test-sidekick@1.service").Return(nil).Once()
 
@@ -432,7 +432,7 @@ func TestController_Stop(t *testing.T) {
 			},
 		},
 		nil,
-	).Once()
+	)
 	fleetMock.On("Stop", "test-main@1.service").Return(nil).Once()
 	fleetMock.On("Stop", "test-sidekick@1.service").Return(nil).Once()
 
