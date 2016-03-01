@@ -16,7 +16,7 @@ type FinalStatus string
 
 const (
 	// StatusFailed represents a task where the action return an error.
-	StatusFailed    FinalStatus = "failed"
+	StatusFailed FinalStatus = "failed"
 	// StatusSucceeded represents a task where the action returned nil.
 	StatusSucceeded FinalStatus = "succeeded"
 )

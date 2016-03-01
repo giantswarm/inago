@@ -144,7 +144,7 @@ func (r Request) ExtendSlices() (Request, error) {
 }
 
 func (c controller) Submit(req Request) (*task.Task, error) {
-	if (len(req.Units) == 0) {
+	if len(req.Units) == 0 {
 		return nil, maskAnyf(invalidArgumentError, "Units must not be empty")
 	}
 	action := func() error {

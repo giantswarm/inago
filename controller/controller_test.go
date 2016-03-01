@@ -316,7 +316,7 @@ func givenController() (Controller, *fleetMock) {
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
 	cfg := Config{
-		Fleet:   &fleetMock,
+		Fleet:       &fleetMock,
 		TaskService: newTaskService,
 	}
 	return NewController(cfg), &fleetMock
@@ -329,9 +329,9 @@ func TestController_Submit_Error(t *testing.T) {
 
 	// Execute
 	req := Request{
-		Group: "single",
+		Group:    "single",
 		SliceIDs: nil,
-		Units: []Unit{}, // Intentionally left empty!
+		Units:    []Unit{}, // Intentionally left empty!
 	}
 
 	task, err := controller.Submit(req)
