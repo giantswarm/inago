@@ -308,7 +308,7 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 	done := make(chan struct{})
 
 	go func() {
-		// c describes the count of how often the desired aggregated status was
+		// count describes the count of how often the desired aggregated status was
 		// seen.
 		count := 0
 
