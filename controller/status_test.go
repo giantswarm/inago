@@ -6,8 +6,60 @@ import (
 	"reflect"
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	"github.com/giantswarm/formica/fleet"
 )
+
+func givenSingleUnitStatus(name, sliceID string) fleet.UnitStatus {
+	return fleet.UnitStatus{
+		Name:    "unit-" + name + "@" + sliceID,
+		Current: "loaded",
+		Desired: "loaded",
+		Machine: []fleet.MachineStatus{
+			{
+				ID:            "machine1",
+				IP:            net.ParseIP("10.0.0.101"),
+				SystemdActive: "dead",
+				UnitHash:      "1234",
+			},
+		},
+	}
+}
+
+func givenGroupedStatus() fleet.UnitStatus {
+	e := givenSingleUnitStatus("*", "1")
+	e.Name = "*"
+	return e
+}
+
+func TestUnitStatusList_Group_NoDiff(t *testing.T) {
+	RegisterTestingT(t)
+
+	input1 := givenSingleUnitStatus("main", "1")
+	input2 := givenSingleUnitStatus("sidekick", "1")
+
+	output, err := UnitStatusList([]fleet.UnitStatus{input1, input2}).Group()
+
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(output).To(ContainElement(givenGroupedStatus()))
+	Expect(len(output)).To(Equal(1))
+}
+
+func TestUnitStatusList_Group_UnitHashDiffs(t *testing.T) {
+	RegisterTestingT(t)
+
+	input1 := givenSingleUnitStatus("main", "1")
+	input2 := givenSingleUnitStatus("sidekick", "1")
+	input2.Machine[0].UnitHash = "something-else"
+
+	output, err := UnitStatusList([]fleet.UnitStatus{input1, input2}).Group()
+
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(output).To(ContainElement(input1))
+	Expect(output).To(ContainElement(input2))
+	Expect(len(output)).To(Equal(2))
+}
 
 func inputUnitStatusList(configs ...map[string][]string) UnitStatusList {
 	unitStatusList := UnitStatusList{}
@@ -26,6 +78,7 @@ func inputUnitStatusList(configs ...map[string][]string) UnitStatusList {
 						ID:            fmt.Sprintf("machine-ID-%s", sliceID),
 						IP:            net.ParseIP(fmt.Sprintf("10.0.0.%s", sliceID)),
 						SystemdActive: fmt.Sprintf("systemd-active-state-%s", state),
+						UnitHash:      "1234",
 					},
 				},
 				Name: fmt.Sprintf("name-%d@%s.service", i, sliceID),
@@ -56,6 +109,7 @@ func expectedUnitStatusList(configs ...map[string][]string) []fleet.UnitStatus {
 						ID:            fmt.Sprintf("machine-ID-%s", sliceID),
 						IP:            net.ParseIP(fmt.Sprintf("10.0.0.%s", sliceID)),
 						SystemdActive: fmt.Sprintf("systemd-active-state-%s", state),
+						UnitHash:      "1234",
 					},
 				},
 				Name: name,
