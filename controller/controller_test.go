@@ -2,6 +2,7 @@ package controller
 
 import (
 	"testing"
+	"time"
 
 	"github.com/juju/errgo"
 	. "github.com/onsi/gomega"
@@ -318,6 +319,8 @@ func givenController() (Controller, *fleetMock) {
 	cfg := Config{
 		Fleet:       &fleetMock,
 		TaskService: newTaskService,
+		WaitCount:   1,
+		WaitSleep:   10 * time.Millisecond,
 	}
 	return NewController(cfg), &fleetMock
 }
