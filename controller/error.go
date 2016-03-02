@@ -59,6 +59,13 @@ func IsInvalidUnitStatus(err error) bool {
 	return errgo.Cause(err) == invalidUnitStatusError
 }
 
+var waitTimeoutReachedError = errgo.New("wait timeout reached")
+
+// IsWaitTimeoutReached asserts waitTimeoutReachedError.
+func IsWaitTimeoutReached(err error) bool {
+	return errgo.Cause(err) == waitTimeoutReachedError
+}
+
 var invalidArgumentError = errgo.Newf("invalid argument")
 
 // IsInvalidArgument checks whether the given error indicates a invalid argument

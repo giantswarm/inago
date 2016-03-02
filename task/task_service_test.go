@@ -124,12 +124,9 @@ func Test_Task_TastService_Create_Wait(t *testing.T) {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
 
-	closer := make(chan struct{})
-
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		closer <- struct{}{}
-	}()
+	// Directly close and end waiting.
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
 
 	taskObject, err := newTaskService.WaitForFinalStatus(originalTaskObject.ID, closer)
 	if err != nil {

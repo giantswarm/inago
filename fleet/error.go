@@ -1,12 +1,26 @@
 package fleet
 
 import (
+	"fmt"
+
 	"github.com/juju/errgo"
 )
 
 var (
 	maskAny = errgo.MaskFunc(errgo.Any)
 )
+
+func maskAnyf(err error, f string, v ...interface{}) error {
+	f = fmt.Sprintf("%s: %s", err.Error(), f)
+	newErr := errgo.WithCausef(nil, errgo.Cause(err), f, v...)
+
+	if e, _ := newErr.(*errgo.Err); e != nil {
+		e.SetLocation(1)
+		return e
+	}
+
+	return err
+}
 
 var ipNotFoundError = errgo.New("ip not found")
 

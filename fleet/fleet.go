@@ -59,6 +59,9 @@ type MachineStatus struct {
 	// SystemdActive represents the unit's systemd active state.
 	SystemdActive string
 
+	// SystemdSub represents the unit's systemd sub state.
+	SystemdSub string
+
 	// UnitHash represents a unique token to identify the content of the unitfile.
 	UnitHash string
 }
@@ -333,6 +336,7 @@ func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 				ID:            ffus.MachineID,
 				IP:            IP,
 				SystemdActive: ffus.SystemdActiveState,
+				SystemdSub:    ffus.SystemdSubState,
 				UnitHash:      ffus.Hash,
 			}
 			ourUnitStatus.Machine = append(ourUnitStatus.Machine, ourMachineStatus)

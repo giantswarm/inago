@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/giantswarm/formica/fleet"
 	"github.com/giantswarm/formica/task"
@@ -15,8 +16,27 @@ import (
 // Config provides all necessary and injectable configurations for a new
 // controller.
 type Config struct {
-	Fleet       fleet.Fleet
+	// Dependencies.
+
+	Fleet fleet.Fleet
+
 	TaskService task.Service
+
+	// Settings.
+
+	// WaitCount represents the amount of times a desired status is required to
+	// be seen to interpret it as final. E.g. when WaitCount is 3 and you start a
+	// group, all statuses of units of that group need to be seen as "running" 3
+	// times in a row.
+	WaitCount int
+
+	// WaitSleep represents the time to sleep between status-check cycles.
+	WaitSleep time.Duration
+
+	// WaitTimeout represents the maximum time to wait to reach a certain
+	// status. When the desired status was not reached within the given period of
+	// time, the wait ends.
+	WaitTimeout time.Duration
 }
 
 // DefaultConfig provides a set of configurations with default values by best
@@ -34,6 +54,9 @@ func DefaultConfig() Config {
 	newConfig := Config{
 		Fleet:       newFleet,
 		TaskService: newTaskService,
+		WaitCount:   3,
+		WaitSleep:   1 * time.Second,
+		WaitTimeout: 5 * time.Minute,
 	}
 
 	return newConfig
@@ -61,6 +84,9 @@ type Controller interface {
 	// GetStatus fetches the current status of a group. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
 	GetStatus(req Request) ([]fleet.UnitStatus, error)
+
+	// WaitForStatus waits for a group to reach the given status.
+	WaitForStatus(req Request, desired Status, closer <-chan struct{}) error
 
 	// WaitForTask waits for the given task to reach a final status. Once the
 	// given task has reached the final status, the final task representation is
@@ -145,8 +171,9 @@ func (r Request) ExtendSlices() (Request, error) {
 
 func (c controller) Submit(req Request) (*task.Task, error) {
 	if len(req.Units) == 0 {
-		return nil, maskAnyf(invalidArgumentError, "Units must not be empty")
+		return nil, maskAnyf(invalidArgumentError, "units must not be empty")
 	}
+
 	action := func() error {
 		extended, err := req.ExtendSlices()
 		if err != nil {
@@ -158,6 +185,12 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 			if err != nil {
 				return maskAny(err)
 			}
+		}
+
+		closer := make(chan struct{})
+		err = c.WaitForStatus(req, StatusStopped, closer)
+		if err != nil {
+			return maskAny(err)
 		}
 
 		// TODO retry operations
@@ -175,7 +208,7 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 
 func (c controller) Start(req Request) (*task.Task, error) {
 	action := func() error {
-		unitStatusList, err := c.groupStatus(req)
+		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -185,6 +218,12 @@ func (c controller) Start(req Request) (*task.Task, error) {
 			if err != nil {
 				return maskAny(err)
 			}
+		}
+
+		closer := make(chan struct{})
+		err = c.WaitForStatus(req, StatusRunning, closer)
+		if err != nil {
+			return maskAny(err)
 		}
 
 		// TODO retry operations
@@ -202,7 +241,7 @@ func (c controller) Start(req Request) (*task.Task, error) {
 
 func (c controller) Stop(req Request) (*task.Task, error) {
 	action := func() error {
-		unitStatusList, err := c.groupStatus(req)
+		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -212,6 +251,12 @@ func (c controller) Stop(req Request) (*task.Task, error) {
 			if err != nil {
 				return maskAny(err)
 			}
+		}
+
+		closer := make(chan struct{})
+		err = c.WaitForStatus(req, StatusStopped, closer)
+		if err != nil {
+			return maskAny(err)
 		}
 
 		// TODO retry operations
@@ -229,7 +274,7 @@ func (c controller) Stop(req Request) (*task.Task, error) {
 
 func (c controller) Destroy(req Request) (*task.Task, error) {
 	action := func() error {
-		unitStatusList, err := c.groupStatus(req)
+		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -239,6 +284,12 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 			if err != nil {
 				return maskAny(err)
 			}
+		}
+
+		closer := make(chan struct{})
+		err = c.WaitForStatus(req, StatusNotFound, closer)
+		if err != nil {
+			return maskAny(err)
 		}
 
 		// TODO retry operations
@@ -255,8 +306,70 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 }
 
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
-	status, err := c.groupStatus(req)
+	status, err := c.groupStatusWithValidate(req)
 	return status, maskAny(err)
+}
+
+func (c controller) WaitForStatus(req Request, desired Status, closer <-chan struct{}) error {
+	fail := make(chan error)
+	done := make(chan struct{})
+
+	go func() {
+		// count describes the count of how often the desired aggregated status was
+		// seen.
+		count := 0
+
+	L1:
+		for {
+			unitStatusList, err := c.groupStatus(req)
+			if IsUnitNotFound(err) && desired == StatusNotFound {
+				goto C1
+			} else if err != nil {
+				fail <- maskAny(err)
+				return
+			}
+
+			for _, us := range unitStatusList {
+				for _, ms := range us.Machine {
+					aggregated, err := AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
+					if err != nil {
+						fail <- maskAny(err)
+						return
+					}
+
+					if aggregated != desired {
+						// Whenever the aggregated status does not match the desired
+						// status, we reset the counter.
+						count = 0
+						time.Sleep(c.WaitSleep)
+						continue L1
+					}
+				}
+			}
+
+		C1:
+			count++
+			if count == c.WaitCount {
+				// In case the desired state was seen 3 times in a row, we assume we
+				// finally reached the state we want to have.
+				break
+			}
+			time.Sleep(c.WaitSleep)
+		}
+
+		done <- struct{}{}
+	}()
+
+	select {
+	case err := <-fail:
+		return maskAny(err)
+	case <-done:
+		return nil
+	case <-closer:
+		return nil
+	case <-time.After(c.WaitTimeout):
+		return maskAny(waitTimeoutReachedError)
+	}
 }
 
 func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error) {
@@ -264,17 +377,36 @@ func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Ta
 	return taskObject, maskAny(err)
 }
 
+// groupStatus fetches the group status using information provided
+// by req. Note that this methods throws a unitNotFoundError in case no unit
+// can be found.
 func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesGroupSlices(req))
 	if fleet.IsUnitNotFound(err) {
-		return []fleet.UnitStatus{}, maskAny(unitNotFoundError)
+		// This happens when no unit is found.
+		return nil, maskAny(unitNotFoundError)
 	} else if err != nil {
-		return []fleet.UnitStatus{}, maskAny(err)
+		return nil, maskAny(err)
+	}
+
+	// TODO retry operations
+
+	return unitStatusList, nil
+}
+
+// groupStatusWithValidate fetches the group status using information provided
+// by req. Note that this methods throws a unitNotFoundError in case no unit
+// can be found, and a unitSliceNotFoundError in case at least one unit cannot
+// be found.
+func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, error) {
+	unitStatusList, err := c.groupStatus(req)
+	if err != nil {
+		return nil, maskAny(err)
 	}
 
 	err = validateUnitStatusWithRequest(unitStatusList, req)
 	if err != nil {
-		return []fleet.UnitStatus{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 
 	// TODO retry operations
@@ -285,6 +417,7 @@ func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Request) error {
 	for _, sliceID := range req.SliceIDs {
 		if !containsUnitStatusSliceID(unitStatusList, sliceID) {
+			// This happens when at least one of the units is not found.
 			return maskAnyf(unitSliceNotFoundError, "slice ID '%s'", sliceID)
 		}
 	}

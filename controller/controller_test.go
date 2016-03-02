@@ -339,7 +339,7 @@ func TestController_Submit_Error(t *testing.T) {
 	// Assert
 	Expect(task).To(BeNil())
 	Expect(err).To(HaveOccurred())
-	Expect(err.Error()).To(Equal("invalid argument: Units must not be empty"))
+	Expect(err.Error()).To(Equal("invalid argument: units must not be empty"))
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
@@ -358,7 +358,7 @@ func TestController_Start(t *testing.T) {
 			},
 		},
 		nil,
-	).Once()
+	)
 	fleetMock.On("Start", "test-main@1.service").Return(nil).Once()
 	fleetMock.On("Start", "test-sidekick@1.service").Return(nil).Once()
 
@@ -392,7 +392,7 @@ func TestController_Destroy(t *testing.T) {
 			},
 		},
 		nil,
-	).Once()
+	)
 	fleetMock.On("Destroy", "test-main@1.service").Return(nil).Once()
 	fleetMock.On("Destroy", "test-sidekick@1.service").Return(nil).Once()
 
@@ -426,7 +426,7 @@ func TestController_Stop(t *testing.T) {
 			},
 		},
 		nil,
-	).Once()
+	)
 	fleetMock.On("Stop", "test-main@1.service").Return(nil).Once()
 	fleetMock.On("Stop", "test-sidekick@1.service").Return(nil).Once()
 
