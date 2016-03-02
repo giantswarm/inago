@@ -531,7 +531,7 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
-func TestController_WaitForStatus(t *testing.T) {
+func TestController_WaitForStatus_001(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
@@ -595,4 +595,101 @@ func TestController_WaitForStatus(t *testing.T) {
 
 	// Assert
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+func TestController_WaitForStatus_002(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := givenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+			{
+				Name: "test-sidekick@1.service",
+			},
+		},
+		nil,
+	)
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	desired := StatusRunning
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
+
+	err := controller.WaitForStatus(req, desired, closer)
+	Expect(err).To(BeNil())
+}
+
+func TestController_WaitForStatus_003(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	newFleetMockConfig := defaultFleetMockConfig()
+	newFleetMockConfig.UseTestifyMock = false
+	newFleetMockConfig.UseCustomMock = true
+	newFleetMockConfig.FirstCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "*",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "activating",
+					SystemdSub:    "*",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+	newFleetMockConfig.LastCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "*",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "active",
+					SystemdSub:    "running",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+
+	c, _ := givenControllerWithConfig(newFleetMockConfig)
+	c.(*controller).WaitTimeout = 0
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	desired := StatusRunning
+	closer := make(chan struct{}, 1)
+
+	err := c.WaitForStatus(req, desired, closer)
+	Expect(IsWaitTimeoutReached(err)).To(BeTrue()) // Because WaitForStatus is 0 nothing should happen but directly return the error
 }

@@ -58,3 +58,11 @@ var invalidUnitStatusError = errgo.New("invalid unit status")
 func IsInvalidUnitStatus(err error) bool {
 	return errgo.Cause(err) == invalidUnitStatusError
 }
+
+var invalidEndpointError = errgo.Newf("invalid endpoint")
+
+// IsInvalidEndpoint checks whether the given error indicates a invalid
+// endpoint to the operation that was performed.
+func IsInvalidEndpoint(err error) bool {
+	return errgo.Cause(err) == invalidEndpointError
+}

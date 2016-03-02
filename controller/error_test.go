@@ -45,3 +45,57 @@ func Test_Controller_maskAnyf(t *testing.T) {
 		}
 	}
 }
+
+func Test_Controller_errors(t *testing.T) {
+	testCases := []struct {
+		Output   bool
+		Expected bool
+	}{
+		{
+			Output:   IsUnitNotFound(unitNotFoundError),
+			Expected: true,
+		},
+		{
+			Output:   IsUnitNotFound(unitSliceNotFoundError),
+			Expected: false,
+		},
+		{
+			Output:   IsInvalidUnitStatus(invalidUnitStatusError),
+			Expected: true,
+		},
+		{
+			Output:   IsInvalidUnitStatus(unitSliceNotFoundError),
+			Expected: false,
+		},
+		{
+			Output:   IsInvalidArgument(invalidArgumentError),
+			Expected: true,
+		},
+		{
+			Output:   IsInvalidArgument(unitSliceNotFoundError),
+			Expected: false,
+		},
+		{
+			Output:   IsWaitTimeoutReached(waitTimeoutReachedError),
+			Expected: true,
+		},
+		{
+			Output:   IsWaitTimeoutReached(invalidUnitStatusError),
+			Expected: false,
+		},
+		{
+			Output:   IsUnitSliceNotFound(unitSliceNotFoundError),
+			Expected: true,
+		},
+		{
+			Output:   IsUnitSliceNotFound(waitTimeoutReachedError),
+			Expected: false,
+		},
+	}
+
+	for i, testCase := range testCases {
+		if testCase.Expected != testCase.Output {
+			t.Fatalf("test case %d: expected %t got %t", i+1, testCase.Expected, testCase.Output)
+		}
+	}
+}

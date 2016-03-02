@@ -41,7 +41,53 @@ func Test_Fleet_maskAnyf(t *testing.T) {
 		}
 
 		if testCase.Expected != nil && output.Error() != testCase.Expected.Error() {
-			t.Fatalf("test case %d: output '%s' != expected '%s'", i, output, testCase.Expected)
+			t.Fatalf("test case %d: output '%s' != expected '%s'", i+1, output, testCase.Expected)
+		}
+	}
+}
+
+func Test_Fleet_errors(t *testing.T) {
+	testCases := []struct {
+		Output   bool
+		Expected bool
+	}{
+		{
+			Output:   IsIPNotFound(ipNotFoundError),
+			Expected: true,
+		},
+		{
+			Output:   IsIPNotFound(unitNotFoundError),
+			Expected: false,
+		},
+		{
+			Output:   IsUnitNotFound(unitNotFoundError),
+			Expected: true,
+		},
+		{
+			Output:   IsUnitNotFound(ipNotFoundError),
+			Expected: false,
+		},
+		{
+			Output:   IsInvalidUnitStatus(invalidUnitStatusError),
+			Expected: true,
+		},
+		{
+			Output:   IsInvalidUnitStatus(ipNotFoundError),
+			Expected: false,
+		},
+		{
+			Output:   IsInvalidEndpoint(invalidEndpointError),
+			Expected: true,
+		},
+		{
+			Output:   IsInvalidEndpoint(invalidUnitStatusError),
+			Expected: false,
+		},
+	}
+
+	for i, testCase := range testCases {
+		if testCase.Expected != testCase.Output {
+			t.Fatalf("test case %d: expected %t got %t", i+1, testCase.Expected, testCase.Output)
 		}
 	}
 }
