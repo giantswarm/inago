@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"net"
 	"testing"
 	"time"
 
@@ -311,18 +312,38 @@ func Test_matchesGroupSlices(t *testing.T) {
 // givenController returns a controller where the fleet backend is replaced
 // with a mock.
 func givenController() (Controller, *fleetMock) {
-	fleetMock := fleetMock{}
+	newFleetMockConfig := defaultFleetMockConfig()
+	newFleetMock := newFleetMock(newFleetMockConfig)
 
 	newTaskServiceConfig := task.DefaultConfig()
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
-	cfg := Config{
-		Fleet:       &fleetMock,
-		TaskService: newTaskService,
-		WaitCount:   1,
-		WaitSleep:   10 * time.Millisecond,
-	}
-	return NewController(cfg), &fleetMock
+	newControllerConfig := DefaultConfig()
+	newControllerConfig.Fleet = newFleetMock
+	newControllerConfig.TaskService = newTaskService
+	newControllerConfig.WaitCount = 1
+	newControllerConfig.WaitSleep = 10 * time.Millisecond
+	newController := NewController(newControllerConfig)
+
+	return newController, newFleetMock
+}
+
+// givenController returns a controller where the fleet backend is replaced
+// with a mock.
+func givenControllerWithConfig(fmc fleetMockConfig) (Controller, *fleetMock) {
+	newFleetMock := newFleetMock(fmc)
+
+	newTaskServiceConfig := task.DefaultConfig()
+	newTaskService := task.NewTaskService(newTaskServiceConfig)
+
+	newControllerConfig := DefaultConfig()
+	newControllerConfig.Fleet = newFleetMock
+	newControllerConfig.TaskService = newTaskService
+	newControllerConfig.WaitCount = 1
+	newControllerConfig.WaitSleep = 10 * time.Millisecond
+	newController := NewController(newControllerConfig)
+
+	return newController, newFleetMock
 }
 
 func TestController_Submit_Error(t *testing.T) {
@@ -343,6 +364,42 @@ func TestController_Submit_Error(t *testing.T) {
 	Expect(task).To(BeNil())
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal("invalid argument: units must not be empty"))
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+func TestController_Submit(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := givenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+		},
+		nil,
+	)
+	fleetMock.On("Submit", "test-main@1.service", "content").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	taskObject, err := controller.Submit(req)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(taskObject.ID, nil)
+	Expect(err).To(BeNil())
+
+	// Assert
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
@@ -471,5 +528,71 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	// Assert
 	Expect(IsUnitSliceNotFound(err)).To(Equal(true))
 	Expect(status).To(BeEmpty())
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+func TestController_WaitForStatus(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	newFleetMockConfig := defaultFleetMockConfig()
+	newFleetMockConfig.UseTestifyMock = false
+	newFleetMockConfig.UseCustomMock = true
+	newFleetMockConfig.FirstCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "*",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "activating",
+					SystemdSub:    "*",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+	newFleetMockConfig.LastCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "*",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "active",
+					SystemdSub:    "running",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+
+	controller, fleetMock := givenControllerWithConfig(newFleetMockConfig)
+	fleetMock.On("Start", "test-main@1.service").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	taskObject, err := controller.Start(req)
+	Expect(err).To(BeNil())
+	Expect(task.HasFinalStatus(taskObject)).To(Not(BeTrue()))
+
+	taskObject, err = controller.WaitForTask(taskObject.ID, nil)
+	Expect(err).To(BeNil())
+	Expect(task.HasSucceededStatus(taskObject)).To(BeTrue())
+
+	// Assert
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
