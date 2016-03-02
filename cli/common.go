@@ -1,10 +1,13 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"text/template"
 
 	"github.com/giantswarm/formica/controller"
 	"github.com/giantswarm/formica/task"
@@ -131,16 +134,12 @@ func createRequest(slices []string) (controller.Request, error) {
 }
 
 var (
-	statusHeader = "Group | Units | FDState | FCState | SAState | IP | Machine"
-	statusBody   = "%s | %s | %s | %s | %s | %s | %s"
+	statusHeader = "Group | Units | FDState | FCState | SAState {{if .Verbose}}| Hash{{end}} | IP | Machine"
+	statusBody   = "{{.Group}}{{.UnitState.Slice}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
+		"{{.MachineState.SystemdActive}}{{if .Verbose}} | {{.MachineState.UnitHash}}{{end}} | {{.MachineState.IP}} | {{.MachineState.ID}}"
 )
 
 func createStatus(group string, usl controller.UnitStatusList) ([]string, error) {
-	data := []string{
-		statusHeader,
-		"",
-	}
-
 	if !globalFlags.Verbose {
 		var err error
 		usl, err = usl.Group()
@@ -149,23 +148,37 @@ func createStatus(group string, usl controller.UnitStatusList) ([]string, error)
 		}
 	}
 
+	out := bytes.NewBufferString("")
+
+	header := template.Must(template.New("header").Parse(statusHeader))
+	header.Execute(out, struct {
+		Verbose bool
+	}{
+		globalFlags.Verbose,
+	})
+	out.WriteString("\n\n")
+	tmpl := template.Must(template.New("row-format").Parse(statusBody))
 	for _, us := range usl {
 		for _, ms := range us.Machine {
-			row := fmt.Sprintf(
-				statusBody,
-				group+us.Slice,
-				us.Name,
-				us.Desired,
-				us.Current,
-				ms.SystemdActive,
-				ms.IP,
-				ms.ID,
-			)
-			data = append(data, row)
+
+			tmpl.Execute(out, struct {
+				Verbose      bool
+				Group        string
+				UnitState    interface{}
+				MachineState interface{}
+			}{
+				globalFlags.Verbose,
+				group,
+				us,
+				ms,
+			})
+
+			out.WriteString("\n")
+
 		}
 	}
 
-	return data, nil
+	return strings.Split(out.String(), "\n"), nil
 }
 
 type blockWithFeedbackCtx struct {

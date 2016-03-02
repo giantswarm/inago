@@ -42,6 +42,8 @@ func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 	return newList, nil
 }
 
+// groupUnitStatus returns a subset of usl where the sliceID matches the sliceID
+// of groupMember, ignoring the unit names and extension.
 func groupUnitStatus(usl []fleet.UnitStatus, groupMember fleet.UnitStatus) ([]fleet.UnitStatus, string, error) {
 	ID, err := common.SliceID(groupMember.Name)
 	if err != nil {
@@ -61,6 +63,8 @@ func groupUnitStatus(usl []fleet.UnitStatus, groupMember fleet.UnitStatus) ([]fl
 	return newList, ID, nil
 }
 
+// allStatesEqual returns true if all elements in usl match for the following
+// fields: Current, Desired, Machine.SystemdActive, Machine.UnitHash
 func allStatesEqual(usl []fleet.UnitStatus) bool {
 	for _, us1 := range usl {
 		for _, us2 := range usl {
@@ -73,6 +77,9 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 			for _, m1 := range us1.Machine {
 				for _, m2 := range us2.Machine {
 					if m1.SystemdActive != m2.SystemdActive {
+						return false
+					}
+					if m1.UnitHash != m2.UnitHash {
 						return false
 					}
 				}
