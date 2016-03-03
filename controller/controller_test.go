@@ -313,17 +313,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 // with a mock.
 func givenController() (Controller, *fleetMock) {
 	newFleetMockConfig := defaultFleetMockConfig()
-	newFleetMock := newFleetMock(newFleetMockConfig)
-
-	newTaskServiceConfig := task.DefaultConfig()
-	newTaskService := task.NewTaskService(newTaskServiceConfig)
-
-	newControllerConfig := DefaultConfig()
-	newControllerConfig.Fleet = newFleetMock
-	newControllerConfig.TaskService = newTaskService
-	newControllerConfig.WaitCount = 1
-	newControllerConfig.WaitSleep = 10 * time.Millisecond
-	newController := NewController(newControllerConfig)
+	newController, newFleetMock := givenControllerWithConfig(newFleetMockConfig)
 
 	return newController, newFleetMock
 }
@@ -531,7 +521,9 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
-func TestController_WaitForStatus_001(t *testing.T) {
+// TestController_WaitForStatus_Success tests the normal behaviour of
+// Controller.WaitForStatus to ensure it works as expected.
+func TestController_WaitForStatus_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
@@ -541,13 +533,13 @@ func TestController_WaitForStatus_001(t *testing.T) {
 	newFleetMockConfig.FirstCustomMockStatus = []fleet.UnitStatus{
 		{
 			Current: "loaded",
-			Desired: "*",
+			Desired: "loaded",
 			Machine: []fleet.MachineStatus{
 				{
 					ID:            "test-id",
 					IP:            net.ParseIP("10.0.0.101"),
 					SystemdActive: "activating",
-					SystemdSub:    "*",
+					SystemdSub:    "start-pre",
 					UnitHash:      "test-hash",
 				},
 			},
@@ -557,7 +549,7 @@ func TestController_WaitForStatus_001(t *testing.T) {
 	newFleetMockConfig.LastCustomMockStatus = []fleet.UnitStatus{
 		{
 			Current: "loaded",
-			Desired: "*",
+			Desired: "loaded",
 			Machine: []fleet.MachineStatus{
 				{
 					ID:            "test-id",
@@ -597,7 +589,9 @@ func TestController_WaitForStatus_001(t *testing.T) {
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
-func TestController_WaitForStatus_002(t *testing.T) {
+// TestController_WaitForStatus_Closer tests Controller.WaitForStatus to
+// directly end waiting when the closer is used.
+func TestController_WaitForStatus_Closer(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
@@ -633,7 +627,9 @@ func TestController_WaitForStatus_002(t *testing.T) {
 	Expect(err).To(BeNil())
 }
 
-func TestController_WaitForStatus_003(t *testing.T) {
+// TestController_WaitForStatus_Timeout tests Controller.WaitForStatus to end
+// waiting when the given WaitTimeout expired.
+func TestController_WaitForStatus_Timeout(t *testing.T) {
 	RegisterTestingT(t)
 
 	// Mocks
@@ -643,13 +639,13 @@ func TestController_WaitForStatus_003(t *testing.T) {
 	newFleetMockConfig.FirstCustomMockStatus = []fleet.UnitStatus{
 		{
 			Current: "loaded",
-			Desired: "*",
+			Desired: "loaded",
 			Machine: []fleet.MachineStatus{
 				{
 					ID:            "test-id",
 					IP:            net.ParseIP("10.0.0.101"),
 					SystemdActive: "activating",
-					SystemdSub:    "*",
+					SystemdSub:    "start-pre",
 					UnitHash:      "test-hash",
 				},
 			},
@@ -659,7 +655,7 @@ func TestController_WaitForStatus_003(t *testing.T) {
 	newFleetMockConfig.LastCustomMockStatus = []fleet.UnitStatus{
 		{
 			Current: "loaded",
-			Desired: "*",
+			Desired: "loaded",
 			Machine: []fleet.MachineStatus{
 				{
 					ID:            "test-id",
