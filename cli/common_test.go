@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/giantswarm/formica/controller"
 	"github.com/giantswarm/formica/file-system/fake"
+	"github.com/giantswarm/formica/fleet"
 )
 
 type testFileSystemSetup struct {
@@ -225,4 +227,28 @@ func Test_Common_createRequest(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestCreateStatus(t *testing.T) {
+	assert := assert.New(t)
+	group := "example"
+	statusList := controller.UnitStatusList{
+		fleet.UnitStatus{
+			Current: fleet.unitStateLoaded,
+			Desired: fleet.unitStateLoaded,
+			Machine: MachineStatus{
+				ID: "505e0d7802d7439a924c269b76f34b5f",
+				IP: net.IP{
+				// TODO add IP here
+				},
+				SystemdActive: "inactive",
+				SystemdSub:    "inactive",
+				UnitHash:      "fa59254bb1fac86a10935d9aaf839fe0638fbaba",
+			},
+			Name:  "example-main",
+			Slice: "@1",
+		},
+	}
+	status, err := createStatus(group, statusList)
+	assert.Nil(err)
 }
