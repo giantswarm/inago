@@ -1,11 +1,11 @@
-package controller
+package fleet
 
 import (
 	"fmt"
 	"testing"
 )
 
-func Test_Controller_maskAnyf(t *testing.T) {
+func Test_Fleet_maskAnyf(t *testing.T) {
 	testCases := []struct {
 		InputError  error
 		InputFormat string
@@ -41,22 +41,30 @@ func Test_Controller_maskAnyf(t *testing.T) {
 		}
 
 		if testCase.Expected != nil && output.Error() != testCase.Expected.Error() {
-			t.Fatalf("test case %d: output '%s' != expected '%s'", i, output, testCase.Expected)
+			t.Fatalf("test case %d: output '%s' != expected '%s'", i+1, output, testCase.Expected)
 		}
 	}
 }
 
-func Test_Controller_errors(t *testing.T) {
+func Test_Fleet_errors(t *testing.T) {
 	testCases := []struct {
 		Output   bool
 		Expected bool
 	}{
 		{
+			Output:   IsIPNotFound(ipNotFoundError),
+			Expected: true,
+		},
+		{
+			Output:   IsIPNotFound(unitNotFoundError),
+			Expected: false,
+		},
+		{
 			Output:   IsUnitNotFound(unitNotFoundError),
 			Expected: true,
 		},
 		{
-			Output:   IsUnitNotFound(unitSliceNotFoundError),
+			Output:   IsUnitNotFound(ipNotFoundError),
 			Expected: false,
 		},
 		{
@@ -64,31 +72,15 @@ func Test_Controller_errors(t *testing.T) {
 			Expected: true,
 		},
 		{
-			Output:   IsInvalidUnitStatus(unitSliceNotFoundError),
+			Output:   IsInvalidUnitStatus(ipNotFoundError),
 			Expected: false,
 		},
 		{
-			Output:   IsInvalidArgument(invalidArgumentError),
+			Output:   IsInvalidEndpoint(invalidEndpointError),
 			Expected: true,
 		},
 		{
-			Output:   IsInvalidArgument(unitSliceNotFoundError),
-			Expected: false,
-		},
-		{
-			Output:   IsWaitTimeoutReached(waitTimeoutReachedError),
-			Expected: true,
-		},
-		{
-			Output:   IsWaitTimeoutReached(invalidUnitStatusError),
-			Expected: false,
-		},
-		{
-			Output:   IsUnitSliceNotFound(unitSliceNotFoundError),
-			Expected: true,
-		},
-		{
-			Output:   IsUnitSliceNotFound(waitTimeoutReachedError),
+			Output:   IsInvalidEndpoint(invalidUnitStatusError),
 			Expected: false,
 		},
 	}

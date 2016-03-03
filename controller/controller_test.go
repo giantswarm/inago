@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"net"
 	"testing"
+	"time"
 
 	"github.com/juju/errgo"
 	. "github.com/onsi/gomega"
@@ -310,16 +312,28 @@ func Test_matchesGroupSlices(t *testing.T) {
 // givenController returns a controller where the fleet backend is replaced
 // with a mock.
 func givenController() (Controller, *fleetMock) {
-	fleetMock := fleetMock{}
+	newFleetMockConfig := defaultFleetMockConfig()
+	newController, newFleetMock := givenControllerWithConfig(newFleetMockConfig)
+
+	return newController, newFleetMock
+}
+
+// givenController returns a controller where the fleet backend is replaced
+// with a mock.
+func givenControllerWithConfig(fmc fleetMockConfig) (Controller, *fleetMock) {
+	newFleetMock := newFleetMock(fmc)
 
 	newTaskServiceConfig := task.DefaultConfig()
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
-	cfg := Config{
-		Fleet:       &fleetMock,
-		TaskService: newTaskService,
-	}
-	return NewController(cfg), &fleetMock
+	newControllerConfig := DefaultConfig()
+	newControllerConfig.Fleet = newFleetMock
+	newControllerConfig.TaskService = newTaskService
+	newControllerConfig.WaitCount = 1
+	newControllerConfig.WaitSleep = 10 * time.Millisecond
+	newController := NewController(newControllerConfig)
+
+	return newController, newFleetMock
 }
 
 func TestController_Submit_Error(t *testing.T) {
@@ -340,6 +354,42 @@ func TestController_Submit_Error(t *testing.T) {
 	Expect(task).To(BeNil())
 	Expect(err).To(HaveOccurred())
 	Expect(err.Error()).To(Equal("invalid argument: units must not be empty"))
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+func TestController_Submit(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := givenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+		},
+		nil,
+	)
+	fleetMock.On("Submit", "test-main@1.service", "content").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	taskObject, err := controller.Submit(req)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(taskObject.ID, nil)
+	Expect(err).To(BeNil())
+
+	// Assert
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
@@ -469,4 +519,173 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	Expect(IsUnitSliceNotFound(err)).To(Equal(true))
 	Expect(status).To(BeEmpty())
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+// TestController_WaitForStatus_Success tests the normal behaviour of
+// Controller.WaitForStatus to ensure it works as expected.
+func TestController_WaitForStatus_Success(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	newFleetMockConfig := defaultFleetMockConfig()
+	newFleetMockConfig.UseTestifyMock = false
+	newFleetMockConfig.UseCustomMock = true
+	newFleetMockConfig.FirstCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "activating",
+					SystemdSub:    "start-pre",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+	newFleetMockConfig.LastCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "active",
+					SystemdSub:    "running",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+
+	controller, fleetMock := givenControllerWithConfig(newFleetMockConfig)
+	fleetMock.On("Start", "test-main@1.service").Return(nil).Once()
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	taskObject, err := controller.Start(req)
+	Expect(err).To(BeNil())
+	Expect(task.HasFinalStatus(taskObject)).To(Not(BeTrue()))
+
+	taskObject, err = controller.WaitForTask(taskObject.ID, nil)
+	Expect(err).To(BeNil())
+	Expect(task.HasSucceededStatus(taskObject)).To(BeTrue())
+
+	// Assert
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+// TestController_WaitForStatus_Closer tests Controller.WaitForStatus to
+// directly end waiting when the closer is used.
+func TestController_WaitForStatus_Closer(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := givenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+			{
+				Name: "test-sidekick@1.service",
+			},
+		},
+		nil,
+	)
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	desired := StatusRunning
+	closer := make(chan struct{}, 1)
+	closer <- struct{}{}
+
+	err := controller.WaitForStatus(req, desired, closer)
+	Expect(err).To(BeNil())
+}
+
+// TestController_WaitForStatus_Timeout tests Controller.WaitForStatus to end
+// waiting when the given WaitTimeout expired.
+func TestController_WaitForStatus_Timeout(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	newFleetMockConfig := defaultFleetMockConfig()
+	newFleetMockConfig.UseTestifyMock = false
+	newFleetMockConfig.UseCustomMock = true
+	newFleetMockConfig.FirstCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "activating",
+					SystemdSub:    "start-pre",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+	newFleetMockConfig.LastCustomMockStatus = []fleet.UnitStatus{
+		{
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{
+				{
+					ID:            "test-id",
+					IP:            net.ParseIP("10.0.0.101"),
+					SystemdActive: "active",
+					SystemdSub:    "running",
+					UnitHash:      "test-hash",
+				},
+			},
+			Name: "test-main@1.service",
+		},
+	}
+
+	c, _ := givenControllerWithConfig(newFleetMockConfig)
+	c.(*controller).WaitTimeout = 0
+
+	// Execute test
+	req := Request{
+		Group:    "test",
+		SliceIDs: []string{"1"},
+		Units: []Unit{
+			{
+				Name:    "test-main@1.service",
+				Content: "content",
+			},
+		},
+	}
+	desired := StatusRunning
+	closer := make(chan struct{}, 1)
+
+	err := c.WaitForStatus(req, desired, closer)
+	Expect(IsWaitTimeoutReached(err)).To(BeTrue()) // Because WaitForStatus is 0 nothing should happen but directly return the error
 }

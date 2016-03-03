@@ -4,7 +4,6 @@
 package fleet
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -131,11 +130,11 @@ func NewFleet(config Config) (Fleet, error) {
 
 	switch config.Endpoint.Scheme {
 	case "unix", "file":
-		if len(config.Endpoint.Host) > 0 {
+		if config.Endpoint.Host != "" {
 			// This commonly happens if the user misses the leading slash after the
 			// scheme. For example, "unix://var/run/fleet.sock" would be parsed as
 			// host "var".
-			return nil, maskAny(fmt.Errorf("unable to connect to host %q with scheme %q", config.Endpoint.Host, config.Endpoint.Scheme))
+			return nil, maskAnyf(invalidEndpointError, "cannot connect to host %q with scheme %q", config.Endpoint.Host, config.Endpoint.Scheme)
 		}
 
 		// The Path field is only used for dialing and should not be used when
@@ -160,7 +159,7 @@ func NewFleet(config Config) (Fleet, error) {
 	case "http", "https":
 		trans = http.DefaultTransport
 	default:
-		return nil, maskAny(fmt.Errorf("invalid scheme in fleet endpoint: %s", config.Endpoint.Scheme))
+		return nil, maskAnyf(invalidEndpointError, "invalid scheme %q", config.Endpoint.Scheme)
 	}
 
 	config.Client.Transport = trans

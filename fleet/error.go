@@ -10,16 +10,22 @@ var (
 	maskAny = errgo.MaskFunc(errgo.Any)
 )
 
+// maskAnyf returns a new github.com/juju/errgo error wrapping the given one.
+// The message will contain the message of f and v (see fmt.Printf), prefixed
+// with the message of err.
+//
+// Examples:
+//   maskAnyf(unitNotFoundError, "%s", unit.ID) => "unit not found: 12345abcdef.service"
 func maskAnyf(err error, f string, v ...interface{}) error {
-	f = fmt.Sprintf("%s: %s", err.Error(), f)
-	newErr := errgo.WithCausef(nil, errgo.Cause(err), f, v...)
-
-	if e, _ := newErr.(*errgo.Err); e != nil {
-		e.SetLocation(1)
-		return e
+	if err == nil {
+		return nil
 	}
 
-	return err
+	f = fmt.Sprintf("%s: %s", err.Error(), f)
+	newErr := errgo.WithCausef(nil, errgo.Cause(err), f, v...)
+	newErr.(*errgo.Err).SetLocation(1)
+
+	return newErr
 }
 
 var ipNotFoundError = errgo.New("ip not found")
@@ -51,4 +57,12 @@ var invalidUnitStatusError = errgo.New("invalid unit status")
 // returned.
 func IsInvalidUnitStatus(err error) bool {
 	return errgo.Cause(err) == invalidUnitStatusError
+}
+
+var invalidEndpointError = errgo.Newf("invalid endpoint")
+
+// IsInvalidEndpoint checks whether the given error indicates a invalid
+// endpoint to the operation that was performed.
+func IsInvalidEndpoint(err error) bool {
+	return errgo.Cause(err) == invalidEndpointError
 }
