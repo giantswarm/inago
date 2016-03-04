@@ -1,5 +1,5 @@
 // Package common provides implementation of general interest for certain sub
-// packages of inago.
+// packages of Inago.
 package common
 
 import (
