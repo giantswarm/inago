@@ -1,3 +1,4 @@
 formicactl
 .gobuild/
 coverage.txt
+profile.out

@@ -230,54 +230,107 @@ func Test_Common_createRequest(t *testing.T) {
 	}
 }
 
-// tests the status formating for a group with one slice
-func Test_Common_createStatus_Group_OneSlice(t *testing.T) {
+// tests the status formating for three slices of a group
+func Test_Common_createStatus_Group_ThreeSlices(t *testing.T) {
 	RegisterTestingT(t)
 
 	expectedStatusOutput := []string{
-		"Group | Units | FDState | FCState | SAState  | IP | Machine",
+		"Group | Units | FDState | FCState | SAState | IP | Machine",
 		"",
-		"example@1 | * | loaded | loaded | inactive | 172.17.8.102 | 505e0d7802d7439a924c269b76f34b5f",
+		"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+		"example@2 | * | loaded | loaded | inactive | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+		"example@3 | * | loaded | loaded | inactive | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
 		"",
 	}
 
 	group := "example"
 
 	statusList := controller.UnitStatusList{
-		fleet.UnitStatus{
-			Current: "loaded",
-			Desired: "loaded",
-			Machine: []fleet.MachineStatus{
-				fleet.MachineStatus{
-					ID:            "505e0d7802d7439a924c269b76f34b5f",
-					IP:            net.ParseIP("172.17.8.102"),
-					SystemdActive: "inactive",
-					SystemdSub:    "inactive",
-					UnitHash:      "fa59254bb1fac86a10935d9aaf839fe0638fbaba",
-				},
-			},
-			Name:  "example-main",
-			Slice: "@1",
-		},
-		fleet.UnitStatus{
-			Current: "loaded",
-			Desired: "loaded",
-			Machine: []fleet.MachineStatus{
-				fleet.MachineStatus{
-					ID:            "505e0d7802d7439a924c269b76f34b5f",
-					IP:            net.ParseIP("172.17.8.102"),
-					SystemdActive: "inactive",
-					SystemdSub:    "inactive",
-					UnitHash:      "fa59254bb1fac86a10935d9aaf839fe0638fbaba",
-				},
-			},
-			Name:  "example-foo",
-			Slice: "@1",
-		},
+		unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+		unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+		unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+		unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+		unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+		unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
 	}
 
 	status, err := createStatus(group, statusList)
-
 	Expect(err).To(Not(HaveOccurred()))
 	Expect(status).To(Equal(expectedStatusOutput))
+}
+
+// tests the status formating for one slice of a group
+func Test_Common_createStatus_Group_OneSlice(t *testing.T) {
+	RegisterTestingT(t)
+
+	expectedStatusOutput := []string{
+		"Group | Units | FDState | FCState | SAState | IP | Machine",
+		"",
+		"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+		"",
+	}
+
+	group := "example"
+
+	statusList := controller.UnitStatusList{
+		unitStatus("example-foo", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+		unitStatus("example-bar", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+	}
+
+	status, err := createStatus(group, statusList)
+	Expect(err).To(Not(HaveOccurred()))
+
+	Expect(status).To(Equal(expectedStatusOutput))
+}
+
+func Test_Common_createStatus_Group_ThreeSlices_Verbose(t *testing.T) {
+	RegisterTestingT(t)
+
+	globalFlags.Verbose = true
+	expectedStatusOutput := []string{
+		"Group | Units | FDState | FCState | SAState | Hash | IP | Machine",
+		"",
+		"example@1 | example-foo@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+		"example@1 | example-bar@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+
+		"example@2 | example-foo@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+		"example@2 | example-bar@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+
+		"example@3 | example-foo@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+		"example@3 | example-bar@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+		"",
+	}
+
+	group := "example"
+
+	statusList := controller.UnitStatusList{
+		unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+		unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+		unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+		unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+		unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+		unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+	}
+
+	status, err := createStatus(group, statusList)
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(status).To(Equal(expectedStatusOutput))
+}
+
+func unitStatus(name, slice, machineIP, machineID string) fleet.UnitStatus {
+	return fleet.UnitStatus{
+		Current: "loaded",
+		Desired: "loaded",
+		Machine: []fleet.MachineStatus{
+			fleet.MachineStatus{
+				ID:            machineID,
+				IP:            net.ParseIP(machineIP),
+				SystemdActive: "inactive",
+				SystemdSub:    "inactive",
+				UnitHash:      "4311",
+			},
+		},
+		Name:  name,
+		Slice: slice,
+	}
 }
