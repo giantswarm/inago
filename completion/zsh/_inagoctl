@@ -1,4 +1,4 @@
-#compdef formicactl
+#compdef inagoctl
 
 local -a options
 options=(

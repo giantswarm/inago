@@ -1,4 +1,4 @@
-// Package cli implements a command line client for formica. Cobra CLI
+// Package cli implements a command line client for Inago. Cobra CLI
 // is used as framework.
 package cli
 
@@ -7,10 +7,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/giantswarm/formica/controller"
-	"github.com/giantswarm/formica/file-system/real"
-	"github.com/giantswarm/formica/file-system/spec"
-	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/file-system/real"
+	"github.com/giantswarm/inago/file-system/spec"
+	"github.com/giantswarm/inago/fleet"
 )
 
 var (
@@ -24,9 +24,9 @@ var (
 	newFileSystem filesystemspec.FileSystem
 	newFleet      fleet.Fleet
 
-	// MainCmd contains the cobra.Command to execute formicactl.
+	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
-		Use:   "formicactl",
+		Use:   "inagoctl",
 		Short: "orchestrate groups of unit files on Fleet clusters",
 		Long:  "orchestrate groups of unit files on Fleet clusters",
 		Run:   mainRun,

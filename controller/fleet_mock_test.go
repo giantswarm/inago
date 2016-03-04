@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 
-	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/inago/fleet"
 )
 
 type fleetMockConfig struct {

@@ -9,9 +9,8 @@ import (
 	"github.com/juju/errgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/giantswarm/formica/controller"
-	"github.com/giantswarm/formica/file-system/fake"
-	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/file-system/fake"
 )
 
 type testFileSystemSetup struct {
