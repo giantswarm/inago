@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/giantswarm/formica/fleet"
-	"github.com/giantswarm/formica/task"
+	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/task"
 )
 
 // Config provides all necessary and injectable configurations for a new

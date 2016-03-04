@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/giantswarm/formica/fleet"
-	"github.com/giantswarm/formica/task"
+	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/task"
 )
 
 func Test_Request_ExtendSlices(t *testing.T) {

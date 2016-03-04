@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/giantswarm/formica/controller"
-	"github.com/giantswarm/formica/task"
+	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/task"
 )
 
 var groupExp = regexp.MustCompile("@(.*)")

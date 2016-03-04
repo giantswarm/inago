@@ -14,7 +14,7 @@ import (
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
 
-	"github.com/giantswarm/formica/common"
+	"github.com/giantswarm/inago/common"
 )
 
 const (

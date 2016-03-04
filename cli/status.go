@@ -7,7 +7,7 @@ import (
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
 
-	"github.com/giantswarm/formica/controller"
+	"github.com/giantswarm/inago/controller"
 )
 
 var (

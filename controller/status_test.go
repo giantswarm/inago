@@ -8,7 +8,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/inago/fleet"
 )
 
 func givenSingleUnitStatus(name, sliceID string) fleet.UnitStatus {
