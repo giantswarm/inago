@@ -1,5 +1,5 @@
 [Unit]
-Description=Formica Demo Unit
+Description=Inago Demo Unit
 
 [Service]
 ExecStart=/bin/bash -c "while true; do echo Hi; sleep 10; done"
