@@ -171,7 +171,7 @@ var (
 )
 
 // AggregateStatus aggregates the given fleet and systemd states to a Status
-// known to inago based on the StatusIndex.
+// known to Inago based on the StatusIndex.
 //
 //   fc: fleet current state
 //   fd: fleet desired state
