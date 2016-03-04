@@ -105,6 +105,21 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 	return true
 }
 
+func unitHasStatus(us fleet.UnitStatus, status Status) (bool, error) {
+	for _, ms := range us.Machine {
+		aggregated, err := AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
+		if err != nil {
+			return false, maskAny(err)
+		}
+
+		if aggregated != StatusRunning {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
 type Status string
 
 var (

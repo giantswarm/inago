@@ -73,3 +73,10 @@ var invalidArgumentError = errgo.Newf("invalid argument")
 func IsInvalidArgument(err error) bool {
 	return errgo.Cause(err) == invalidArgumentError
 }
+
+var updateNotAllowedError = errgo.Newf("update not allowed")
+
+// IsUpdateNotAllowed asserts updateNotAllowedError.
+func IsUpdateNotAllowed(err error) bool {
+	return errgo.Cause(err) == updateNotAllowedError
+}

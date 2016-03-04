@@ -400,41 +400,6 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-// UpdateOptions represents the options defining the strategy of an update
-// process. Lets have a look at how the update process of 3 group slices would
-// look like using the given options.
-//
-//     TODO I am not that happy with this visualization. Improving it? Removing it?
-//
-//     MaxGrowth    1
-//     MinAlive     2
-//     ReadySecs    30
-//
-//     @1 (running)  ->  @1 (stopped/destroyed)
-//     @2 (running)  ->  @2 (running)            ->  @2 (stopped/destroyed)
-//     @3 (running)  ->  @3 (running)            ->  @3 (running)            ->  @3 (stopped/destroyed)
-//                   ->  @1 (submitted/running)  ->  @1 (running)            ->  @1 (running)            ->  @1 (running)
-//                                               ->  @2 (submitted/running)  ->  @2 (running)            ->  @2 (running)
-//                                                                           ->  @3 (submitted/running)  ->  @3 (running)
-//
-type UpdateOptions struct {
-	// MaxGrowth represents the number of groups allowed to be added at a given
-	// time. No more than MaxGrowth groups will be added at the same time during
-	// the update process.
-	MaxGrowth int
-
-	// MinAlive represents the number of groups required to stay healthy during
-	// the update process. No more than MinAlive groups will be removed at the
-	// same time during the update process.
-	MinAlive int
-
-	// ReadySecs represents the number of seconds required to wait before ending
-	// the update process of one group and starting the update process of another
-	// group. This is basically a cool down where the update process sleeps
-	// before updating the next group.
-	ReadySecs int
-}
-
 func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) {
 	action := func() error {
 		req, ok, err := c.GroupNeedsUpdate(req)
@@ -465,10 +430,6 @@ func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) 
 	return taskObject, nil
 }
 
-func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
-	return nil
-}
-
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
 	status, err := c.groupStatusWithValidate(req)
 	return status, maskAny(err)
@@ -494,20 +455,17 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 			}
 
 			for _, us := range unitStatusList {
-				for _, ms := range us.Machine {
-					aggregated, err := AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
-					if err != nil {
-						fail <- maskAny(err)
-						return
-					}
-
-					if aggregated != desired {
-						// Whenever the aggregated status does not match the desired
-						// status, we reset the counter.
-						count = 0
-						time.Sleep(c.WaitSleep)
-						continue L1
-					}
+				ok, err := unitHasStatus(us, desired)
+				if err != nil {
+					fail <- maskAny(err)
+					return
+				}
+				if !ok {
+					// Whenever the aggregated status does not match the desired
+					// status, we reset the counter.
+					count = 0
+					time.Sleep(c.WaitSleep)
+					continue L1
 				}
 			}
 
