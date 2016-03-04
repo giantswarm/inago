@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/juju/errgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/formica/controller"
 	"github.com/giantswarm/formica/file-system/fake"
@@ -229,26 +230,54 @@ func Test_Common_createRequest(t *testing.T) {
 	}
 }
 
-func TestCreateStatus(t *testing.T) {
-	assert := assert.New(t)
+// tests the status formating for a group with one slice
+func Test_Common_createStatus_Group_OneSlice(t *testing.T) {
+	RegisterTestingT(t)
+
+	expectedStatusOutput := []string{
+		"Group | Units | FDState | FCState | SAState  | IP | Machine",
+		"",
+		"example@1 | * | loaded | loaded | inactive | 172.17.8.102 | 505e0d7802d7439a924c269b76f34b5f",
+		"",
+	}
+
 	group := "example"
+
 	statusList := controller.UnitStatusList{
 		fleet.UnitStatus{
-			Current: fleet.unitStateLoaded,
-			Desired: fleet.unitStateLoaded,
-			Machine: MachineStatus{
-				ID: "505e0d7802d7439a924c269b76f34b5f",
-				IP: net.IP{
-				// TODO add IP here
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{
+				fleet.MachineStatus{
+					ID:            "505e0d7802d7439a924c269b76f34b5f",
+					IP:            net.ParseIP("172.17.8.102"),
+					SystemdActive: "inactive",
+					SystemdSub:    "inactive",
+					UnitHash:      "fa59254bb1fac86a10935d9aaf839fe0638fbaba",
 				},
-				SystemdActive: "inactive",
-				SystemdSub:    "inactive",
-				UnitHash:      "fa59254bb1fac86a10935d9aaf839fe0638fbaba",
 			},
 			Name:  "example-main",
 			Slice: "@1",
 		},
+		fleet.UnitStatus{
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{
+				fleet.MachineStatus{
+					ID:            "505e0d7802d7439a924c269b76f34b5f",
+					IP:            net.ParseIP("172.17.8.102"),
+					SystemdActive: "inactive",
+					SystemdSub:    "inactive",
+					UnitHash:      "fa59254bb1fac86a10935d9aaf839fe0638fbaba",
+				},
+			},
+			Name:  "example-foo",
+			Slice: "@1",
+		},
 	}
+
 	status, err := createStatus(group, statusList)
-	assert.Nil(err)
+
+	Expect(err).To(Not(HaveOccurred()))
+	Expect(status).To(Equal(expectedStatusOutput))
 }

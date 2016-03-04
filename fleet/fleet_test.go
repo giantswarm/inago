@@ -12,14 +12,51 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-// TestDefaultConfig verifies that the default config contains a basic valid fleet config
-func TestDefaultConfig(t *testing.T) {
+// Test_Fleet_DefaultConfig_Success verifies that the default config contains a
+// basic valid fleet config and a valid fleet instance can be created.
+func Test_Fleet_DefaultConfig_Success(t *testing.T) {
 	RegisterTestingT(t)
 
 	cfg := DefaultConfig()
-
 	Expect(cfg.Endpoint).To(Not(BeZero()))
 	Expect(cfg.Client).To(Not(BeZero()))
+
+	newFleet, err := NewFleet(cfg)
+	Expect(newFleet).To(Not(BeZero()))
+	Expect(err).To(BeNil())
+}
+
+// Test_Fleet_DefaultConfig_Failure_001 verifies that a proper error will be
+// thrown when the given config is invalid.
+func Test_Fleet_DefaultConfig_Failure_001(t *testing.T) {
+	RegisterTestingT(t)
+
+	cfg := DefaultConfig()
+	Expect(cfg.Endpoint).To(Not(BeZero()))
+	Expect(cfg.Client).To(Not(BeZero()))
+
+	cfg.Endpoint.Host = "foo"
+	cfg.Endpoint.Scheme = "file"
+
+	newFleet, err := NewFleet(cfg)
+	Expect(newFleet).To(BeZero())
+	Expect(IsInvalidEndpoint(err)).To(BeTrue())
+}
+
+// Test_Fleet_DefaultConfig_Failure_002 verifies that a proper error will be
+// thrown when the given config is invalid.
+func Test_Fleet_DefaultConfig_Failure_002(t *testing.T) {
+	RegisterTestingT(t)
+
+	cfg := DefaultConfig()
+	Expect(cfg.Endpoint).To(Not(BeZero()))
+	Expect(cfg.Client).To(Not(BeZero()))
+
+	cfg.Endpoint.Scheme = "foo"
+
+	newFleet, err := NewFleet(cfg)
+	Expect(newFleet).To(BeZero())
+	Expect(IsInvalidEndpoint(err)).To(BeTrue())
 }
 
 func givenMockedFleet() (*fleetClientMock, *fleet) {
