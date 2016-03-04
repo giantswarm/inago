@@ -42,6 +42,21 @@ func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 	return newList, nil
 }
 
+func (usl UnitStatusList) unitStatusBySliceID(sliceID string) (fleet.UnitStatus, error) {
+	for _, us := range usl {
+		ID, err := common.SliceID(us.Name)
+		if err != nil {
+			return fleet.UnitStatus{}, maskAny(err)
+		}
+		if ID == sliceID {
+			// We are not interested in this slice during this iteration.
+			return us, nil
+		}
+	}
+
+	return fleet.UnitStatus{}, maskAny(unitSliceNotFoundError)
+}
+
 // groupUnitStatus returns a subset of usl where the sliceID matches the sliceID
 // of groupMember, ignoring the unit names and extension.
 func groupUnitStatus(usl []fleet.UnitStatus, groupMember fleet.UnitStatus) ([]fleet.UnitStatus, string, error) {
