@@ -1,4 +1,4 @@
-PROJECT=formica
+PROJECT=inago
 
 BUILD_PATH := $(shell pwd)/.gobuild
 GS_PATH := $(BUILD_PATH)/src/github.com/giantswarm
