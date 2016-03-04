@@ -230,91 +230,109 @@ func Test_Common_createRequest(t *testing.T) {
 	}
 }
 
-// tests the status formating for three slices of a group
-func Test_Common_createStatus_Group_ThreeSlices(t *testing.T) {
+func Test_Common_createStatus(t *testing.T) {
 	RegisterTestingT(t)
 
-	expectedStatusOutput := []string{
-		"Group | Units | FDState | FCState | SAState | IP | Machine",
-		"",
-		"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-		"example@2 | * | loaded | loaded | inactive | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
-		"example@3 | * | loaded | loaded | inactive | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
-		"",
+	type input struct {
+		Group   string
+		USL     controller.UnitStatusList
+		Verbose bool
+	}
+	type testCase struct {
+		Comment       string
+		Expected      []string
+		Input         input
+		ShouldBeEqual bool
 	}
 
-	group := "example"
-
-	statusList := controller.UnitStatusList{
-		unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-		unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-		unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-		unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-		unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
-		unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+	testCases := []testCase{
+		// 3 slices of 1 group with 2 units
+		testCase{
+			Comment: "3 slices of 1 group with 2 units",
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@2 | * | loaded | loaded | inactive | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+				"example@3 | * | loaded | loaded | inactive | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+				"",
+			},
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+				},
+				Verbose: false,
+			},
+			ShouldBeEqual: true,
+		},
+		// 1 slice of 1 group with 2 units
+		testCase{
+			Comment: "1 slice of 1 group with 2 units",
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
+			},
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unitStatus("example-foo", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+					unitStatus("example-bar", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+				},
+				Verbose: false,
+			},
+			ShouldBeEqual: true,
+		},
+		// 3 slices of 1 group with 2 units - verbose
+		testCase{
+			Comment: "3 slices of 1 group with 2 units - verbose",
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | Hash | IP | Machine",
+				"",
+				"example@1 | example-foo@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@1 | example-bar@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@2 | example-foo@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+				"example@2 | example-bar@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+				"example@3 | example-foo@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+				"example@3 | example-bar@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+				"",
+			},
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
+					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+				},
+				Verbose: true,
+			},
+			ShouldBeEqual: true,
+		},
 	}
 
-	status, err := createStatus(group, statusList)
-	Expect(err).To(Not(HaveOccurred()))
-	Expect(status).To(Equal(expectedStatusOutput))
-}
+	// execute test cases
+	for _, test := range testCases {
+		globalFlags.Verbose = test.Input.Verbose
 
-// tests the status formating for one slice of a group
-func Test_Common_createStatus_Group_OneSlice(t *testing.T) {
-	RegisterTestingT(t)
+		got, err := createStatus(test.Input.Group, test.Input.USL)
+		Expect(err).To(Not(HaveOccurred()))
 
-	expectedStatusOutput := []string{
-		"Group | Units | FDState | FCState | SAState | IP | Machine",
-		"",
-		"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-		"",
+		if test.ShouldBeEqual {
+			Expect(got).To(Equal(test.Expected), test.Comment)
+		} else {
+			Expect(got).NotTo(Equal(test.Expected), test.Comment)
+		}
 	}
-
-	group := "example"
-
-	statusList := controller.UnitStatusList{
-		unitStatus("example-foo", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-		unitStatus("example-bar", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-	}
-
-	status, err := createStatus(group, statusList)
-	Expect(err).To(Not(HaveOccurred()))
-
-	Expect(status).To(Equal(expectedStatusOutput))
-}
-
-func Test_Common_createStatus_Group_ThreeSlices_Verbose(t *testing.T) {
-	RegisterTestingT(t)
-
-	globalFlags.Verbose = true
-	expectedStatusOutput := []string{
-		"Group | Units | FDState | FCState | SAState | Hash | IP | Machine",
-		"",
-		"example@1 | example-foo@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-		"example@1 | example-bar@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-
-		"example@2 | example-foo@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
-		"example@2 | example-bar@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
-
-		"example@3 | example-foo@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
-		"example@3 | example-bar@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
-		"",
-	}
-
-	group := "example"
-
-	statusList := controller.UnitStatusList{
-		unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-		unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-		unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-		unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-		unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
-		unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
-	}
-
-	status, err := createStatus(group, statusList)
-	Expect(err).To(Not(HaveOccurred()))
-	Expect(status).To(Equal(expectedStatusOutput))
 }
 
 func unitStatus(name, slice, machineIP, machineID string) fleet.UnitStatus {
