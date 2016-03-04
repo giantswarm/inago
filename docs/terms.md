@@ -2,8 +2,8 @@
 
 ### Group
 A group is a collection of unit files tied together. This can be seen as
-equivalent to kubernetes pods. Units within a Inago group are scheduled
-together on the same host.
+equivalent to kubernetes pods. Units within an Inago group are scheduled
+together on the same host by convention.
 
 Since a group represents many units, Inago aims to abstract units away, so
 the user can manage a group more easily. Having this given, a group can be
