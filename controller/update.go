@@ -252,6 +252,4 @@ func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 			return maskAny(waitTimeoutReachedError)
 		}
 	}
-
-	return nil
 }
