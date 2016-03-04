@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/giantswarm/formica/cli"
+	"github.com/giantswarm/inago/cli"
 )
 
 func main() {

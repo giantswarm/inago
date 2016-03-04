@@ -3,8 +3,8 @@ package controller
 import (
 	"strings"
 
-	"github.com/giantswarm/formica/common"
-	"github.com/giantswarm/formica/fleet"
+	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/fleet"
 )
 
 // UnitStatusList represents a list of UnitStatus.
@@ -186,7 +186,7 @@ var (
 )
 
 // AggregateStatus aggregates the given fleet and systemd states to a Status
-// known to formica based on the StatusIndex.
+// known to Inago based on the StatusIndex.
 //
 //   fc: fleet current state
 //   fd: fleet desired state

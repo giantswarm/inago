@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/giantswarm/formica/file-system/spec"
+	"github.com/giantswarm/inago/file-system/spec"
 )
 
 // NewFileSystem creates a new fake filesystem. Operations are made against in
