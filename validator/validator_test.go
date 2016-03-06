@@ -101,6 +101,30 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   badUnitPrefixError,
 		},
+		{
+			request: controller.Request{
+				Group: "bad@groupname@",
+				Units: []controller.Unit{
+					controller.Unit{
+						Name: "bad@groupname@.service",
+					},
+				},
+			},
+			valid: false,
+			err:   multipleAtInGroupNameError,
+		},
+		{
+			request: controller.Request{
+				Group: "group",
+				Units: []controller.Unit{
+					controller.Unit{
+						Name: "group-un@it@.service",
+					},
+				},
+			},
+			valid: false,
+			err:   multipleAtInUnitNameError,
+		},
 	}
 
 	for index, test := range tests {
