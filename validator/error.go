@@ -10,6 +10,7 @@ var (
 	mixedSliceInstanceError    = errgo.New("group mixing scalable and non-scalable units")
 	multipleAtInGroupNameError = errgo.New("multiple @ symbols in group name")
 	multipleAtInUnitNameError  = errgo.New("multiple @ symbols in unit name")
+	unitsSameNameError         = errgo.New("unit named with same name as another unit")
 
 	groupsArePrefixError = errgo.New("group is prefix of another group")
 	groupsSameNameError  = errgo.New("group named with same name as another group")

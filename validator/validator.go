@@ -46,6 +46,13 @@ func ValidateRequest(request controller.Request) (bool, error) {
 		}
 	}
 
+	// Test that all unit names are unique
+	for i := 0; i < len(request.Units)-1; i++ {
+		if request.Units[i] == request.Units[i+1] {
+			return false, unitsSameNameError
+		}
+	}
+
 	return true, nil
 }
 

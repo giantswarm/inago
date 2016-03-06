@@ -125,6 +125,24 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   multipleAtInUnitNameError,
 		},
+		{
+			request: controller.Request{
+				Group: "group",
+				Units: []controller.Unit{
+					controller.Unit{
+						Name: "group-unit1@.service",
+					},
+					controller.Unit{
+						Name: "group-unit@.service",
+					},
+					controller.Unit{
+						Name: "group-unit@.service",
+					},
+				},
+			},
+			valid: false,
+			err:   unitsSameNameError,
+		},
 	}
 
 	for index, test := range tests {
