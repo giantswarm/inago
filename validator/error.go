@@ -10,4 +10,5 @@ var (
 	mixedSliceInstanceError = errgo.New("group mixing scalable and non-scalable units")
 
 	groupsArePrefixError = errgo.New("group is prefix of another group")
+	groupsSameNameError  = errgo.New("group named with same name as another group")
 )

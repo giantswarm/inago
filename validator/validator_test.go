@@ -160,6 +160,18 @@ func TestValidateMultipleRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		{
+			requests: []controller.Request{
+				controller.Request{
+					Group: "joker",
+				},
+				controller.Request{
+					Group: "joker",
+				},
+			},
+			valid: false,
+			err:   groupsSameNameError,
+		},
 	}
 
 	for index, test := range tests {

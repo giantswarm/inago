@@ -50,6 +50,10 @@ func ValidateMultipleRequest(requests []controller.Request) (bool, error) {
 	sort.Strings(groupNames)
 
 	for i := 0; i < len(groupNames)-1; i++ {
+		if groupNames[i] == groupNames[i+1] {
+			return false, groupsSameNameError
+		}
+
 		if strings.HasPrefix(groupNames[i+1], groupNames[i]) {
 			return false, groupsArePrefixError
 		}
