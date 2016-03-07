@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/giantswarm/inago/task"
@@ -41,6 +42,10 @@ func (c controller) createJobQueues(req Request, opts UpdateOptions) (chan updat
 	}
 	numAllowedToRemove := numRunning - opts.MinAlive
 
+	fmt.Printf("numRunning: %#v\n", numRunning)
+	fmt.Printf("opts.MinAlive: %#v\n", opts.MinAlive)
+	fmt.Printf("numAllowedToRemove: %#v\n", numAllowedToRemove)
+
 	var numRemovalQueued int
 	for _, sliceID := range req.SliceIDs {
 		jobDesc := updateJobDesc{
@@ -52,10 +57,12 @@ func (c controller) createJobQueues(req Request, opts UpdateOptions) (chan updat
 		}
 
 		addQueue <- jobDesc
+		fmt.Printf("job added to addQueue\n")
 
 		if numAllowedToRemove >= numRemovalQueued {
 			removeQueue <- jobDesc
 			numRemovalQueued++
+			fmt.Printf("job added to removeQueue\n")
 		}
 	}
 
@@ -88,7 +95,9 @@ func (c controller) isGroupAdditionAllowed(req Request, numTotal int, opts Updat
 	return false, nil
 }
 
-func (c controller) addWorker(jobDesc updateJobDesc, removeQueue chan updateJobDesc, fail chan<- error) {
+func (c controller) runAddWorker(jobDesc updateJobDesc, fail chan<- error, readySecs int) {
+	fmt.Printf("call runAddWorker\n")
+
 	// Submit.
 	taskObject, err := c.Submit(jobDesc.Request)
 	if err != nil {
@@ -123,10 +132,15 @@ func (c controller) addWorker(jobDesc updateJobDesc, removeQueue chan updateJobD
 		return
 	}
 
-	removeQueue <- jobDesc
+	fmt.Printf("runAddWorker sleep %ds\n", readySecs)
+	time.Sleep(time.Duration(readySecs) * time.Second)
+
+	fmt.Printf("end runAddWorker\n")
 }
 
-func (c controller) removeWorker(jobDesc updateJobDesc, fail chan<- error) {
+func (c controller) runRemoveWorker(jobDesc updateJobDesc, fail chan<- error) {
+	fmt.Printf("call runRemoveWorker\n")
+
 	// Stop.
 	taskObject, err := c.Stop(jobDesc.Request)
 	if err != nil {
@@ -160,13 +174,12 @@ func (c controller) removeWorker(jobDesc updateJobDesc, fail chan<- error) {
 		fail <- maskAny(fmt.Errorf(taskObject.Error))
 		return
 	}
+	fmt.Printf("end runRemoveWorker\n")
 }
 
 // UpdateOptions represents the options defining the strategy of an update
 // process. Lets have a look at how the update process of 3 group slices would
 // look like using the given options.
-//
-//     TODO I am not that happy with this visualization. Improving it? Removing it?
 //
 //     MaxGrowth    1
 //     MinAlive     2
@@ -200,16 +213,20 @@ type UpdateOptions struct {
 func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 	done := make(chan struct{}, 1)
 	fail := make(chan error, 1)
+	addQueue := make(chan updateJobDesc, len(req.SliceIDs))
 	addQueue, removeQueue, err := c.createJobQueues(req, opts)
 	if err != nil {
 		return maskAny(err)
 	}
 	numTotal := len(req.SliceIDs)
+	fmt.Printf("numTotal: %#v\n", numTotal)
 
-	for {
-		select {
-		case jobDesc := <-addQueue:
-			go func(jobDesc updateJobDesc) {
+	m := sync.Mutex{}
+	var alreadyUpdated int
+
+	for i := 0; i < opts.MaxGrowth; i++ {
+		go func() {
+			for jobDesc := range addQueue {
 				for {
 					ok, err := c.isGroupAdditionAllowed(req, numTotal, opts)
 					if err != nil {
@@ -222,8 +239,16 @@ func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 					break
 				}
 
-				c.addWorker(jobDesc, removeQueue, fail)
-			}(jobDesc)
+				c.runAddWorker(jobDesc, fail, opts.ReadySecs)
+				fmt.Printf("add jobDesc to removeQueue\n")
+				removeQueue <- jobDesc
+			}
+			fmt.Printf("finished addQueue\n")
+		}()
+	}
+
+	for {
+		select {
 		case jobDesc := <-removeQueue:
 			go func(jobDesc updateJobDesc) {
 				for {
@@ -238,13 +263,15 @@ func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 					break
 				}
 
-				c.removeWorker(jobDesc, fail)
+				c.runRemoveWorker(jobDesc, fail)
+				m.Lock()
+				alreadyUpdated++
+				if alreadyUpdated == numTotal {
+					done <- struct{}{}
+				}
+				m.Unlock()
 			}(jobDesc)
 		case err := <-fail:
-			close(done)
-			close(addQueue)
-			close(removeQueue)
-
 			return maskAny(err)
 		case <-done:
 			return nil

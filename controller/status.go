@@ -112,7 +112,7 @@ func unitHasStatus(us fleet.UnitStatus, status Status) (bool, error) {
 			return false, maskAny(err)
 		}
 
-		if aggregated != StatusRunning {
+		if aggregated != status {
 			return false, nil
 		}
 	}

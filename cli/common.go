@@ -9,16 +9,13 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/task"
 )
 
-var groupExp = regexp.MustCompile("@(.*)")
-
 func dirnameFromSlices(slices []string) string {
-	slice := slices[0]
-	dirname := groupExp.ReplaceAllString(slice, "")
-	return dirname
+	return common.UnitBase(slices[0])
 }
 
 func readUnitFiles(slices []string) (map[string]string, error) {
@@ -46,7 +43,10 @@ func readUnitFiles(slices []string) (map[string]string, error) {
 	return unitFiles, nil
 }
 
-var atExp = regexp.MustCompile("@")
+var (
+	atExp    = regexp.MustCompile("@")
+	groupExp = regexp.MustCompile("@(.*)")
+)
 
 func validateArgs(slices []string) error {
 	if len(slices) == 0 {

@@ -55,7 +55,7 @@ func updateRun(cmd *cobra.Command, args []string) {
 	maybeBlockWithFeedback(blockWithFeedbackCtx{
 		Request:    req,
 		Descriptor: "update",
-		NoBlock:    globalFlags.NoBlock,
+		NoBlock:    false,
 		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})

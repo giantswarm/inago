@@ -11,6 +11,7 @@ import (
 
 	"github.com/coreos/fleet/unit"
 
+	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
 )
@@ -187,7 +188,7 @@ func (r Request) ExtendSlices() (Request, error) {
 
 func (r Request) unitByName(name string) (Unit, error) {
 	for _, u := range r.Units {
-		if u.Name == name {
+		if common.UnitBase(u.Name) == common.UnitBase(name) {
 			return u, nil
 		}
 	}
@@ -409,7 +410,7 @@ func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) 
 
 		if !ok {
 			// Group does not need to be updated. Do nothing.
-			return nil
+			return maskAnyf(updateNotAllowedError, "units already up to date")
 		}
 
 		err = c.UpdateWithStrategy(req, opts)
@@ -538,7 +539,11 @@ func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, er
 
 func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Request) error {
 	for _, sliceID := range req.SliceIDs {
-		if !containsUnitStatusSliceID(unitStatusList, sliceID) {
+		ok, err := containsUnitStatusSliceID(unitStatusList, sliceID)
+		if err != nil {
+			return maskAny(err)
+		}
+		if !ok {
 			// This happens when at least one of the units is not found.
 			return maskAnyf(unitSliceNotFoundError, "slice ID '%s'", sliceID)
 		}
@@ -547,16 +552,18 @@ func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Reques
 	return nil
 }
 
-func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string) bool {
-	sliceID = fmt.Sprintf("@%s.service", sliceID)
-
+func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string) (bool, error) {
 	for _, us := range unitStatusList {
-		if strings.HasSuffix(us.Name, sliceID) {
-			return true
+		ID, err := common.SliceID(us.Name)
+		if err != nil {
+			return false, maskAny(err)
+		}
+		if strings.HasSuffix(ID, sliceID) {
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // matchesGroupSlices returns a matcher compatible with fleet.GetStatusWithMatcher
