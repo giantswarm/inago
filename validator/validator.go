@@ -34,9 +34,9 @@ func ValidateRequest(request controller.Request) (bool, error) {
 		return false, mixedSliceInstanceError
 	}
 
-	// Test there are not multiple @ symbols in the group name.
-	if strings.Count(request.Group, "@") > 1 {
-		return false, multipleAtInGroupNameError
+	// Test there are not any @ symbols in the group name.
+	if strings.Contains(request.Group, "@") {
+		return false, atInGroupNameError
 	}
 
 	// Test there are not multiple @ symbols in any unit name.

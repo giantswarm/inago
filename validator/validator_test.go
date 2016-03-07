@@ -111,7 +111,7 @@ func TestValidateRequest(t *testing.T) {
 				},
 			},
 			valid: false,
-			err:   multipleAtInGroupNameError,
+			err:   atInGroupNameError,
 		},
 		{
 			request: controller.Request{

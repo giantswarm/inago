@@ -5,12 +5,12 @@ import (
 )
 
 var (
-	noUnitsInGroupError        = errgo.New("no units in group")
-	badUnitPrefixError         = errgo.New("unit does not have group prefix")
-	mixedSliceInstanceError    = errgo.New("group mixing scalable and non-scalable units")
-	multipleAtInGroupNameError = errgo.New("multiple @ symbols in group name")
-	multipleAtInUnitNameError  = errgo.New("multiple @ symbols in unit name")
-	unitsSameNameError         = errgo.New("unit named with same name as another unit")
+	noUnitsInGroupError       = errgo.New("no units in group")
+	badUnitPrefixError        = errgo.New("unit does not have group prefix")
+	mixedSliceInstanceError   = errgo.New("group mixing scalable and non-scalable units")
+	atInGroupNameError        = errgo.New("@ symbols in group name")
+	multipleAtInUnitNameError = errgo.New("multiple @ symbols in unit name")
+	unitsSameNameError        = errgo.New("unit named with same name as another unit")
 
 	groupsArePrefixError = errgo.New("group is prefix of another group")
 	groupsSameNameError  = errgo.New("group named with same name as another group")
@@ -31,9 +31,9 @@ func IsMixedSliceInstance(err error) bool {
 	return errgo.Cause(err) == mixedSliceInstanceError
 }
 
-// IsMultipleAtInGroupName returns true if the given error cause is multipleAtInGroupNameError.
-func IsMultipleAtInGroupName(err error) bool {
-	return errgo.Cause(err) == multipleAtInGroupNameError
+// IsAtInGroupNameError returns true if the given error cause is atInGroupNameError.
+func IsAtInGroupNameError(err error) bool {
+	return errgo.Cause(err) == atInGroupNameError
 }
 
 // IsMultipleAtInUnitName returns true if the given error cause is multipleAtInUnitNameError.
