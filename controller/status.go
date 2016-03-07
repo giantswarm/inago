@@ -90,17 +90,30 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 	return true
 }
 
+// Status represents the current status of a unit.
 type Status string
 
 var (
-	StatusFailed   Status = "failed"
+	// StatusFailed represents a unit being failed.
+	StatusFailed Status = "failed"
+
+	// StatusNotFound represents a unit not being found.
 	StatusNotFound Status = "not-found"
-	StatusRunning  Status = "running"
+
+	// StatusRunning represents a unit running.
+	StatusRunning Status = "running"
+
+	// StatusStarting represents a unit starting.
 	StatusStarting Status = "starting"
-	StatusStopped  Status = "stopped"
+
+	// StatusStopped represents a unit that has stopped.
+	StatusStopped Status = "stopped"
+
+	// StatusStopping represents a unit stopping.
 	StatusStopping Status = "stopping"
 )
 
+// StatusContext represents a units status from fleet and systemd.
 type StatusContext struct {
 	FleetCurrent  string
 	FleetDesired  string
@@ -110,6 +123,7 @@ type StatusContext struct {
 }
 
 var (
+	// StatusIndex represents the aggregated states of a unit.
 	StatusIndex = []StatusContext{
 		{
 			FleetCurrent:  "inactive",
