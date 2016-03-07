@@ -8,6 +8,73 @@ import (
 	"github.com/giantswarm/inago/controller"
 )
 
+// StringsUnique returns true if all strings in the list are unique,
+// false otherwise.
+func StringsUnique(s []string) bool {
+	sort.Strings(s)
+
+	for i := 0; i < len(s)-1; i++ {
+		if s[i] == s[i+1] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// StringsHasPrefix returns true if all of the strings have the given prefix,
+// false otherwise.
+func StringsHasPrefix(s []string, p string) bool {
+	for _, x := range s {
+		if !strings.HasPrefix(x, p) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// StringsSharePrefix returns true if any of the strings are prefixes of another,
+// false otherwise.
+func StringsSharePrefix(s []string) bool {
+	sort.Strings(s)
+
+	for i := 0; i < len(s)-1; i++ {
+		if strings.HasPrefix(s[i+1], s[i]) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// StringsCountMoreThan returns true if any of the strings in s
+// contain more than n occurences of c, false otherwise.
+func StringsCountMoreThan(s []string, c string, n int) bool {
+	for _, x := range s {
+		if strings.Count(x, c) > n {
+			return true
+		}
+	}
+
+	return false
+}
+
+// StringsHaveOrNot returns true if all strings in s either have an occurence of c,
+// or do not have any occurence of c.
+// In another way, it returns false if only some strings in s have an occurence of c.
+func StringsHaveOrNot(s []string, c string) bool {
+	numStringsWithOccurence := 0
+
+	for _, x := range s {
+		if strings.Contains(x, c) {
+			numStringsWithOccurence++
+		}
+	}
+
+	return !(numStringsWithOccurence > 0 && numStringsWithOccurence < len(s))
+}
+
 // ValidateRequest takes a Request, and returns whether it is valid or not.
 // If the request is not valid, the error provides more details.
 func ValidateRequest(request controller.Request) (bool, error) {
@@ -16,34 +83,9 @@ func ValidateRequest(request controller.Request) (bool, error) {
 		return false, noUnitsInGroupError
 	}
 
-	// Check that each unit name is prefixed with the group name.
-	for _, unit := range request.Units {
-		if !strings.HasPrefix(unit.Name, request.Group) {
-			return false, badUnitPrefixError
-		}
-	}
-
-	// Check that all units either have @ or they don't.
-	numUnitsWithAtSymbol := 0
-	for _, unit := range request.Units {
-		if strings.Contains(unit.Name, "@.") {
-			numUnitsWithAtSymbol++
-		}
-	}
-	if numUnitsWithAtSymbol > 0 && numUnitsWithAtSymbol < len(request.Units) {
-		return false, mixedSliceInstanceError
-	}
-
-	// Test there are not any @ symbols in the group name.
+	// Check that there are not any @ symbols in the group name.
 	if strings.Contains(request.Group, "@") {
 		return false, atInGroupNameError
-	}
-
-	// Test there are not multiple @ symbols in any unit name.
-	for _, unit := range request.Units {
-		if strings.Count(unit.Name, "@") > 1 {
-			return false, multipleAtInUnitNameError
-		}
 	}
 
 	unitNames := []string{}
@@ -52,13 +94,24 @@ func ValidateRequest(request controller.Request) (bool, error) {
 		unitNames = append(unitNames, unit.Name)
 	}
 
-	sort.Strings(unitNames)
+	// Check that we're not mixing units with @ and units without @.
+	if !StringsHaveOrNot(unitNames, "@.") {
+		return false, mixedSliceInstanceError
+	}
 
-	// Test that all unit names are unique
-	for i := 0; i < len(unitNames)-1; i++ {
-		if unitNames[i] == unitNames[i+1] {
-			return false, unitsSameNameError
-		}
+	// Check that all unit names are prefixed by the group name.
+	if !StringsHasPrefix(unitNames, request.Group) {
+		return false, badUnitPrefixError
+	}
+
+	// Check that @ only occurences at most once per unit name.
+	if StringsCountMoreThan(unitNames, "@", 1) {
+		return false, multipleAtInUnitNameError
+	}
+
+	// Check that all unit names are unique.
+	if !StringsUnique(unitNames) {
+		return false, unitsSameNameError
 	}
 
 	return true, nil
@@ -74,16 +127,14 @@ func ValidateMultipleRequest(requests []controller.Request) (bool, error) {
 		groupNames = append(groupNames, request.Group)
 	}
 
-	sort.Strings(groupNames)
+	// Check that all group names are unique.
+	if !StringsUnique(groupNames) {
+		return false, groupsSameNameError
+	}
 
-	for i := 0; i < len(groupNames)-1; i++ {
-		if groupNames[i] == groupNames[i+1] {
-			return false, groupsSameNameError
-		}
-
-		if strings.HasPrefix(groupNames[i+1], groupNames[i]) {
-			return false, groupsArePrefixError
-		}
+	// Check that group names are not prefixes of each other.
+	if StringsSharePrefix(groupNames) {
+		return false, groupsArePrefixError
 	}
 
 	return true, nil
