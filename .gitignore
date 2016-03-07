@@ -1,3 +1,4 @@
 inagoctl
 .gobuild/
 coverage.txt
+profile.out
