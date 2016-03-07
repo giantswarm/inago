@@ -13,6 +13,7 @@ func TestValidateRequest(t *testing.T) {
 		valid   bool
 		err     error
 	}{
+		// Test a group with no units in it is not valid.
 		{
 			request: controller.Request{
 				Group: "empty",
@@ -20,6 +21,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   noUnitsInGroupError,
 		},
+		// Test a group with one well-named unit is valid.
 		{
 			request: controller.Request{
 				Group: "single",
@@ -32,6 +34,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		// Test a group with two well-named units is valid.
 		{
 			request: controller.Request{
 				Group: "single",
@@ -47,6 +50,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		// Test a group with a scalable unit is valid.
 		{
 			request: controller.Request{
 				Group: "scalable",
@@ -59,6 +63,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		// Test a group with two scalable units is valid.
 		{
 			request: controller.Request{
 				Group: "scalable",
@@ -74,6 +79,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		// Test that a group mixing scalable and unscalable units is not valid.
 		{
 			request: controller.Request{
 				Group: "mix",
@@ -89,6 +95,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   mixedSliceInstanceError,
 		},
+		// Test that units must be prefixed with their group name.
 		{
 			request: controller.Request{
 				Group: "single",
@@ -101,6 +108,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   badUnitPrefixError,
 		},
+		// Test that group names cannot contain @ symbols.
 		{
 			request: controller.Request{
 				Group: "bad@groupname@",
@@ -113,6 +121,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   atInGroupNameError,
 		},
+		// Test that unit names cannot contain multiple @ symbols.
 		{
 			request: controller.Request{
 				Group: "group",
@@ -125,6 +134,7 @@ func TestValidateRequest(t *testing.T) {
 			valid: false,
 			err:   multipleAtInUnitNameError,
 		},
+		// Test that a group cannot have multiple units with the same name.
 		{
 			request: controller.Request{
 				Group: "group",
@@ -169,6 +179,7 @@ func TestValidateMultipleRequest(t *testing.T) {
 		valid    bool
 		err      error
 	}{
+		// Test that two differently named groups are valid.
 		{
 			requests: []controller.Request{
 				controller.Request{
@@ -181,6 +192,7 @@ func TestValidateMultipleRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		// Test that groups which are prefixes of another are invalid.
 		{
 			requests: []controller.Request{
 				controller.Request{
@@ -193,6 +205,7 @@ func TestValidateMultipleRequest(t *testing.T) {
 			valid: false,
 			err:   groupsArePrefixError,
 		},
+		// Test that the group prefix rule applies to the entire group name.
 		{
 			requests: []controller.Request{
 				controller.Request{
@@ -205,6 +218,7 @@ func TestValidateMultipleRequest(t *testing.T) {
 			valid: true,
 			err:   nil,
 		},
+		// Test that group names must be unique.
 		{
 			requests: []controller.Request{
 				controller.Request{
