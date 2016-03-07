@@ -240,22 +240,14 @@ func Test_Common_createStatus(t *testing.T) {
 	}
 	type testCase struct {
 		Comment  string
-		Expected []string
 		Input    input
+		Expected []string
 	}
 
 	testCases := []testCase{
 		// 3 slices of 1 group with 2 units
 		testCase{
 			Comment: "3 slices of 1 group with 2 units",
-			Expected: []string{
-				"Group | Units | FDState | FCState | SAState | IP | Machine",
-				"",
-				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"example@2 | * | loaded | loaded | inactive | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
-				"example@3 | * | loaded | loaded | inactive | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
-				"",
-			},
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
@@ -268,16 +260,18 @@ func Test_Common_createStatus(t *testing.T) {
 				},
 				Verbose: false,
 			},
-		},
-		// 1 slice of 1 group with 2 units
-		testCase{
-			Comment: "1 slice of 1 group with 2 units",
 			Expected: []string{
 				"Group | Units | FDState | FCState | SAState | IP | Machine",
 				"",
 				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@2 | * | loaded | loaded | inactive | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+				"example@3 | * | loaded | loaded | inactive | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
 				"",
 			},
+		},
+		// 1 slice of 1 group with 2 units
+		testCase{
+			Comment: "1 slice of 1 group with 2 units",
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
@@ -286,21 +280,16 @@ func Test_Common_createStatus(t *testing.T) {
 				},
 				Verbose: false,
 			},
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
+			},
 		},
 		// 3 slices of 1 group with 2 units - verbose
 		testCase{
 			Comment: "3 slices of 1 group with 2 units - verbose",
-			Expected: []string{
-				"Group | Units | FDState | FCState | SAState | Hash | IP | Machine",
-				"",
-				"example@1 | example-foo@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"example@1 | example-bar@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"example@2 | example-foo@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
-				"example@2 | example-bar@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
-				"example@3 | example-foo@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
-				"example@3 | example-bar@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
-				"",
-			},
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
@@ -313,16 +302,21 @@ func Test_Common_createStatus(t *testing.T) {
 				},
 				Verbose: true,
 			},
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | Hash | IP | Machine",
+				"",
+				"example@1 | example-foo@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@1 | example-bar@1.service | loaded | loaded | inactive | 4311 | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@2 | example-foo@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+				"example@2 | example-bar@2.service | loaded | loaded | inactive | 4311 | 172.17.8.102 | 9ebb53b04b0d46fb94b4fd1b3f562d2b",
+				"example@3 | example-foo@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+				"example@3 | example-bar@3.service | loaded | loaded | inactive | 4311 | 172.17.8.103 | e3cb5f13a9164ba5b7eff6c920475e61",
+				"",
+			},
 		},
 		// 1 slice of 2 groups with 2 units - only show example group
 		testCase{
 			Comment: "1 slice of 2 groups with 2 units - only show example group",
-			Expected: []string{
-				"Group | Units | FDState | FCState | SAState | IP | Machine",
-				"",
-				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"",
-			},
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
@@ -333,18 +327,16 @@ func Test_Common_createStatus(t *testing.T) {
 				},
 				Verbose: false,
 			},
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
+			},
 		},
 		// One group contains different statuses => expand view
 		testCase{
 			Comment: "One group contains different statuses => expand view",
-			Expected: []string{
-				"Group | Units | FDState | FCState | SAState | IP | Machine",
-				"",
-				"example@1 | example-foo@1.service | launched | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"example@1 | example-bar@1.service | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"example@2 | * | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
-				"",
-			},
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
@@ -354,6 +346,14 @@ func Test_Common_createStatus(t *testing.T) {
 					unitStatus("example-bar@2.service", "@2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
 				},
 				Verbose: false,
+			},
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | example-foo@1.service | launched | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@1 | example-bar@1.service | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@2 | * | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
 			},
 		},
 	}
