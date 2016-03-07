@@ -11,6 +11,7 @@ import (
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/fake"
+	"github.com/giantswarm/inago/fleet"
 )
 
 type testFileSystemSetup struct {
@@ -238,10 +239,9 @@ func Test_Common_createStatus(t *testing.T) {
 		Verbose bool
 	}
 	type testCase struct {
-		Comment       string
-		Expected      []string
-		Input         input
-		ShouldBeEqual bool
+		Comment  string
+		Expected []string
+		Input    input
 	}
 
 	testCases := []testCase{
@@ -259,16 +259,15 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
-					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
-			ShouldBeEqual: true,
 		},
 		// 1 slice of 1 group with 2 units
 		testCase{
@@ -282,12 +281,11 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-					unitStatus("example-bar", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
+					unitStatus("example-foo", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
-			ShouldBeEqual: true,
 		},
 		// 3 slices of 1 group with 2 units - verbose
 		testCase{
@@ -306,16 +304,57 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f"),
-					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b"),
-					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
-					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61"),
+					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
 				},
 				Verbose: true,
 			},
-			ShouldBeEqual: true,
+		},
+		// 1 slice of 2 groups with 2 units - only show example group
+		testCase{
+			Comment: "1 slice of 2 groups with 2 units - only show example group",
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | * | loaded | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
+			},
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("myapp-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("myapp-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+				},
+				Verbose: false,
+			},
+		},
+		// One group contains different statuses => expand view
+		testCase{
+			Comment: "One group contains different statuses => expand view",
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | example-foo@1.service | launched | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@1 | example-bar@1.service | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"example@2 | * | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
+			},
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "launched"),
+					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					unitStatus("example-foo@2.service", "@2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					unitStatus("example-bar@2.service", "@2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+				},
+				Verbose: false,
+			},
 		},
 	}
 
@@ -326,18 +365,14 @@ func Test_Common_createStatus(t *testing.T) {
 		got, err := createStatus(test.Input.Group, test.Input.USL)
 		Expect(err).To(Not(HaveOccurred()))
 
-		if test.ShouldBeEqual {
-			Expect(got).To(Equal(test.Expected), test.Comment)
-		} else {
-			Expect(got).NotTo(Equal(test.Expected), test.Comment)
-		}
+		Expect(got).To(Equal(test.Expected), test.Comment)
 	}
 }
 
-func unitStatus(name, slice, machineIP, machineID string) fleet.UnitStatus {
+func unitStatus(name, slice, machineIP, machineID, currentState, desiredState string) fleet.UnitStatus {
 	return fleet.UnitStatus{
-		Current: "loaded",
-		Desired: "loaded",
+		Current: currentState,
+		Desired: desiredState,
 		Machine: []fleet.MachineStatus{
 			fleet.MachineStatus{
 				ID:            machineID,
