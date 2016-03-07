@@ -136,6 +136,9 @@ func TestValidateRequest(t *testing.T) {
 						Name: "group-unit@.service",
 					},
 					controller.Unit{
+						Name: "group-unit2@.service",
+					},
+					controller.Unit{
 						Name: "group-unit@.service",
 					},
 				},
