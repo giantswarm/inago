@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/giantswarm/inago/validator"
 )
 
 var (
@@ -19,6 +21,12 @@ var (
 func submitRun(cmd *cobra.Command, args []string) {
 	req, err := createRequestWithContent(args)
 	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+
+	ok, err := validator.ValidateRequest(req)
+	if !ok {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
