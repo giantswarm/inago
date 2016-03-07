@@ -9,17 +9,17 @@ import (
 // TestValidateRequest tests the ValidateRequest function.
 func TestValidateRequest(t *testing.T) {
 	var tests = []struct {
-		request controller.Request
-		valid   bool
-		err     error
+		request      controller.Request
+		valid        bool
+		errAssertion func(error) bool
 	}{
 		// Test a group with no units in it is not valid.
 		{
 			request: controller.Request{
 				Group: "empty",
 			},
-			valid: false,
-			err:   noUnitsInGroupError,
+			valid:        false,
+			errAssertion: IsNoUnitsInGroup,
 		},
 		// Test a group with one well-named unit is valid.
 		{
@@ -31,8 +31,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: true,
-			err:   nil,
+			valid:        true,
+			errAssertion: nil,
 		},
 		// Test a group with two well-named units is valid.
 		{
@@ -47,8 +47,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: true,
-			err:   nil,
+			valid:        true,
+			errAssertion: nil,
 		},
 		// Test a group with a scalable unit is valid.
 		{
@@ -60,8 +60,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: true,
-			err:   nil,
+			valid:        true,
+			errAssertion: nil,
 		},
 		// Test a group with two scalable units is valid.
 		{
@@ -76,8 +76,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: true,
-			err:   nil,
+			valid:        true,
+			errAssertion: nil,
 		},
 		// Test that a group mixing scalable and unscalable units is not valid.
 		{
@@ -92,8 +92,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: false,
-			err:   mixedSliceInstanceError,
+			valid:        false,
+			errAssertion: IsMixedSliceInstance,
 		},
 		// Test that units must be prefixed with their group name.
 		{
@@ -105,8 +105,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: false,
-			err:   badUnitPrefixError,
+			valid:        false,
+			errAssertion: IsBadUnitPrefix,
 		},
 		// Test that group names cannot contain @ symbols.
 		{
@@ -118,8 +118,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: false,
-			err:   atInGroupNameError,
+			valid:        false,
+			errAssertion: IsAtInGroupNameError,
 		},
 		// Test that unit names cannot contain multiple @ symbols.
 		{
@@ -131,8 +131,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: false,
-			err:   multipleAtInUnitNameError,
+			valid:        false,
+			errAssertion: IsMultipleAtInUnitName,
 		},
 		// Test that a group cannot have multiple units with the same name.
 		{
@@ -153,8 +153,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid: false,
-			err:   unitsSameNameError,
+			valid:        false,
+			errAssertion: IsUnitsSameName,
 		},
 	}
 
@@ -166,8 +166,8 @@ func TestValidateRequest(t *testing.T) {
 		if test.valid && err != nil {
 			t.Errorf("%v: Request should be valid, but returned err: '%v'", index, err)
 		}
-		if !test.valid && test.err != err {
-			t.Errorf("%v: Returned err '%v' instead of err '%v'", index, err, test.err)
+		if !test.valid && !test.errAssertion(err) {
+			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, err)
 		}
 	}
 }
@@ -175,9 +175,9 @@ func TestValidateRequest(t *testing.T) {
 // TestValidateMultipleRequest tests the ValidateMultipleRequest function.
 func TestValidateMultipleRequest(t *testing.T) {
 	var tests = []struct {
-		requests []controller.Request
-		valid    bool
-		err      error
+		requests     []controller.Request
+		valid        bool
+		errAssertion func(error) bool
 	}{
 		// Test that two differently named groups are valid.
 		{
@@ -189,8 +189,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					Group: "b",
 				},
 			},
-			valid: true,
-			err:   nil,
+			valid:        true,
+			errAssertion: nil,
 		},
 		// Test that groups which are prefixes of another are invalid.
 		{
@@ -202,8 +202,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					Group: "batman",
 				},
 			},
-			valid: false,
-			err:   groupsArePrefixError,
+			valid:        false,
+			errAssertion: IsGroupsArePrefix,
 		},
 		// Test that the group prefix rule applies to the entire group name.
 		{
@@ -215,8 +215,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					Group: "batman",
 				},
 			},
-			valid: true,
-			err:   nil,
+			valid:        true,
+			errAssertion: nil,
 		},
 		// Test that group names must be unique.
 		{
@@ -228,8 +228,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					Group: "joker",
 				},
 			},
-			valid: false,
-			err:   groupsSameNameError,
+			valid:        false,
+			errAssertion: IsGroupsSameName,
 		},
 	}
 
@@ -241,8 +241,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 		if test.valid && err != nil {
 			t.Errorf("%v: Requests should be valid, but returned err: '%v'", index, err)
 		}
-		if !test.valid && test.err != err {
-			t.Errorf("%v: Returned err '%v' instead of err '%v'", index, err, test.err)
+		if !test.valid && !test.errAssertion(err) {
+			t.Errorf("%v: Requests should be invalid, but returned incorrect err '%v'", index, err)
 		}
 	}
 }
