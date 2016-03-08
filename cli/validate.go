@@ -10,7 +10,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/giantswarm/inago/validator"
 )
 
 var (
@@ -54,7 +53,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 	}
 
 	for _, request := range requests {
-		ok, err := validator.ValidateRequest(request)
+		ok, err := controller.ValidateRequest(request)
 		if ok {
 			fmt.Printf("Group '%v' is valid.\n", request.Group)
 		} else {
@@ -62,7 +61,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	ok, err := validator.ValidateMultipleRequest(requests)
+	ok, err := controller.ValidateMultipleRequest(requests)
 	if ok {
 		fmt.Println("Groups are valid globally.")
 	} else {

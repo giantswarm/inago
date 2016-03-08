@@ -1,21 +1,19 @@
-package validator
+package controller
 
 import (
 	"testing"
-
-	"github.com/giantswarm/inago/controller"
 )
 
 // TestValidateRequest tests the ValidateRequest function.
 func TestValidateRequest(t *testing.T) {
 	var tests = []struct {
-		request      controller.Request
+		request      Request
 		valid        bool
 		errAssertion func(error) bool
 	}{
 		// Test a group with no units in it is not valid.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "empty",
 			},
 			valid:        false,
@@ -23,10 +21,10 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test a group with one well-named unit is valid.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "single",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "single-unit.service",
 					},
 				},
@@ -36,13 +34,13 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test a group with two well-named units is valid.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "single",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "single-unit.service",
 					},
-					controller.Unit{
+					Unit{
 						Name: "single-unit2.timer",
 					},
 				},
@@ -52,10 +50,10 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test a group with a scalable unit is valid.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "scalable",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "scalable-unit@.service",
 					},
 				},
@@ -65,13 +63,13 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test a group with two scalable units is valid.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "scalable",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "scalable-unit@.service",
 					},
-					controller.Unit{
+					Unit{
 						Name: "scalable-unit2@.timer",
 					},
 				},
@@ -81,13 +79,13 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test that a group mixing scalable and unscalable units is not valid.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "mix",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "mix-unit1.service",
 					},
-					controller.Unit{
+					Unit{
 						Name: "mix-unit2@.service",
 					},
 				},
@@ -97,10 +95,10 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test that units must be prefixed with their group name.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "single",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "bad-prefix.service",
 					},
 				},
@@ -110,10 +108,10 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test that group names cannot contain @ symbols.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "bad@groupname@",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "bad@groupname@.service",
 					},
 				},
@@ -123,10 +121,10 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test that unit names cannot contain multiple @ symbols.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "group",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "group-un@it@.service",
 					},
 				},
@@ -136,19 +134,19 @@ func TestValidateRequest(t *testing.T) {
 		},
 		// Test that a group cannot have multiple units with the same name.
 		{
-			request: controller.Request{
+			request: Request{
 				Group: "group",
-				Units: []controller.Unit{
-					controller.Unit{
+				Units: []Unit{
+					Unit{
 						Name: "group-unit1@.service",
 					},
-					controller.Unit{
+					Unit{
 						Name: "group-unit@.service",
 					},
-					controller.Unit{
+					Unit{
 						Name: "group-unit2@.service",
 					},
-					controller.Unit{
+					Unit{
 						Name: "group-unit@.service",
 					},
 				},
@@ -175,17 +173,17 @@ func TestValidateRequest(t *testing.T) {
 // TestValidateMultipleRequest tests the ValidateMultipleRequest function.
 func TestValidateMultipleRequest(t *testing.T) {
 	var tests = []struct {
-		requests     []controller.Request
+		requests     []Request
 		valid        bool
 		errAssertion func(error) bool
 	}{
 		// Test that two differently named groups are valid.
 		{
-			requests: []controller.Request{
-				controller.Request{
+			requests: []Request{
+				Request{
 					Group: "a",
 				},
-				controller.Request{
+				Request{
 					Group: "b",
 				},
 			},
@@ -194,11 +192,11 @@ func TestValidateMultipleRequest(t *testing.T) {
 		},
 		// Test that groups which are prefixes of another are invalid.
 		{
-			requests: []controller.Request{
-				controller.Request{
+			requests: []Request{
+				Request{
 					Group: "bat",
 				},
-				controller.Request{
+				Request{
 					Group: "batman",
 				},
 			},
@@ -207,11 +205,11 @@ func TestValidateMultipleRequest(t *testing.T) {
 		},
 		// Test that the group prefix rule applies to the entire group name.
 		{
-			requests: []controller.Request{
-				controller.Request{
+			requests: []Request{
+				Request{
 					Group: "batwoman",
 				},
-				controller.Request{
+				Request{
 					Group: "batman",
 				},
 			},
@@ -220,11 +218,11 @@ func TestValidateMultipleRequest(t *testing.T) {
 		},
 		// Test that group names must be unique.
 		{
-			requests: []controller.Request{
-				controller.Request{
+			requests: []Request{
+				Request{
 					Group: "joker",
 				},
-				controller.Request{
+				Request{
 					Group: "joker",
 				},
 			},

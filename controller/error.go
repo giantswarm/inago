@@ -73,3 +73,59 @@ var invalidArgumentError = errgo.Newf("invalid argument")
 func IsInvalidArgument(err error) bool {
 	return errgo.Cause(err) == invalidArgumentError
 }
+
+var noUnitsInGroupError = errgo.New("no units in group")
+
+// IsNoUnitsInGroup returns true if the given error cause is noUnitsInGroupError.
+func IsNoUnitsInGroup(err error) bool {
+	return errgo.Cause(err) == noUnitsInGroupError
+}
+
+var badUnitPrefixError = errgo.New("unit does not have group prefix")
+
+// IsBadUnitPrefix returns true if the given error cause is badUnitPrefixError.
+func IsBadUnitPrefix(err error) bool {
+	return errgo.Cause(err) == badUnitPrefixError
+}
+
+var mixedSliceInstanceError = errgo.New("group mixing scalable and non-scalable units")
+
+// IsMixedSliceInstance returns true if the given error cause is mixedSliceInstanceError.
+func IsMixedSliceInstance(err error) bool {
+	return errgo.Cause(err) == mixedSliceInstanceError
+}
+
+var atInGroupNameError = errgo.New("@ symbols in group name")
+
+// IsAtInGroupNameError returns true if the given error cause is atInGroupNameError.
+func IsAtInGroupNameError(err error) bool {
+	return errgo.Cause(err) == atInGroupNameError
+}
+
+var multipleAtInUnitNameError = errgo.New("multiple @ symbols in unit name")
+
+// IsMultipleAtInUnitName returns true if the given error cause is multipleAtInUnitNameError.
+func IsMultipleAtInUnitName(err error) bool {
+	return errgo.Cause(err) == multipleAtInUnitNameError
+}
+
+var unitsSameNameError = errgo.New("unit named with same name as another unit")
+
+// IsUnitsSameName returns true if the given error cause is unitsSameNameError.
+func IsUnitsSameName(err error) bool {
+	return errgo.Cause(err) == unitsSameNameError
+}
+
+var groupsArePrefixError = errgo.New("group is prefix of another group")
+
+// IsGroupsArePrefix returns true if the given error cause is groupsArePrefixError.
+func IsGroupsArePrefix(err error) bool {
+	return errgo.Cause(err) == groupsArePrefixError
+}
+
+var groupsSameNameError = errgo.New("group named with same name as another group")
+
+// IsGroupsSameName returns true if the given error cause is groupsSameNameError.
+func IsGroupsSameName(err error) bool {
+	return errgo.Cause(err) == groupsSameNameError
+}
