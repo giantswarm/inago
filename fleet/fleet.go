@@ -39,7 +39,7 @@ func DefaultConfig() Config {
 	}
 
 	newConfig := Config{
-		Client:   http.DefaultClient,
+		Client:   &http.Client{},
 		Endpoint: *URL,
 	}
 

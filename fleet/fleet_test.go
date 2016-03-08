@@ -59,6 +59,22 @@ func Test_Fleet_DefaultConfig_Failure_002(t *testing.T) {
 	Expect(IsInvalidEndpoint(err)).To(BeTrue())
 }
 
+// Test_Fleet_DefaultConfig_Failure_003 verifies that the new config
+// sets a new http client and does not overwrite the old one.
+func Test_Fleet_DefaultConfig_Failure_003(t *testing.T) {
+	RegisterTestingT(t)
+
+	oldCfg := DefaultConfig()
+	Expect(oldCfg.Endpoint).To(Not(BeZero()))
+	Expect(oldCfg.Client).To(Not(BeZero()))
+
+	newCfg := DefaultConfig()
+	Expect(newCfg.Endpoint).To(Not(BeZero()))
+	Expect(newCfg.Client).To(Not(BeZero()))
+
+	Expect(oldCfg.Client).ToNot(BeIdenticalTo(newCfg.Client))
+}
+
 func givenMockedFleet() (*fleetClientMock, *fleet) {
 	mock := &fleetClientMock{}
 	return mock, &fleet{
