@@ -160,7 +160,6 @@ func createStatus(group string, usl controller.UnitStatusList) ([]string, error)
 	tmpl := template.Must(template.New("row-format").Parse(statusBody))
 	for _, us := range usl {
 		for _, ms := range us.Machine {
-
 			tmpl.Execute(out, struct {
 				Verbose      bool
 				Group        string
@@ -179,6 +178,42 @@ func createStatus(group string, usl controller.UnitStatusList) ([]string, error)
 	}
 
 	return strings.Split(out.String(), "\n"), nil
+}
+
+var (
+	listHeader = "Group | Status | IP | Machine"
+	listBody   = "%s | %s | %s | %s"
+)
+
+func createList(usl controller.UnitStatusList) ([]string, error) {
+	data := []string{
+		listHeader,
+		"",
+	}
+
+	usl, err := usl.Group()
+	if err != nil {
+		return nil, maskAny(err)
+	}
+
+	for _, us := range usl {
+		for _, ms := range us.Machine {
+			aggregated, err := controller.AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
+			if err != nil {
+				return nil, maskAny(err)
+			}
+			row := fmt.Sprintf(
+				listBody,
+				us.Name,
+				ms.IP,
+				aggregated,
+				ms.ID,
+			)
+			data = append(data, row)
+		}
+	}
+
+	return data, nil
 }
 
 type blockWithFeedbackCtx struct {
