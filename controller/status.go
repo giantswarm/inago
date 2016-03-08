@@ -16,6 +16,8 @@ func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 	matchers := map[string]struct{}{}
 	newList := []fleet.UnitStatus{}
 
+	hashesEqual := allHashesEqual(usl)
+
 	for _, us := range usl {
 		// Group unit status
 		grouped, suffix, err := groupUnitStatus(usl, us)
@@ -29,8 +31,10 @@ func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 		}
 		matchers[suffix] = struct{}{}
 
+		statesEqual := allStatesEqual(grouped)
+
 		// Aggregate.
-		if allStatesEqual(grouped) {
+		if hashesEqual && statesEqual {
 			newStatus := grouped[0]
 			newStatus.Name = "*"
 			newList = append(newList, newStatus)
@@ -63,8 +67,27 @@ func groupUnitStatus(usl []fleet.UnitStatus, groupMember fleet.UnitStatus) ([]fl
 	return newList, ID, nil
 }
 
+// allHashesEqual is supposed to receive a list of unit statuses that is not
+// grouped. This is necessary to compare unit hashes across groups.
+func allHashesEqual(usl []fleet.UnitStatus) bool {
+	for _, us1 := range usl {
+		for _, us2 := range usl {
+			for _, m1 := range us1.Machine {
+				for _, m2 := range us2.Machine {
+					if common.UnitBase(us1.Name) == common.UnitBase(us2.Name) && m1.UnitHash != m2.UnitHash {
+						return false
+					}
+				}
+			}
+		}
+	}
+
+	return true
+}
+
 // allStatesEqual returns true if all elements in usl match for the following
-// fields: Current, Desired, Machine.SystemdActive, Machine.UnitHash
+// fields: Current, Desired, Machine.SystemdActive. Note this does not compare
+// hashes sinces this method is supposed to receive only grouped unit statuses.
 func allStatesEqual(usl []fleet.UnitStatus) bool {
 	for _, us1 := range usl {
 		for _, us2 := range usl {
@@ -77,9 +100,6 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 			for _, m1 := range us1.Machine {
 				for _, m2 := range us2.Machine {
 					if m1.SystemdActive != m2.SystemdActive {
-						return false
-					}
-					if us1.Name == us2.Name && m1.UnitHash != m2.UnitHash {
 						return false
 					}
 				}
