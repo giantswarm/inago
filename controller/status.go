@@ -79,7 +79,7 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 					if m1.SystemdActive != m2.SystemdActive {
 						return false
 					}
-					if m1.UnitHash != m2.UnitHash {
+					if us1.Name == us2.Name && m1.UnitHash != m2.UnitHash {
 						return false
 					}
 				}
