@@ -72,9 +72,13 @@ func groupUnitStatus(usl []fleet.UnitStatus, groupMember fleet.UnitStatus) ([]fl
 func allHashesEqual(usl []fleet.UnitStatus) bool {
 	for _, us1 := range usl {
 		for _, us2 := range usl {
+			if common.UnitBase(us1.Name) != common.UnitBase(us2.Name) {
+				continue
+			}
+
 			for _, m1 := range us1.Machine {
 				for _, m2 := range us2.Machine {
-					if common.UnitBase(us1.Name) == common.UnitBase(us2.Name) && m1.UnitHash != m2.UnitHash {
+					if m1.UnitHash != m2.UnitHash {
 						return false
 					}
 				}
