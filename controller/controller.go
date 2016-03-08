@@ -92,6 +92,8 @@ type Controller interface {
 	// given task has reached the final status, the final task representation is
 	// returned.
 	WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error)
+
+	List() ([]fleet.UnitStatus, error)
 }
 
 // NewController creates a new Controller that is configured with the given
@@ -375,6 +377,22 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error) {
 	taskObject, err := c.TaskService.WaitForFinalStatus(taskID, closer)
 	return taskObject, maskAny(err)
+}
+
+func (c controller) List() ([]fleet.UnitStatus, error) {
+	m := func(s string) bool {
+		// Simply show everything.
+		return true
+	}
+	unitStatusList, err := c.Fleet.GetStatusWithMatcher(m)
+	if fleet.IsUnitNotFound(err) {
+		// This happens when no unit is found.
+		return nil, maskAny(unitNotFoundError)
+	} else if err != nil {
+		return nil, maskAny(err)
+	}
+
+	return unitStatusList, nil
 }
 
 // groupStatus fetches the group status using information provided
