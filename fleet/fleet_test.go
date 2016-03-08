@@ -72,7 +72,7 @@ func Test_Fleet_DefaultConfig_Failure_003(t *testing.T) {
 	Expect(newCfg.Endpoint).To(Not(BeZero()))
 	Expect(newCfg.Client).To(Not(BeZero()))
 
-	Expect(oldCfg.Client).ToNot(Equal(newCfg.Client))
+	Expect(oldCfg.Client).ToNot(BeIdenticalTo(newCfg.Client))
 }
 
 func givenMockedFleet() (*fleetClientMock, *fleet) {
