@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/file-system/real"
 	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
@@ -20,7 +21,7 @@ var (
 		Verbose       bool
 	}
 
-	newController controller.Controller
+	newController api.Controller
 	newFileSystem filesystemspec.FileSystem
 	newFleet      fleet.Fleet
 

@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/validator"
 )
 
@@ -43,7 +43,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 
 	sort.Strings(groups)
 
-	requests := []controller.Request{}
+	requests := []api.Request{}
 	for _, group := range groups {
 		request, err := createRequestWithContent([]string{group})
 		if err != nil {

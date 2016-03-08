@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/controller/api"
 )
 
 // StringsUnique returns true if all strings in the list are unique,
@@ -77,7 +77,7 @@ func StringsHaveOrNot(s []string, c string) bool {
 
 // ValidateRequest takes a Request, and returns whether it is valid or not.
 // If the request is not valid, the error provides more details.
-func ValidateRequest(request controller.Request) (bool, error) {
+func ValidateRequest(request api.Request) (bool, error) {
 	// Check there are units in the group.
 	if len(request.Units) == 0 {
 		return false, noUnitsInGroupError
@@ -120,7 +120,7 @@ func ValidateRequest(request controller.Request) (bool, error) {
 // ValidateMultipleRequest takes a list of Requests, and returns whether
 // they are valid together or not.
 // If the requests are not valid, the error returned provides more details.
-func ValidateMultipleRequest(requests []controller.Request) (bool, error) {
+func ValidateMultipleRequest(requests []api.Request) (bool, error) {
 	groupNames := []string{}
 
 	for _, request := range requests {

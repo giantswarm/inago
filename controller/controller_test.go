@@ -9,30 +9,31 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
 )
 
 func Test_Request_ExtendSlices(t *testing.T) {
 	testCases := []struct {
-		Input    Request
-		Expected Request
+		Input    api.Request
+		Expected api.Request
 	}{
 		// This test ensures that the request is not manipulated when no slice IDs
 		// are given.
 		{
-			Input: Request{
+			Input: api.Request{
 				SliceIDs: []string{},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "unit@.service",
 						Content: "some unit content",
 					},
 				},
 			},
-			Expected: Request{
+			Expected: api.Request{
 				SliceIDs: []string{},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "unit@.service",
 						Content: "some unit content",
@@ -44,18 +45,18 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// This test ensures that the request is extended when one slice ID is
 		// given.
 		{
-			Input: Request{
+			Input: api.Request{
 				SliceIDs: []string{"1"},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "unit@.service",
 						Content: "some unit content",
 					},
 				},
 			},
-			Expected: Request{
+			Expected: api.Request{
 				SliceIDs: []string{"1"},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "unit@1.service",
 						Content: "some unit content",
@@ -67,9 +68,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// This test ensures that the request is extended when multiple slice IDs
 		// and multiple unit files are given.
 		{
-			Input: Request{
+			Input: api.Request{
 				SliceIDs: []string{"1", "2"},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "foo@.service",
 						Content: "some foo content",
@@ -80,9 +81,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 					},
 				},
 			},
-			Expected: Request{
+			Expected: api.Request{
 				SliceIDs: []string{"1", "2"},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "foo@1.service",
 						Content: "some foo content",
@@ -106,18 +107,18 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// This test ensures that the request is extended when arbitrary slice IDs
 		// are given.
 		{
-			Input: Request{
+			Input: api.Request{
 				SliceIDs: []string{"3", "5", "foo"},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "unit@.service",
 						Content: "some unit content",
 					},
 				},
 			},
-			Expected: Request{
+			Expected: api.Request{
 				SliceIDs: []string{"3", "5", "foo"},
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "unit@3.service",
 						Content: "some unit content",
@@ -137,9 +138,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// This test ensures we generate the correct units for group instances,
 		// so groups that do not want slices.
 		{
-			Input: Request{
+			Input: api.Request{
 				SliceIDs: nil,
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "single-1.service",
 						Content: "some unit content",
@@ -150,9 +151,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 					},
 				},
 			},
-			Expected: Request{
+			Expected: api.Request{
 				SliceIDs: nil,
-				Units: []Unit{
+				Units: []api.Unit{
 					{
 						Name:    "single-1.service",
 						Content: "some unit content",
@@ -187,14 +188,14 @@ func Test_Request_ExtendSlices(t *testing.T) {
 func Test_validateUnitStatusWithRequest(t *testing.T) {
 	testCases := []struct {
 		Error          error
-		Request        Request
+		Request        api.Request
 		UnitStatusList []fleet.UnitStatus
 	}{
 		// This test ensures that validating a unit status list against given slice
 		// IDs works as expected.
 		{
 			Error: nil,
-			Request: Request{
+			Request: api.Request{
 				SliceIDs: []string{"1", "2"},
 			},
 			UnitStatusList: []fleet.UnitStatus{
@@ -211,7 +212,7 @@ func Test_validateUnitStatusWithRequest(t *testing.T) {
 		// IDs throws an error in case there is a unit missing
 		{
 			Error: errgo.New("unit slice not found: slice ID '3'"),
-			Request: Request{
+			Request: api.Request{
 				SliceIDs: []string{"1", "2", "3"},
 			},
 			UnitStatusList: []fleet.UnitStatus{
@@ -236,12 +237,12 @@ func Test_validateUnitStatusWithRequest(t *testing.T) {
 func Test_matchesGroupSlices(t *testing.T) {
 	testCases := []struct {
 		InputUnitName string
-		InputRequest  Request
+		InputRequest  api.Request
 		Output        bool
 	}{
 		{
 			InputUnitName: "demo-main@1.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: []string{"1", "2"},
 			},
@@ -249,7 +250,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 		},
 		{
 			InputUnitName: "demo-main@1.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: []string{"3"},
 			},
@@ -257,7 +258,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 		},
 		{
 			InputUnitName: "other-main@1.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: []string{"1"},
 			},
@@ -265,7 +266,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 		},
 		{
 			InputUnitName: "other-main@1.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: []string{"2"},
 			},
@@ -274,7 +275,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 
 		{
 			InputUnitName: "demo-main.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: nil,
 			},
@@ -283,7 +284,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 
 		{
 			InputUnitName: "other-main.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: []string{"1", "2"},
 			},
@@ -291,7 +292,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 		},
 		{
 			InputUnitName: "other-main.service",
-			InputRequest: Request{
+			InputRequest: api.Request{
 				Group:    "demo",
 				SliceIDs: nil,
 			},
@@ -311,7 +312,7 @@ func Test_matchesGroupSlices(t *testing.T) {
 
 // givenController returns a controller where the fleet backend is replaced
 // with a mock.
-func givenController() (Controller, *fleetMock) {
+func givenController() (api.Controller, *fleetMock) {
 	newFleetMockConfig := defaultFleetMockConfig()
 	newController, newFleetMock := givenControllerWithConfig(newFleetMockConfig)
 
@@ -320,7 +321,7 @@ func givenController() (Controller, *fleetMock) {
 
 // givenController returns a controller where the fleet backend is replaced
 // with a mock.
-func givenControllerWithConfig(fmc fleetMockConfig) (Controller, *fleetMock) {
+func givenControllerWithConfig(fmc fleetMockConfig) (api.Controller, *fleetMock) {
 	newFleetMock := newFleetMock(fmc)
 
 	newTaskServiceConfig := task.DefaultConfig()
@@ -342,10 +343,10 @@ func TestController_Submit_Error(t *testing.T) {
 	controller, fleetMock := givenController()
 
 	// Execute
-	req := Request{
+	req := api.Request{
 		Group:    "single",
 		SliceIDs: nil,
-		Units:    []Unit{}, // Intentionally left empty!
+		Units:    []api.Unit{}, // Intentionally left empty!
 	}
 
 	task, err := controller.Submit(req)
@@ -353,7 +354,7 @@ func TestController_Submit_Error(t *testing.T) {
 	// Assert
 	Expect(task).To(BeNil())
 	Expect(err).To(HaveOccurred())
-	Expect(err.Error()).To(Equal("invalid argument: units must not be empty"))
+	Expect(err.Error()).To(Equal("no units in group"))
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 
@@ -373,10 +374,10 @@ func TestController_Submit(t *testing.T) {
 	fleetMock.On("Submit", "test-main@1.service", "content").Return(nil).Once()
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
-		Units: []Unit{
+		Units: []api.Unit{
 			{
 				Name:    "test-main@1.service",
 				Content: "content",
@@ -413,7 +414,7 @@ func TestController_Start(t *testing.T) {
 	fleetMock.On("Start", "test-sidekick@1.service").Return(nil).Once()
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
@@ -447,7 +448,7 @@ func TestController_Destroy(t *testing.T) {
 	fleetMock.On("Destroy", "test-sidekick@1.service").Return(nil).Once()
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
@@ -481,7 +482,7 @@ func TestController_Stop(t *testing.T) {
 	fleetMock.On("Stop", "test-sidekick@1.service").Return(nil).Once()
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
 	}
@@ -510,7 +511,7 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	).Once()
 
 	// Execute
-	status, err := controller.GetStatus(Request{
+	status, err := controller.GetStatus(api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1", "2"},
 	})
@@ -567,10 +568,10 @@ func TestController_WaitForStatus_Success(t *testing.T) {
 	fleetMock.On("Start", "test-main@1.service").Return(nil).Once()
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
-		Units: []Unit{
+		Units: []api.Unit{
 			{
 				Name:    "test-main@1.service",
 				Content: "content",
@@ -609,10 +610,10 @@ func TestController_WaitForStatus_Closer(t *testing.T) {
 	)
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
-		Units: []Unit{
+		Units: []api.Unit{
 			{
 				Name:    "test-main@1.service",
 				Content: "content",
@@ -673,10 +674,10 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 	c.(*controller).WaitTimeout = 0
 
 	// Execute test
-	req := Request{
+	req := api.Request{
 		Group:    "test",
 		SliceIDs: []string{"1"},
-		Units: []Unit{
+		Units: []api.Unit{
 			{
 				Name:    "test-main@1.service",
 				Content: "content",

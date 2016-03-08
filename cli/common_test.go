@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/file-system/fake"
 	"github.com/giantswarm/inago/fleet"
 )
@@ -25,7 +26,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 		Setup    []testFileSystemSetup
 		Input    []string
 		Error    error
-		Expected controller.Request
+		Expected api.Request
 	}{
 		// This test ensures that loading a single unit from a directory results in
 		// the expected controller request.
@@ -39,9 +40,9 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 			},
 			Input: []string{"dirname"},
 			Error: nil,
-			Expected: controller.Request{
+			Expected: api.Request{
 				SliceIDs: []string{},
-				Units: []controller.Unit{
+				Units: []api.Unit{
 					{
 						Name:    "dirname_unit.service",
 						Content: "some unit content",
@@ -56,7 +57,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 			Setup:    []testFileSystemSetup{},
 			Input:    []string{},
 			Error:    invalidArgumentsError,
-			Expected: controller.Request{},
+			Expected: api.Request{},
 		},
 
 		// This test ensures that trying to load unit files when no files are in
@@ -69,7 +70,7 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 				Path: "dirname",
 				Err:  errgo.New("no such file or directory"),
 			},
-			Expected: controller.Request{},
+			Expected: api.Request{},
 		},
 
 		// This test ensures that loading a single unit from a directory with the
@@ -84,9 +85,9 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 			},
 			Input: []string{"dirname@1"},
 			Error: nil,
-			Expected: controller.Request{
+			Expected: api.Request{
 				SliceIDs: []string{"1"},
-				Units: []controller.Unit{
+				Units: []api.Unit{
 					{
 						Name:    "dirname_unit@.service",
 						Content: "some unit content",
@@ -108,9 +109,9 @@ func Test_Common_createRequestWithContent(t *testing.T) {
 			},
 			Input: []string{"dirname@1", "dirname@foo", "dirname@5"},
 			Error: nil,
-			Expected: controller.Request{
+			Expected: api.Request{
 				SliceIDs: []string{"1", "foo", "5"},
-				Units: []controller.Unit{
+				Units: []api.Unit{
 					{
 						Name:    "dirname_unit@.service",
 						Content: "some unit content",
@@ -153,16 +154,16 @@ func Test_Common_createRequest(t *testing.T) {
 	testCases := []struct {
 		Input    []string
 		Error    error
-		Expected controller.Request
+		Expected api.Request
 	}{
 		// This test ensures that loading a single unit from a directory results in
 		// the expected controller request.
 		{
 			Input: []string{"dirname"},
 			Error: nil,
-			Expected: controller.Request{
+			Expected: api.Request{
 				SliceIDs: []string{},
-				Units: []controller.Unit{
+				Units: []api.Unit{
 					{
 						Name:    "dirname_unit.service",
 						Content: "some unit content",
@@ -176,7 +177,7 @@ func Test_Common_createRequest(t *testing.T) {
 		{
 			Input:    []string{},
 			Error:    invalidArgumentsError,
-			Expected: controller.Request{},
+			Expected: api.Request{},
 		},
 
 		// This test ensures that loading a single unit from a directory with the
@@ -184,9 +185,9 @@ func Test_Common_createRequest(t *testing.T) {
 		{
 			Input: []string{"dirname@1"},
 			Error: nil,
-			Expected: controller.Request{
+			Expected: api.Request{
 				SliceIDs: []string{"1"},
-				Units: []controller.Unit{
+				Units: []api.Unit{
 					{
 						Name:    "dirname_unit@.service",
 						Content: "some unit content",
@@ -200,9 +201,9 @@ func Test_Common_createRequest(t *testing.T) {
 		// controller request.
 		{
 			Input: []string{"dirname@1", "dirname@foo", "dirname@5"},
-			Expected: controller.Request{
+			Expected: api.Request{
 				SliceIDs: []string{"1", "foo", "5"},
-				Units: []controller.Unit{
+				Units: []api.Unit{
 					{
 						Name:    "dirname_unit@.service",
 						Content: "some unit content",

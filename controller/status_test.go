@@ -8,6 +8,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/fleet"
 )
 
@@ -174,7 +175,7 @@ func Test_Status_AggregateStatus(t *testing.T) {
 		SA           string
 		SS           string
 		ErrorMatcher func(err error) bool
-		Expected     Status
+		Expected     api.Status
 	}{
 		{
 			FC:           "inactive",
