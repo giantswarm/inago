@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/task"
 )
 
@@ -84,49 +85,49 @@ func createSliceIDs(slices []string) ([]string, error) {
 	return sliceIDs, nil
 }
 
-func createRequestWithContent(slices []string) (controller.Request, error) {
+func createRequestWithContent(slices []string) (api.Request, error) {
 	err := validateArgs(slices)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return api.Request{}, maskAny(err)
 	}
 
-	req := controller.Request{
+	req := api.Request{
 		Group:    dirnameFromSlices(slices),
 		SliceIDs: []string{},
-		Units:    []controller.Unit{},
+		Units:    []api.Unit{},
 	}
 
 	unitFiles, err := readUnitFiles(slices)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return api.Request{}, maskAny(err)
 	}
 	for name, content := range unitFiles {
-		req.Units = append(req.Units, controller.Unit{Name: name, Content: content})
+		req.Units = append(req.Units, api.Unit{Name: name, Content: content})
 	}
 
 	sliceIDs, err := createSliceIDs(slices)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return api.Request{}, maskAny(err)
 	}
 	req.SliceIDs = sliceIDs
 
 	return req, nil
 }
 
-func createRequest(slices []string) (controller.Request, error) {
+func createRequest(slices []string) (api.Request, error) {
 	err := validateArgs(slices)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return api.Request{}, maskAny(err)
 	}
 
-	req := controller.Request{
+	req := api.Request{
 		Group:    dirnameFromSlices(slices),
 		SliceIDs: []string{},
 	}
 
 	sliceIDs, err := createSliceIDs(slices)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return api.Request{}, maskAny(err)
 	}
 	req.SliceIDs = sliceIDs
 
@@ -182,7 +183,7 @@ func createStatus(group string, usl controller.UnitStatusList) ([]string, error)
 }
 
 type blockWithFeedbackCtx struct {
-	Request    controller.Request
+	Request    api.Request
 	Descriptor string
 	NoBlock    bool
 	TaskID     string

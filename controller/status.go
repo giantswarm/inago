@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/fleet"
 )
 
@@ -90,27 +91,24 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 	return true
 }
 
-// Status represents the current status of a unit.
-type Status string
-
 var (
 	// StatusFailed represents a unit being failed.
-	StatusFailed Status = "failed"
+	StatusFailed api.Status = "failed"
 
 	// StatusNotFound represents a unit not being found.
-	StatusNotFound Status = "not-found"
+	StatusNotFound api.Status = "not-found"
 
 	// StatusRunning represents a unit running.
-	StatusRunning Status = "running"
+	StatusRunning api.Status = "running"
 
 	// StatusStarting represents a unit starting.
-	StatusStarting Status = "starting"
+	StatusStarting api.Status = "starting"
 
 	// StatusStopped represents a unit that has stopped.
-	StatusStopped Status = "stopped"
+	StatusStopped api.Status = "stopped"
 
 	// StatusStopping represents a unit stopping.
-	StatusStopping Status = "stopping"
+	StatusStopping api.Status = "stopping"
 )
 
 // StatusContext represents a units status from fleet and systemd.
@@ -119,7 +117,7 @@ type StatusContext struct {
 	FleetDesired  string
 	SystemdActive string
 	SystemdSub    string
-	Aggregated    Status
+	Aggregated    api.Status
 }
 
 var (
@@ -192,7 +190,7 @@ var (
 //   sa: systemd active state
 //   ss: systemd sub state
 //
-func AggregateStatus(fc, fd, sa, ss string) (Status, error) {
+func AggregateStatus(fc, fd, sa, ss string) (api.Status, error) {
 	for _, statusContext := range StatusIndex {
 		if !matchState(statusContext.FleetCurrent, fc) {
 			continue

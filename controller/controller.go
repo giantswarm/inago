@@ -5,12 +5,13 @@ package controller
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
+	"github.com/giantswarm/inago/controller/api"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
+	"github.com/giantswarm/inago/validator"
 )
 
 // Config provides all necessary and injectable configurations for a new
@@ -62,38 +63,6 @@ func DefaultConfig() Config {
 	return newConfig
 }
 
-// Controller defines the interface a controller needs to implement to provide
-// operations for groups of unit files against a fleet cluster.
-type Controller interface {
-	// Submit schedules a group on the configured fleet cluster. This is done by
-	// setting the state of the units in the group to loaded.
-	Submit(req Request) (*task.Task, error)
-
-	// Start starts a group on the configured fleet cluster. This is done by
-	// setting the state of the units in the group to launched.
-	Start(req Request) (*task.Task, error)
-
-	// Stop stops a group on the configured fleet cluster. This is done by
-	// setting the state of the units in the group to loaded.
-	Stop(req Request) (*task.Task, error)
-
-	// Destroy delets a group on the configured fleet cluster. This is done by
-	// setting the state of the units in the group to inactive.
-	Destroy(req Request) (*task.Task, error)
-
-	// GetStatus fetches the current status of a group. If the unit cannot be
-	// found, an error that you can identify using IsUnitNotFound is returned.
-	GetStatus(req Request) ([]fleet.UnitStatus, error)
-
-	// WaitForStatus waits for a group to reach the given status.
-	WaitForStatus(req Request, desired Status, closer <-chan struct{}) error
-
-	// WaitForTask waits for the given task to reach a final status. Once the
-	// given task has reached the final status, the final task representation is
-	// returned.
-	WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error)
-}
-
 // NewController creates a new Controller that is configured with the given
 // settings.
 //
@@ -101,7 +70,7 @@ type Controller interface {
 //   newConfig.Fleet = myCustomFleetClient
 //   newController := controller.NewController(newConfig)
 //
-func NewController(config Config) Controller {
+func NewController(config Config) api.Controller {
 	newController := controller{
 		Config: config,
 	}
@@ -113,65 +82,10 @@ type controller struct {
 	Config
 }
 
-// Unit represents a systemd unit file.
-type Unit struct {
-	// Name is something like "appd@.service". It needs to be extended using the
-	// slice ID before submitting to fleet.
-	Name string
-
-	// Content represents normal systemd unit file content.
-	Content string
-}
-
-// Request represents a controller request. This is used to process some action
-// on the controller.
-type Request struct {
-	// Group represents the plain group name without any slice expression.
-	Group string
-
-	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
-	// "5", etc..
-	SliceIDs []string
-
-	// Units represents a list of unit files that is supposed to be extended
-	// using the provided slice IDs.
-	Units []Unit
-}
-
-var unitExp = regexp.MustCompile("@.service")
-
-// ExtendSlices extends unit files with respect to the given slice IDs. Having
-// slice IDs "1" and "2" and having unit files "foo@.service" and
-// "bar@.service" results in the following extended unit files.
-//
-// 	 foo@1.service
-// 	 bar@1.service
-// 	 foo@2.service
-// 	 bar@2.service
-//
-func (r Request) ExtendSlices() (Request, error) {
-	if len(r.SliceIDs) == 0 {
-		return r, nil
-	}
-	newRequest := Request{
-		SliceIDs: r.SliceIDs,
-		Units:    []Unit{},
-	}
-
-	for _, sliceID := range r.SliceIDs {
-		for _, unit := range r.Units {
-			newUnit := unit
-			newUnit.Name = unitExp.ReplaceAllString(newUnit.Name, fmt.Sprintf("@%s.service", sliceID))
-			newRequest.Units = append(newRequest.Units, newUnit)
-		}
-	}
-
-	return newRequest, nil
-}
-
-func (c controller) Submit(req Request) (*task.Task, error) {
-	if len(req.Units) == 0 {
-		return nil, maskAnyf(invalidArgumentError, "units must not be empty")
+func (c controller) Submit(req api.Request) (*task.Task, error) {
+	ok, err := validator.ValidateRequest(req)
+	if !ok {
+		return nil, maskAny(err)
 	}
 
 	action := func() error {
@@ -206,7 +120,7 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Start(req Request) (*task.Task, error) {
+func (c controller) Start(req api.Request) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
@@ -239,7 +153,7 @@ func (c controller) Start(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Stop(req Request) (*task.Task, error) {
+func (c controller) Stop(req api.Request) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
@@ -272,7 +186,7 @@ func (c controller) Stop(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Destroy(req Request) (*task.Task, error) {
+func (c controller) Destroy(req api.Request) (*task.Task, error) {
 	action := func() error {
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
@@ -305,12 +219,12 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
+func (c controller) GetStatus(req api.Request) ([]fleet.UnitStatus, error) {
 	status, err := c.groupStatusWithValidate(req)
 	return status, maskAny(err)
 }
 
-func (c controller) WaitForStatus(req Request, desired Status, closer <-chan struct{}) error {
+func (c controller) WaitForStatus(req api.Request, desired api.Status, closer <-chan struct{}) error {
 	fail := make(chan error)
 	done := make(chan struct{})
 
@@ -380,7 +294,7 @@ func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Ta
 // groupStatus fetches the group status using information provided
 // by req. Note that this methods throws a unitNotFoundError in case no unit
 // can be found.
-func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
+func (c controller) groupStatus(req api.Request) ([]fleet.UnitStatus, error) {
 	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesGroupSlices(req))
 	if fleet.IsUnitNotFound(err) {
 		// This happens when no unit is found.
@@ -398,7 +312,7 @@ func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 // by req. Note that this methods throws a unitNotFoundError in case no unit
 // can be found, and a unitSliceNotFoundError in case at least one unit cannot
 // be found.
-func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, error) {
+func (c controller) groupStatusWithValidate(req api.Request) ([]fleet.UnitStatus, error) {
 	unitStatusList, err := c.groupStatus(req)
 	if err != nil {
 		return nil, maskAny(err)
@@ -414,7 +328,7 @@ func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, er
 	return unitStatusList, nil
 }
 
-func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Request) error {
+func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req api.Request) error {
 	for _, sliceID := range req.SliceIDs {
 		if !containsUnitStatusSliceID(unitStatusList, sliceID) {
 			// This happens when at least one of the units is not found.
@@ -440,7 +354,7 @@ func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string
 // matchesGroupSlices returns a matcher compatible with fleet.GetStatusWithMatcher
 // that matches for each unitfiles that belongs to the group specified by
 // request.Group and request.SliceIDs
-func matchesGroupSlices(request Request) func(string) bool {
+func matchesGroupSlices(request api.Request) func(string) bool {
 	// If only the group name is of interest, return shorter version
 	if request.SliceIDs == nil || len(request.SliceIDs) == 0 {
 		return func(name string) bool {
