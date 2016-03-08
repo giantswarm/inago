@@ -271,6 +271,10 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 	}
 
 	action := func() error {
+		req, err := c.randomizeSliceIDs(req)
+		if err != nil {
+			return maskAny(err)
+		}
 		extended, err := req.ExtendSlices()
 		if err != nil {
 			return maskAny(err)
@@ -590,4 +594,62 @@ func matchesGroupSlices(request Request) func(string) bool {
 		}
 		return false
 	}
+}
+
+func (c controller) createRandomSliceID(req Request) (string, error) {
+	// Lookup existing IDs of the group.
+	seenSliceIDs := map[string]struct{}{}
+	unitStatusList, err := c.groupStatusWithValidate(req)
+	if IsUnitNotFound(err) {
+		// This happenes when there is no unit, e.g. on submit. Thus we don't need
+		// to check against anything. Se we do nothing and go ahead by simply
+		// creating a new random ID.
+	} else if err != nil {
+		return "", maskAny(err)
+	}
+	for _, us := range unitStatusList {
+		ID, err := common.SliceID(us.Name)
+		if err != nil {
+			return "", maskAny(err)
+		}
+		seenSliceIDs[ID] = struct{}{}
+	}
+
+	// Lookup a new ID that is not already there.
+	for {
+		newID := NewID()
+		if _, ok := seenSliceIDs[newID]; ok {
+			continue
+		}
+
+		return newID, nil
+	}
+}
+
+func (c controller) randomizeSliceIDs(req Request) (Request, error) {
+	// Find enough sufficient IDs.
+	seenSliceIDs := map[string]struct{}{}
+	for range req.SliceIDs {
+		for {
+			randomized, err := c.createRandomSliceID(req)
+			if err != nil {
+				return Request{}, maskAny(err)
+			}
+			if _, ok := seenSliceIDs[randomized]; ok {
+				// We already saw this ID. Try again.
+				continue
+			}
+			seenSliceIDs[randomized] = struct{}{}
+			break
+		}
+	}
+
+	// Transform map to list.
+	var newSliceIDs []string
+	for ID, _ := range seenSliceIDs {
+		newSliceIDs = append(newSliceIDs, ID)
+	}
+	req.SliceIDs = newSliceIDs
+
+	return req, nil
 }
