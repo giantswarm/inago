@@ -170,8 +170,8 @@ func (r Request) ExtendSlices() (Request, error) {
 }
 
 func (c controller) Submit(req Request) (*task.Task, error) {
-	if len(req.Units) == 0 {
-		return nil, maskAnyf(invalidArgumentError, "units must not be empty")
+	if ok, err := ValidateRequest(req); !ok {
+		return nil, maskAny(err)
 	}
 
 	action := func() error {
