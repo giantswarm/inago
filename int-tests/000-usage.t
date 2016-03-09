@@ -1,5 +1,3 @@
-No arguments:
-
   $ inagoctl
   orchestrate groups of unit files on Fleet clusters
   
