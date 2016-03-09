@@ -51,6 +51,7 @@ func updateRun(cmd *cobra.Command, args []string) {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
+
 	req, err = newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
@@ -67,6 +68,16 @@ func updateRun(cmd *cobra.Command, args []string) {
 	}
 
 	taskObject, err := newController.Update(req, opts)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+	taskObject, err = newController.WaitForTask(taskObject.ID, nil)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+	req, err = newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

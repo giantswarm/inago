@@ -16,7 +16,10 @@ func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 	matchers := map[string]struct{}{}
 	newList := []fleet.UnitStatus{}
 
-	hashesEqual := allHashesEqual(usl)
+	hashesEqual, err := allHashesEqual(usl)
+	if err != nil {
+		return nil, maskAny(err)
+	}
 
 	for _, us := range usl {
 		// Group unit status
@@ -84,24 +87,56 @@ func groupUnitStatus(usl []fleet.UnitStatus, groupMember fleet.UnitStatus) ([]fl
 
 // allHashesEqual is supposed to receive a list of unit statuses that is not
 // grouped. This is necessary to compare unit hashes across groups.
-func allHashesEqual(usl []fleet.UnitStatus) bool {
+func allHashesEqual(usl []fleet.UnitStatus) (bool, error) {
+	uhis, err := groupUnitHashInfos(usl)
+	if err != nil {
+		return false, maskAny(err)
+	}
+
+	for _, uhi1 := range uhis {
+		for _, uhi2 := range uhis {
+			if uhi1.Base != uhi2.Base {
+				continue
+			}
+			if uhi1.Hash != uhi2.Hash {
+				return false, nil
+			}
+		}
+	}
+
+	return true, nil
+}
+
+type unitHashInfo struct {
+	Base    string
+	SliceID string
+	Hash    string
+}
+
+func groupUnitHashInfos(usl []fleet.UnitStatus) ([]unitHashInfo, error) {
+	var uhis []unitHashInfo
+
 	for _, us1 := range usl {
 		for _, us2 := range usl {
 			if common.UnitBase(us1.Name) != common.UnitBase(us2.Name) {
 				continue
 			}
-
 			for _, m1 := range us1.Machine {
-				for _, m2 := range us2.Machine {
-					if m1.UnitHash != m2.UnitHash {
-						return false
-					}
+				sliceID, err := common.SliceID(us1.Name)
+				if err != nil {
+					return nil, maskAny(err)
 				}
+				uhi := unitHashInfo{
+					Base:    common.UnitBase(us1.Name),
+					SliceID: sliceID,
+					Hash:    m1.UnitHash,
+				}
+				uhis = append(uhis, uhi)
 			}
 		}
 	}
 
-	return true
+	return uhis, nil
 }
 
 // allStatesEqual returns true if all elements in usl match for the following

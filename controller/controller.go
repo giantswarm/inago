@@ -4,14 +4,14 @@
 package controller
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/coreos/fleet/unit"
 
 	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/file-system/fake"
+	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
 )
@@ -22,6 +22,8 @@ type Config struct {
 	// Dependencies.
 
 	Fleet fleet.Fleet
+
+	FileSystem filesystemspec.FileSystem
 
 	TaskService task.Service
 
@@ -56,6 +58,7 @@ func DefaultConfig() Config {
 
 	newConfig := Config{
 		Fleet:       newFleet,
+		FileSystem:  filesystemfake.NewFileSystem(),
 		TaskService: newTaskService,
 		WaitCount:   3,
 		WaitSleep:   1 * time.Second,
@@ -68,6 +71,10 @@ func DefaultConfig() Config {
 // Controller defines the interface a controller needs to implement to provide
 // operations for groups of unit files against a fleet cluster.
 type Controller interface {
+	ExtendWithContent(req Request) (Request, error)
+	ExtendWithExistingSliceIDs(req Request) (Request, error)
+	ExtendWithRandomSliceIDs(req Request) (Request, error)
+
 	// GroupNeedsUpdate checks if the given group should be updated or not. To
 	// make a decision the unit content of each unit of each slice is compared
 	// using its unit hash. As soon as one unit hash differs, or a unit cannot be
@@ -140,73 +147,48 @@ type Unit struct {
 	Content string
 }
 
-func unitNeedsUpdate(u Unit, us fleet.UnitStatus) (bool, error) {
-	// Here we have us.Content as the unit file content.
-	unitFile, err := unit.NewUnitFile(u.Content)
-	if err != nil {
-		return false, maskAny(err)
-	}
-	unitHash := unitFile.Hash().String()
-
-	for _, ms := range us.Machine {
-		if ms.UnitHash != unitHash {
-			// The unit hash differs, lets update this slice.
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
 func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
 	// This becomes the new filtered list with all dirty slice IDs that needs to
 	// be updated.
 	var newSliceIDs []string
 
-	for _, sliceID := range req.SliceIDs {
-		newReq := Request{
-			Group:    req.Group,
-			SliceIDs: []string{sliceID},
-			Units:    req.Units,
+	usl, err := c.groupStatus(req)
+	if err != nil {
+		return Request{}, false, maskAny(err)
+	}
+	uhis, err := groupUnitHashInfos(usl)
+	if err != nil {
+		return Request{}, false, maskAny(err)
+	}
+	for _, u := range req.Units {
+		unitFile, err := unit.NewUnitFile(u.Content)
+		if err != nil {
+			return Request{}, false, maskAny(err)
 		}
+		hash := unitFile.Hash().String()
 
-		unitStatusList, err := c.groupStatusWithValidate(newReq)
-		if IsUnitNotFound(err) || IsUnitSliceNotFound(err) {
-			// Something is fishy, lets update this slice.
-			newSliceIDs = append(newSliceIDs, sliceID)
-			continue
-		} else if err != nil {
-			return Request{}, false, maskAny(err)
-		}
+		for _, uhi := range uhis {
+			if common.UnitBase(u.Name) != uhi.Base {
+				continue
+			}
+			if hash == uhi.Hash {
+				continue
+			}
+			if contains(newSliceIDs, uhi.SliceID) {
+				// We already tracked this ID. Go ahead.
+				continue
+			}
 
-		us, err := UnitStatusList(unitStatusList).unitStatusBySliceID(sliceID)
-		if err != nil {
-			return Request{}, false, maskAny(err)
-		}
-		u, err := req.unitByName(us.Name)
-		if err != nil {
-			return Request{}, false, maskAny(err)
-		}
-		ok, err := unitNeedsUpdate(u, us)
-		if err != nil {
-			return Request{}, false, maskAny(err)
-		}
-		if ok {
-			newSliceIDs = append(newSliceIDs, sliceID)
+			newSliceIDs = append(newSliceIDs, uhi.SliceID)
 		}
 	}
 
 	if newSliceIDs == nil {
 		return req, false, nil
 	}
+	req.SliceIDs = newSliceIDs
 
-	newReq := Request{
-		Group:    req.Group,
-		SliceIDs: newSliceIDs,
-		Units:    req.Units,
-	}
-
-	return newReq, true, nil
+	return req, true, nil
 }
 
 func (c controller) Submit(req Request) (*task.Task, error) {
@@ -522,16 +504,42 @@ func matchesGroupSlices(request Request) func(string) bool {
 	}
 
 	// Normal version that matches on group prefix and slice ID suffix.
-	return func(unitname string) bool {
-		if !strings.HasPrefix(unitname, request.Group) {
+	return func(unitName string) bool {
+		if !strings.HasPrefix(unitName, request.Group) {
 			return false
 		}
 
 		for _, sliceID := range request.SliceIDs {
-			if strings.HasSuffix(unitname, "@"+sliceID+".service") {
+			// TODO fix extension
+			if strings.HasSuffix(unitName, "@"+sliceID+".service") {
 				return true
 			}
 		}
+
+		return false
+	}
+}
+
+func matchesUnitBase(request Request) func(string) bool {
+	// If only the group name is of interest, return shorter version
+	if request.Units == nil || len(request.Units) == 0 {
+		return func(name string) bool {
+			return strings.HasPrefix(name, request.Group)
+		}
+	}
+
+	// Normal version that matches on group prefix and slice ID suffix.
+	return func(unitName string) bool {
+		if !strings.HasPrefix(unitName, request.Group) {
+			return false
+		}
+
+		for _, u := range request.Units {
+			if common.UnitBase(u.Name) == common.UnitBase(unitName) {
+				return true
+			}
+		}
+
 		return false
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/giantswarm/inago/controller"
 )
 
 var (
@@ -37,20 +39,6 @@ func destroyRun(cmd *cobra.Command, args []string) {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
-
-	taskObject, err := newController.Start(req)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
-
-	maybeBlockWithFeedback(blockWithFeedbackCtx{
-		Request:    req,
-		Descriptor: "start",
-		NoBlock:    globalFlags.NoBlock,
-		TaskID:     taskObject.ID,
-		Closer:     nil,
-	})
 
 	taskObject, err := newController.Destroy(req)
 	if err != nil {

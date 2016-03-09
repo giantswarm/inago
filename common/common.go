@@ -6,20 +6,6 @@ import (
 	"regexp"
 )
 
-// UnitBase returns the base of the unit name. The base is considered
-// everything up to the @ character, if any, or the given name without
-// extension.
-//
-//   app@1.service  =>  app
-//   app@1.mount    =>  app
-//   app.service    =>  app
-//   app.mount      =>  app
-//
-func UnitBase(name string) string {
-	name = groupExp.ReplaceAllString(name, "")
-	return ExtExp.ReplaceAllString(name, "")
-}
-
 // ExtExp matches unit file extensions.
 //
 //   app@1.service  =>  .service

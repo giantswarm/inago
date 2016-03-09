@@ -2,179 +2,165 @@ package controller
 
 import (
 	"fmt"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/giantswarm/inago/task"
 )
 
-type updateJobDesc struct {
-	Request Request
-}
-
 func (c controller) getNumRunningSlices(req Request) (int, error) {
-	unitStatusList, err := c.groupStatusWithValidate(req)
-	if err != nil {
+	usl, err := c.groupStatus(req)
+	if IsUnitNotFound(err) {
+		return 0, nil
+	} else if err != nil {
 		return 0, maskAny(err)
 	}
 
-	var numRunning int
-	for _, us := range unitStatusList {
+	var sliceIDs []string
+	for _, us := range usl {
+		if contains(sliceIDs, us.Slice) {
+			// We already tracked this ID. Ho ahead.
+			continue
+		}
 		ok, err := unitHasStatus(us, StatusRunning)
 		if err != nil {
 			return 0, maskAny(err)
 		}
-		if ok {
-			numRunning++
+		if !ok {
+			continue
 		}
+		sliceIDs = append(sliceIDs, us.Slice)
 	}
 
-	return numRunning, nil
+	return len(sliceIDs), nil
 }
 
-func (c controller) createJobQueues(req Request, opts UpdateOptions) (chan updateJobDesc, chan updateJobDesc, error) {
-	addQueue := make(chan updateJobDesc, len(req.SliceIDs))
-	removeQueue := make(chan updateJobDesc, len(req.SliceIDs))
-
-	numRunning, err := c.getNumRunningSlices(req)
-	if err != nil {
-		return nil, nil, maskAny(err)
-	}
-	numAllowedToRemove := numRunning - opts.MinAlive
-
-	fmt.Printf("numRunning: %#v\n", numRunning)
-	fmt.Printf("opts.MinAlive: %#v\n", opts.MinAlive)
-	fmt.Printf("numAllowedToRemove: %#v\n", numAllowedToRemove)
-
-	var numRemovalQueued int
-	for _, sliceID := range req.SliceIDs {
-		jobDesc := updateJobDesc{
-			Request: Request{
-				Group:    req.Group,
-				SliceIDs: []string{sliceID},
-				Units:    req.Units,
-			},
-		}
-
-		addQueue <- jobDesc
-		fmt.Printf("job added to addQueue\n")
-
-		if numAllowedToRemove >= numRemovalQueued {
-			removeQueue <- jobDesc
-			numRemovalQueued++
-			fmt.Printf("job added to removeQueue\n")
-		}
-	}
-
-	return addQueue, removeQueue, nil
-}
-
-func (c controller) isGroupRemovalAllowed(req Request, opts UpdateOptions) (bool, error) {
+func (c controller) isGroupRemovalAllowed(req Request, minAlive int) (bool, error) {
 	numRunning, err := c.getNumRunningSlices(req)
 	if err != nil {
 		return false, maskAny(err)
 	}
 
-	if numRunning > opts.MinAlive {
+	if numRunning > minAlive {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-func (c controller) isGroupAdditionAllowed(req Request, numTotal int, opts UpdateOptions) (bool, error) {
+func (c controller) isGroupAdditionAllowed(req Request, maxGrowth int) (bool, error) {
 	numRunning, err := c.getNumRunningSlices(req)
 	if err != nil {
 		return false, maskAny(err)
 	}
 
-	if numRunning < numTotal+opts.MaxGrowth {
+	if numRunning < maxGrowth {
 		return true, nil
 	}
 
 	return false, nil
 }
 
-func (c controller) runAddWorker(jobDesc updateJobDesc, fail chan<- error, readySecs int) {
-	fmt.Printf("call runAddWorker\n")
+func (c controller) addFirst(req Request, opts UpdateOptions) error {
+	req, err := c.runAddWorker(req, opts)
+	if err != nil {
+		return maskAny(err)
+	}
+	err = c.runRemoveWorker(req)
+	if err != nil {
+		return maskAny(err)
+	}
+
+	return nil
+}
+
+func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, error) {
+	newReq := req
+	oldReq := req
+
+	// Create new random IDs.
+	var err error
+	newReq, err = c.ExtendWithRandomSliceIDs(newReq)
+	if err != nil {
+		return Request{}, maskAny(err)
+	}
 
 	// Submit.
-	taskObject, err := c.Submit(jobDesc.Request)
+	taskObject, err := c.Submit(newReq)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return Request{}, maskAny(err)
 	}
 	closer := make(<-chan struct{})
 	taskObject, err = c.WaitForTask(taskObject.ID, closer)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return Request{}, maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		fail <- maskAny(fmt.Errorf(taskObject.Error))
-		return
+		return Request{}, maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	// Start.
-	taskObject, err = c.Start(jobDesc.Request)
+	taskObject, err = c.Start(newReq)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return Request{}, maskAny(err)
 	}
 	closer = make(<-chan struct{})
 	taskObject, err = c.WaitForTask(taskObject.ID, closer)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return Request{}, maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		fail <- maskAny(fmt.Errorf(taskObject.Error))
-		return
+		return Request{}, maskAny(err)
 	}
 
-	fmt.Printf("runAddWorker sleep %ds\n", readySecs)
-	time.Sleep(time.Duration(readySecs) * time.Second)
+	time.Sleep(time.Duration(opts.ReadySecs) * time.Second)
 
-	fmt.Printf("end runAddWorker\n")
+	return oldReq, nil
 }
 
-func (c controller) runRemoveWorker(jobDesc updateJobDesc, fail chan<- error) {
-	fmt.Printf("call runRemoveWorker\n")
-
-	// Stop.
-	taskObject, err := c.Stop(jobDesc.Request)
+func (c controller) removeFirst(req Request, opts UpdateOptions) error {
+	err := c.runRemoveWorker(req)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return maskAny(err)
+	}
+	_, err = c.runAddWorker(req, opts)
+	if err != nil {
+		return maskAny(err)
+	}
+
+	return nil
+}
+
+func (c controller) runRemoveWorker(req Request) error {
+	// Stop.
+	taskObject, err := c.Stop(req)
+	if err != nil {
+		return maskAny(err)
 	}
 	closer := make(<-chan struct{})
 	taskObject, err = c.WaitForTask(taskObject.ID, closer)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		fail <- maskAny(fmt.Errorf(taskObject.Error))
-		return
+		return maskAny(err)
 	}
 
 	// Destroy.
-	taskObject, err = c.Destroy(jobDesc.Request)
+	taskObject, err = c.Destroy(req)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return maskAny(err)
 	}
 	closer = make(<-chan struct{})
 	taskObject, err = c.WaitForTask(taskObject.ID, closer)
 	if err != nil {
-		fail <- maskAny(err)
-		return
+		return maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		fail <- maskAny(fmt.Errorf(taskObject.Error))
-		return
+		return maskAny(err)
 	}
-	fmt.Printf("end runRemoveWorker\n")
+
+	return nil
 }
 
 // UpdateOptions represents the options defining the strategy of an update
@@ -211,70 +197,77 @@ type UpdateOptions struct {
 }
 
 func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
-	done := make(chan struct{}, 1)
 	fail := make(chan error, 1)
-	addQueue := make(chan updateJobDesc, len(req.SliceIDs))
-	addQueue, removeQueue, err := c.createJobQueues(req, opts)
-	if err != nil {
-		return maskAny(err)
-	}
 	numTotal := len(req.SliceIDs)
-	fmt.Printf("numTotal: %#v\n", numTotal)
+	done := make(chan struct{}, numTotal)
+	var addInProgress int64
+	var removeInProgress int64
 
-	m := sync.Mutex{}
-	var alreadyUpdated int
+	for _, sliceID := range req.SliceIDs {
+		newReq := req
+		newReq.SliceIDs = []string{sliceID}
 
-	for i := 0; i < opts.MaxGrowth; i++ {
-		go func() {
-			for jobDesc := range addQueue {
-				for {
-					ok, err := c.isGroupAdditionAllowed(req, numTotal, opts)
+		for {
+			// add
+			maxGrowth := opts.MaxGrowth + numTotal - int(addInProgress)
+			ok, err := c.isGroupAdditionAllowed(req, maxGrowth)
+			if err != nil {
+				return maskAny(err)
+			}
+			if ok {
+				go func() {
+					v := atomic.AddInt64(&addInProgress, 1)
+					addInProgress = v
+					err := c.addFirst(newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
-					if !ok {
-						time.Sleep(c.WaitSleep)
-					}
-					break
-				}
+					v = atomic.AddInt64(&addInProgress, -1)
+					addInProgress = v
+					done <- struct{}{}
+				}()
 
-				c.runAddWorker(jobDesc, fail, opts.ReadySecs)
-				fmt.Printf("add jobDesc to removeQueue\n")
-				removeQueue <- jobDesc
+				break
 			}
-			fmt.Printf("finished addQueue\n")
-		}()
+
+			// remove
+			minAlive := opts.MinAlive + int(removeInProgress)
+			ok, err = c.isGroupRemovalAllowed(req, minAlive)
+			if err != nil {
+				return maskAny(err)
+			}
+			if ok {
+				go func() {
+					v := atomic.AddInt64(&removeInProgress, 1)
+					removeInProgress = v
+					err := c.removeFirst(newReq, opts)
+					if err != nil {
+						fail <- maskAny(err)
+						return
+					}
+					v = atomic.AddInt64(&removeInProgress, -1)
+					removeInProgress = v
+					done <- struct{}{}
+				}()
+
+				break
+			}
+
+			time.Sleep(c.WaitSleep)
+		}
 	}
 
+	tc := 0
 	for {
 		select {
-		case jobDesc := <-removeQueue:
-			go func(jobDesc updateJobDesc) {
-				for {
-					ok, err := c.isGroupRemovalAllowed(req, opts)
-					if err != nil {
-						fail <- maskAny(err)
-						return
-					}
-					if !ok {
-						time.Sleep(c.WaitSleep)
-					}
-					break
-				}
-
-				c.runRemoveWorker(jobDesc, fail)
-				m.Lock()
-				alreadyUpdated++
-				if alreadyUpdated == numTotal {
-					done <- struct{}{}
-				}
-				m.Unlock()
-			}(jobDesc)
 		case err := <-fail:
 			return maskAny(err)
 		case <-done:
-			return nil
+			tc++
+			if tc == numTotal {
+				return nil
+			}
 		case <-time.After(c.WaitTimeout):
 			return maskAny(waitTimeoutReachedError)
 		}

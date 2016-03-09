@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
 
-	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/task"
 )
@@ -21,7 +19,7 @@ var (
 
 var (
 	statusHeader = "Group | Units | FDState | FCState | SAState {{if .Verbose}}| Hash {{end}}| IP | Machine"
-	statusBody   = "{{.Group}}{{.UnitState.Slice}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
+	statusBody   = "{{.Group}}@{{.UnitState.Slice}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
 		"{{.MachineState.SystemdActive}}{{if .Verbose}} | {{.MachineState.UnitHash}}{{end}} | {{.MachineState.IP}} | {{.MachineState.ID}}"
 )
 

@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
+
+	"github.com/giantswarm/inago/controller"
 )
 
 var (
@@ -40,7 +43,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 
 	newRequestConfig := controller.DefaultNewRequest()
 	newRequestConfig.Group = group
-	newRequestConfig.Scale = scale
+	newRequestConfig.SliceIDs = strings.Split(strings.Repeat("x", scale), "")
 	req := controller.NewRequest(newRequestConfig)
 
 	req, err := newController.ExtendWithContent(req)

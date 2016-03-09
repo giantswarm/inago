@@ -1,13 +1,17 @@
 package controller
 
 import (
-	"strings"
+	"fmt"
+	"path/filepath"
+	"regexp"
+
+	"github.com/giantswarm/inago/common"
 )
 
 func DefaultNewRequest() RequestConfig {
 	newConfig := RequestConfig{
-		Group: "",
-		Scale: 0,
+		Group:    "",
+		SliceIDs: []string{},
 	}
 
 	return newConfig
@@ -17,8 +21,9 @@ type RequestConfig struct {
 	// Group represents the plain group name without any slice expression.
 	Group string
 
-	// Scale represents the number random of slice IDs to create.
-	Scale init
+	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
+	// "5", etc..
+	SliceIDs []string
 }
 
 // Request represents a controller request. This is used to process some action
@@ -26,21 +31,15 @@ type RequestConfig struct {
 type Request struct {
 	RequestConfig
 
-	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
-	// "5", etc..
-	SliceIDs []string
-
 	// Units represents a list of unit files that is supposed to be extended
 	// using the provided slice IDs.
 	Units []Unit
 }
 
 func NewRequest(config RequestConfig) Request {
-	req := controller.Request{
-		Group:    config.Group,
-		Scale:    config.Scale,
-		SliceIDs: []string{},
-		Units:    []controller.Unit{},
+	req := Request{
+		RequestConfig: config,
+		Units:         []Unit{},
 	}
 
 	return req
@@ -61,34 +60,23 @@ func (r Request) ExtendSlices() (Request, error) {
 	if len(r.SliceIDs) == 0 {
 		return r, nil
 	}
-	newRequest := Request{
-		SliceIDs: r.SliceIDs,
-		Units:    []Unit{},
-	}
 
+	var newUnits []Unit
 	for _, sliceID := range r.SliceIDs {
 		for _, unit := range r.Units {
 			newUnit := unit
+			// TODO fix extension
 			newUnit.Name = unitExp.ReplaceAllString(newUnit.Name, fmt.Sprintf("@%s.service", sliceID))
-			newRequest.Units = append(newRequest.Units, newUnit)
+			newUnits = append(newUnits, newUnit)
 		}
 	}
+	r.Units = newUnits
 
-	return newRequest, nil
+	return r, nil
 }
 
-func (r Request) unitByName(name string) (Unit, error) {
-	for _, u := range r.Units {
-		if common.UnitBase(u.Name) == common.UnitBase(name) {
-			return u, nil
-		}
-	}
-
-	return Unit{}, maskAny(unitNotFoundError)
-}
-
-func readUnitFiles(dir string) (map[string]string, error) {
-	fileInfos, err := newFileSystem.ReadDir(dir)
+func (c controller) readUnitFiles(dir string) (map[string]string, error) {
+	fileInfos, err := c.FileSystem.ReadDir(dir)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -99,7 +87,7 @@ func readUnitFiles(dir string) (map[string]string, error) {
 			continue
 		}
 
-		raw, err := newFileSystem.ReadFile(filepath.Join(dir, fileInfo.Name()))
+		raw, err := c.FileSystem.ReadFile(filepath.Join(dir, fileInfo.Name()))
 		if err != nil {
 			return nil, maskAny(err)
 		}
@@ -110,13 +98,8 @@ func readUnitFiles(dir string) (map[string]string, error) {
 	return unitFiles, nil
 }
 
-// submit: new slice IDs, 		 unit files content
-// update: existing slice IDs, unit files content
-// other:  existing slice IDs
-
-// other
 func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
-	unitStatusList, err := c.groupStatusWithValidate(req)
+	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesUnitBase(req))
 	if IsUnitNotFound(err) {
 		// This happenes when there is no unit, e.g. on submit. Thus we don't need
 		// to check against anything. Se we do nothing and go ahead by simply
@@ -125,35 +108,39 @@ func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
 		return nil, maskAny(err)
 	}
 
-	var sliceIDs []string
+	var newSliceIDs []string
 	for _, us := range unitStatusList {
 		ID, err := common.SliceID(us.Name)
 		if err != nil {
 			return nil, maskAny(err)
 		}
-		seenSliceIDs = append(sliceIDs, ID)
+		if contains(newSliceIDs, ID) {
+			// We already tracked this ID. Go ahead.
+			continue
+		}
+		newSliceIDs = append(newSliceIDs, ID)
 	}
 
-	return sliceIDs, nil
+	return newSliceIDs, nil
 }
 
 func (c controller) ExtendWithExistingSliceIDs(req Request) (Request, error) {
-	sliceIDs, err := c.getExistingSliceIDs(req)
+	newSliceIDs, err := c.getExistingSliceIDs(req)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return Request{}, maskAny(err)
 	}
-	req.SliceIDs = sliceIDs
+	req.SliceIDs = newSliceIDs
 
 	return req, nil
 }
 
 func (c controller) ExtendWithContent(req Request) (Request, error) {
-	unitFiles, err := readUnitFiles(req.Group)
+	unitFiles, err := c.readUnitFiles(req.Group)
 	if err != nil {
-		return controller.Request{}, maskAny(err)
+		return Request{}, maskAny(err)
 	}
 	for name, content := range unitFiles {
-		req.Units = append(req.Units, controller.Unit{Name: name, Content: content})
+		req.Units = append(req.Units, Unit{Name: name, Content: content})
 	}
 
 	return req, nil
@@ -172,13 +159,16 @@ func contains(l []string, e string) bool {
 func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 	// Lookup existing slice IDs.
 	unitStatusList, err := c.groupStatusWithValidate(req)
-	if err != nil {
+	if IsUnitNotFound(err) {
+		// This happens when no unit is found, e.g. on submit. In this case we
+		// simply go ahead, because we have no existing IDs to ignore.
+	} else if err != nil {
 		return Request{}, maskAny(err)
 	}
 
 	// Find enough sufficient IDs.
 	var newIDs []string
-	for i := 0; i < req.Scale; i++ {
+	for range req.SliceIDs {
 		for {
 			newID := NewID()
 

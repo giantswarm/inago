@@ -41,7 +41,6 @@ func statusRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	group := dirnameFromSlices(args)
 	statusList, err := newController.GetStatus(req)
 	if controller.IsUnitNotFound(err) || controller.IsUnitSliceNotFound(err) {
 		if req.SliceIDs == nil {
@@ -57,7 +56,7 @@ func statusRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	data, err := createStatus(group, statusList)
+	data, err := createStatus(req.Group, statusList)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

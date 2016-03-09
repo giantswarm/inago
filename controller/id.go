@@ -1,7 +1,8 @@
 package controller
 
 import (
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 )
 
 var (
@@ -11,14 +12,15 @@ var (
 // NewID creates a new ID.
 func NewID() string {
 	b := make([]byte, 3)
-	ns := []int{}
 
 	for i := range b {
-		if i%len(idChars) == 0 {
-			ns = rand.Perm(len(idChars))
+		max := big.NewInt(int64(len(idChars)))
+		j, err := rand.Int(rand.Reader, max)
+		if err != nil {
+			panic(err)
 		}
 
-		b[i] = idChars[ns[i]]
+		b[i] = idChars[int(j.Int64())]
 	}
 
 	return string(b)
