@@ -66,6 +66,7 @@ func init() {
 	MainCmd.AddCommand(stopCmd)
 	MainCmd.AddCommand(destroyCmd)
 	MainCmd.AddCommand(updateCmd)
+	MainCmd.AddCommand(validateCmd)
 }
 
 func mainRun(cmd *cobra.Command, args []string) {

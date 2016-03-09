@@ -27,8 +27,8 @@ func givenSingleUnitStatus(name, sliceID string) fleet.UnitStatus {
 	}
 }
 
-func givenGroupedStatus() fleet.UnitStatus {
-	e := givenSingleUnitStatus("*", "1")
+func givenGroupedStatus(sliceID string) fleet.UnitStatus {
+	e := givenSingleUnitStatus("*", sliceID)
 	e.Name = "*"
 	return e
 }
@@ -38,12 +38,15 @@ func TestUnitStatusList_Group_NoDiff(t *testing.T) {
 
 	input1 := givenSingleUnitStatus("main", "1")
 	input2 := givenSingleUnitStatus("sidekick", "1")
+	input3 := givenSingleUnitStatus("main", "2")
+	input4 := givenSingleUnitStatus("sidekick", "2")
 
-	output, err := UnitStatusList([]fleet.UnitStatus{input1, input2}).Group()
+	output, err := UnitStatusList([]fleet.UnitStatus{input1, input2, input3, input4}).Group()
 
 	Expect(err).To(Not(HaveOccurred()))
-	Expect(output).To(ContainElement(givenGroupedStatus()))
-	Expect(len(output)).To(Equal(1))
+	Expect(output).To(ContainElement(givenGroupedStatus("1")))
+	Expect(output).To(ContainElement(givenGroupedStatus("2")))
+	Expect(len(output)).To(Equal(2))
 }
 
 func TestUnitStatusList_Group_UnitHashDiffs(t *testing.T) {
@@ -51,14 +54,18 @@ func TestUnitStatusList_Group_UnitHashDiffs(t *testing.T) {
 
 	input1 := givenSingleUnitStatus("main", "1")
 	input2 := givenSingleUnitStatus("sidekick", "1")
-	input2.Machine[0].UnitHash = "something-else"
+	input3 := givenSingleUnitStatus("main", "2")
+	input4 := givenSingleUnitStatus("sidekick", "2")
+	input3.Machine[0].UnitHash = "something-else"
 
-	output, err := UnitStatusList([]fleet.UnitStatus{input1, input2}).Group()
+	output, err := UnitStatusList([]fleet.UnitStatus{input1, input2, input3, input4}).Group()
 
 	Expect(err).To(Not(HaveOccurred()))
 	Expect(output).To(ContainElement(input1))
 	Expect(output).To(ContainElement(input2))
-	Expect(len(output)).To(Equal(2))
+	Expect(output).To(ContainElement(input3))
+	Expect(output).To(ContainElement(input4))
+	Expect(len(output)).To(Equal(4))
 }
 
 func inputUnitStatusList(configs ...map[string][]string) UnitStatusList {

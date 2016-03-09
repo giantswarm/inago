@@ -4,6 +4,8 @@ BUILD_PATH := $(shell pwd)/.gobuild
 GS_PATH := $(BUILD_PATH)/src/github.com/giantswarm
 GOPATH := $(BUILD_PATH)
 
+GOVERSION=1.6
+
 BIN := $(PROJECT)ctl
 
 VERSION := $(shell cat VERSION)
@@ -51,7 +53,7 @@ $(BIN): $(SOURCE) VERSION .gobuild
 	    -e GOOS=$(GOOS) \
 	    -e GOARCH=$(GOARCH) \
 	    -w /usr/code \
-	    golang:1.5 \
+	    golang:$(GOVERSION) \
 	    $(BUILD_COMMAND)
 
 test: $(SOURCE) VERSION .gobuild
@@ -64,7 +66,7 @@ test: $(SOURCE) VERSION .gobuild
 	    -e GOOS=$(GOOS) \
 	    -e GOARCH=$(GOARCH) \
 	    -w /usr/code \
-	    golang:1.5 \
+	    golang:$(GOVERSION) \
 	    $(TEST_COMMAND)
 
 lint:

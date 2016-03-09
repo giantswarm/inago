@@ -74,9 +74,9 @@ func (fm *fleetMock) GetStatusWithMatcher(f func(string) bool) ([]fleet.UnitStat
 		fm.CustomMockUsed++
 		if fm.CustomMockUsed <= 3 {
 			return fm.FirstCustomMockStatus, nil
-		} else {
-			return fm.LastCustomMockStatus, nil
 		}
+
+		return fm.LastCustomMockStatus, nil
 	}
 
 	return nil, fmt.Errorf("invalid mock setup")
