@@ -31,7 +31,27 @@ func init() {
 }
 
 func updateRun(cmd *cobra.Command, args []string) {
-	req, err := createRequestWithContent(args)
+	group := ""
+	switch len(args) {
+	case 1:
+		group = args[0]
+	case 0:
+		fallthrough
+	default:
+		cmd.Help()
+		os.Exit(1)
+	}
+
+	newRequestConfig := controller.DefaultNewRequest()
+	newRequestConfig.Group = group
+	req := controller.NewRequest(newRequestConfig)
+
+	req, err := newController.ExtendWithContent(req)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+	req, err = newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

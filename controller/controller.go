@@ -140,62 +140,6 @@ type Unit struct {
 	Content string
 }
 
-// Request represents a controller request. This is used to process some action
-// on the controller.
-type Request struct {
-	// Group represents the plain group name without any slice expression.
-	Group string
-
-	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
-	// "5", etc..
-	SliceIDs []string
-
-	// Units represents a list of unit files that is supposed to be extended
-	// using the provided slice IDs.
-	Units []Unit
-}
-
-var unitExp = regexp.MustCompile("@.service")
-
-// ExtendSlices extends unit files with respect to the given slice IDs. Having
-// slice IDs "1" and "2" and having unit files "foo@.service" and
-// "bar@.service" results in the following extended unit files.
-//
-// 	 foo@1.service
-// 	 bar@1.service
-// 	 foo@2.service
-// 	 bar@2.service
-//
-func (r Request) ExtendSlices() (Request, error) {
-	if len(r.SliceIDs) == 0 {
-		return r, nil
-	}
-	newRequest := Request{
-		SliceIDs: r.SliceIDs,
-		Units:    []Unit{},
-	}
-
-	for _, sliceID := range r.SliceIDs {
-		for _, unit := range r.Units {
-			newUnit := unit
-			newUnit.Name = unitExp.ReplaceAllString(newUnit.Name, fmt.Sprintf("@%s.service", sliceID))
-			newRequest.Units = append(newRequest.Units, newUnit)
-		}
-	}
-
-	return newRequest, nil
-}
-
-func (r Request) unitByName(name string) (Unit, error) {
-	for _, u := range r.Units {
-		if common.UnitBase(u.Name) == common.UnitBase(name) {
-			return u, nil
-		}
-	}
-
-	return Unit{}, maskAny(unitNotFoundError)
-}
-
 func unitNeedsUpdate(u Unit, us fleet.UnitStatus) (bool, error) {
 	// Here we have us.Content as the unit file content.
 	unitFile, err := unit.NewUnitFile(u.Content)
@@ -271,10 +215,6 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 	}
 
 	action := func() error {
-		req, err := c.randomizeSliceIDs(req)
-		if err != nil {
-			return maskAny(err)
-		}
 		extended, err := req.ExtendSlices()
 		if err != nil {
 			return maskAny(err)
@@ -562,7 +502,7 @@ func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string
 		if err != nil {
 			return false, maskAny(err)
 		}
-		if strings.HasSuffix(ID, sliceID) {
+		if ID == sliceID {
 			return true, nil
 		}
 	}
@@ -594,62 +534,4 @@ func matchesGroupSlices(request Request) func(string) bool {
 		}
 		return false
 	}
-}
-
-func (c controller) createRandomSliceID(req Request) (string, error) {
-	// Lookup existing IDs of the group.
-	seenSliceIDs := map[string]struct{}{}
-	unitStatusList, err := c.groupStatusWithValidate(req)
-	if IsUnitNotFound(err) {
-		// This happenes when there is no unit, e.g. on submit. Thus we don't need
-		// to check against anything. Se we do nothing and go ahead by simply
-		// creating a new random ID.
-	} else if err != nil {
-		return "", maskAny(err)
-	}
-	for _, us := range unitStatusList {
-		ID, err := common.SliceID(us.Name)
-		if err != nil {
-			return "", maskAny(err)
-		}
-		seenSliceIDs[ID] = struct{}{}
-	}
-
-	// Lookup a new ID that is not already there.
-	for {
-		newID := NewID()
-		if _, ok := seenSliceIDs[newID]; ok {
-			continue
-		}
-
-		return newID, nil
-	}
-}
-
-func (c controller) randomizeSliceIDs(req Request) (Request, error) {
-	// Find enough sufficient IDs.
-	seenSliceIDs := map[string]struct{}{}
-	for range req.SliceIDs {
-		for {
-			randomized, err := c.createRandomSliceID(req)
-			if err != nil {
-				return Request{}, maskAny(err)
-			}
-			if _, ok := seenSliceIDs[randomized]; ok {
-				// We already saw this ID. Try again.
-				continue
-			}
-			seenSliceIDs[randomized] = struct{}{}
-			break
-		}
-	}
-
-	// Transform map to list.
-	var newSliceIDs []string
-	for ID, _ := range seenSliceIDs {
-		newSliceIDs = append(newSliceIDs, ID)
-	}
-	req.SliceIDs = newSliceIDs
-
-	return req, nil
 }

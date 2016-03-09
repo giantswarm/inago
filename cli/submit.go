@@ -3,13 +3,14 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
 
 var (
 	submitCmd = &cobra.Command{
-		Use:   "submit [group]",
+		Use:   "submit <group> [scale]",
 		Short: "submit a group",
 		Long:  "submit a group",
 		Run:   submitRun,
@@ -17,7 +18,37 @@ var (
 )
 
 func submitRun(cmd *cobra.Command, args []string) {
-	req, err := createRequestWithContent(args)
+	group := ""
+	scale := 1
+	switch len(args) {
+	case 1:
+		group = args[0]
+	case 2:
+		group = args[0]
+		n, err := strconv.Atoi(args[1])
+		if err != nil {
+			fmt.Printf("%#v\n", maskAny(err))
+			os.Exit(1)
+		}
+		scale = n
+	case 0:
+		fallthrough
+	default:
+		cmd.Help()
+		os.Exit(1)
+	}
+
+	newRequestConfig := controller.DefaultNewRequest()
+	newRequestConfig.Group = group
+	newRequestConfig.Scale = scale
+	req := controller.NewRequest(newRequestConfig)
+
+	req, err := newController.ExtendWithContent(req)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+	req, err = newController.ExtendWithRandomSliceIDs(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)

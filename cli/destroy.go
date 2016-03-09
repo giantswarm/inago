@@ -17,11 +17,40 @@ var (
 )
 
 func destroyRun(cmd *cobra.Command, args []string) {
-	req, err := createRequest(args)
+	group := ""
+	switch len(args) {
+	case 1:
+		group = args[0]
+	case 0:
+		fallthrough
+	default:
+		cmd.Help()
+		os.Exit(1)
+	}
+
+	newRequestConfig := controller.DefaultNewRequest()
+	newRequestConfig.Group = group
+	req := controller.NewRequest(newRequestConfig)
+
+	req, err := newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
+
+	taskObject, err := newController.Start(req)
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
+
+	maybeBlockWithFeedback(blockWithFeedbackCtx{
+		Request:    req,
+		Descriptor: "start",
+		NoBlock:    globalFlags.NoBlock,
+		TaskID:     taskObject.ID,
+		Closer:     nil,
+	})
 
 	taskObject, err := newController.Destroy(req)
 	if err != nil {
