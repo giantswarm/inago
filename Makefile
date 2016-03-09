@@ -3,6 +3,7 @@ PROJECT=inago
 BUILD_PATH := $(shell pwd)/.gobuild
 GS_PATH := $(BUILD_PATH)/src/github.com/giantswarm
 GOPATH := $(BUILD_PATH)
+INT_TESTS_PATH := $(shell pwd)/int-tests
 
 GOVERSION=1.6
 
@@ -14,6 +15,7 @@ COMMIT := $(shell git rev-parse --short HEAD)
 .PHONY: all clean test ci-test deps
 
 SOURCE=$(shell find . -name '*.go')
+INT_TESTS=$(shell find $(INT_TESTS_PATH) -name '*.t')
 
 BUILD_COMMAND=go build -a -o $(BIN)
 TEST_COMMAND=./go.test.sh
@@ -80,3 +82,16 @@ ci-build: $(SOURCE) VERSION .gobuild
 ci-test: $(SOURCE) VERSION .gobuild
 	echo Testing for $(GOOS)/$(GOARCH)
 	$(TEST_COMMAND)
+	
+# Use with `GOOS=linux FLEET_ENDPOINT=http://192.168.99.1:49153/ make int-test`
+# Set fleet endpoint to a fleet API endpoint available to the container.
+int-test: $(BIN) $(INT_TESTS)
+	@echo Running integration tests
+	docker run \
+		--rm \
+		-ti \
+		-e FLEET_ENDPOINT=$(FLEET_ENDPOINT) \
+		-v $(CURDIR)/$(BIN):/usr/local/bin/$(BIN) \
+		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
+		zeisss/cram-docker \
+		-v $(INT_TESTS_PATH)
