@@ -88,9 +88,9 @@ ci-test: $(SOURCE) VERSION .gobuild
 # Set fleet endpoint to a fleet API endpoint available to the container.
 int-test: $(BIN) $(INT_TESTS)
 	@echo Running integration tests
-	@echo Starting coreos integration test machine
+	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
-	sleep 10
+	sleep 5
 	docker run \
 		--rm \
 		-ti \
@@ -99,5 +99,6 @@ int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
-	@echo destroying the integration test machine
+	@echo Destroying the integration test machine
+	# TODO destroy the machine if the tests fail
 	cd $(VAGRANT_PATH) && vagrant destroy -f
