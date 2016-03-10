@@ -15,6 +15,7 @@ import (
 	"github.com/coreos/fleet/unit"
 
 	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/logging"
 )
 
 const (
@@ -183,6 +184,8 @@ type fleet struct {
 }
 
 func (f fleet) Submit(name, content string) error {
+	logging.GetLogger().Debug(nil, "Submitting unit '%v' to fleet", name)
+
 	unitFile, err := unit.NewUnitFile(content)
 	if err != nil {
 		return maskAny(err)
@@ -203,6 +206,8 @@ func (f fleet) Submit(name, content string) error {
 }
 
 func (f fleet) Start(name string) error {
+	logging.GetLogger().Debug(nil, "Starting unit '%v'", name)
+
 	err := f.Client.SetUnitTargetState(name, unitStateLaunched)
 	if err != nil {
 		return maskAny(err)
@@ -212,6 +217,8 @@ func (f fleet) Start(name string) error {
 }
 
 func (f fleet) Stop(name string) error {
+	logging.GetLogger().Debug(nil, "Stopping unit '%v'", name)
+
 	err := f.Client.SetUnitTargetState(name, unitStateLoaded)
 	if err != nil {
 		return maskAny(err)
@@ -221,6 +228,8 @@ func (f fleet) Stop(name string) error {
 }
 
 func (f fleet) Destroy(name string) error {
+	logging.GetLogger().Debug(nil, "Destroying unit '%v'", name)
+
 	err := f.Client.DestroyUnit(name)
 	if err != nil {
 		return maskAny(err)
