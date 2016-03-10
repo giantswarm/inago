@@ -203,6 +203,10 @@ func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 	var addInProgress int64
 	var removeInProgress int64
 
+	if numTotal < opts.MinAlive {
+		return maskAnyf(updateNotAllowedError, "invalid min alive option")
+	}
+
 	for _, sliceID := range req.SliceIDs {
 		newReq := req
 		newReq.SliceIDs = []string{sliceID}
