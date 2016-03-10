@@ -1,10 +1,11 @@
 package task
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/satori/go.uuid"
+
+	"github.com/giantswarm/inago/logging"
 )
 
 // Action represents any work to be done when executing a task.
@@ -92,6 +93,8 @@ type taskService struct {
 }
 
 func (ts *taskService) Create(action Action) (*Task, error) {
+	logger := logging.GetLogger()
+
 	taskObject := &Task{
 		ID:           uuid.NewV4().String(),
 		ActiveStatus: StatusStarted,
@@ -103,7 +106,7 @@ func (ts *taskService) Create(action Action) (*Task, error) {
 		if err != nil {
 			_, markErr := ts.MarkAsFailedWithError(taskObject, err)
 			if markErr != nil {
-				fmt.Printf("[E] Task.MarkAsFailed failed: %#v\n", maskAny(markErr))
+				logger.Error(nil, "[E] Task.MarkAsFailed failed: %#v", maskAny(markErr))
 				return
 			}
 			return
@@ -111,7 +114,7 @@ func (ts *taskService) Create(action Action) (*Task, error) {
 
 		_, err = ts.MarkAsSucceeded(taskObject)
 		if err != nil {
-			fmt.Printf("[E] Task.MarkAsSucceeded failed: %#v\n", maskAny(err))
+			logger.Error(nil, "[E] Task.MarkAsSucceeded failed: %#v", maskAny(err))
 			return
 		}
 	}()

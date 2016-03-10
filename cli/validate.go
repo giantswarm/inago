@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -10,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/logging"
 )
 
 var (
@@ -22,6 +22,8 @@ var (
 )
 
 func validateRun(cmd *cobra.Command, args []string) {
+	logger := logging.GetLogger()
+
 	groups := args
 
 	// If no groups are specified, assume all directories in current
@@ -29,7 +31,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		files, err := ioutil.ReadDir(".")
 		if err != nil {
-			fmt.Printf("%#v\n", maskAny(err))
+			logger.Error(nil, "%#v", maskAny(err))
 			os.Exit(1)
 		}
 
@@ -46,7 +48,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 	for _, group := range groups {
 		request, err := createRequestWithContent([]string{group})
 		if err != nil {
-			fmt.Printf("%#v\n", maskAny(err))
+			logger.Error(nil, "%#v", maskAny(err))
 			os.Exit(1)
 		}
 		requests = append(requests, request)
@@ -55,16 +57,16 @@ func validateRun(cmd *cobra.Command, args []string) {
 	for _, request := range requests {
 		ok, err := controller.ValidateRequest(request)
 		if ok {
-			fmt.Printf("Group '%v' is valid.\n", request.Group)
+			logger.Info(nil, "Group '%v' is valid.", request.Group)
 		} else {
-			fmt.Printf("Group '%v' not valid: %v.\n", request.Group, err)
+			logger.Info(nil, "Group '%v' not valid: %v.", request.Group, err)
 		}
 	}
 
 	ok, err := controller.ValidateMultipleRequest(requests)
 	if ok {
-		fmt.Println("Groups are valid globally.")
+		logger.Info(nil, "Groups are valid globally.")
 	} else {
-		fmt.Println("Groups are not valid globally:", err)
+		logger.Info(nil, "Groups are not valid globally:", err)
 	}
 }

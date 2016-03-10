@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/giantswarm/inago/cli"
+	"github.com/giantswarm/inago/logging"
 )
 
 func main() {
 	if err := cli.MainCmd.Execute(); err != nil {
-		fmt.Println(err)
+		logging.GetLogger().Error(nil, err.Error())
 		os.Exit(-1)
 	}
 }

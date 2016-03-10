@@ -1,10 +1,11 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+
+	"github.com/giantswarm/inago/logging"
 )
 
 var (
@@ -17,15 +18,17 @@ var (
 )
 
 func startRun(cmd *cobra.Command, args []string) {
+	logger := logging.GetLogger()
+
 	req, err := createRequest(args)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		logger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
 	taskObject, err := newController.Start(req)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		logger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
