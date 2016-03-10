@@ -3,3 +3,4 @@ inagoctl
 coverage.txt
 profile.out
 *.t.err
+.vagrant

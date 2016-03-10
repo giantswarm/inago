@@ -4,6 +4,7 @@ BUILD_PATH := $(shell pwd)/.gobuild
 GS_PATH := $(BUILD_PATH)/src/github.com/giantswarm
 GOPATH := $(BUILD_PATH)
 INT_TESTS_PATH := $(shell pwd)/int-tests
+VAGRANT_PATH := $(INT_TESTS_PATH)/vagrant
 
 GOVERSION=1.6
 
@@ -87,6 +88,9 @@ ci-test: $(SOURCE) VERSION .gobuild
 # Set fleet endpoint to a fleet API endpoint available to the container.
 int-test: $(BIN) $(INT_TESTS)
 	@echo Running integration tests
+	@echo Starting coreos integration test machine
+	cd $(VAGRANT_PATH) && vagrant up
+	sleep 10
 	docker run \
 		--rm \
 		-ti \
@@ -95,3 +99,5 @@ int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
+	@echo destroying the integration test machine
+	cd $(VAGRANT_PATH) && vagrant destroy -f
