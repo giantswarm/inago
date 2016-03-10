@@ -99,7 +99,7 @@ func (c controller) readUnitFiles(dir string) (map[string]string, error) {
 }
 
 func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
-	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesUnitBase(req))
+	usl, err := c.Fleet.GetStatusWithMatcher(matchesUnitBase(req))
 	if fleet.IsUnitNotFound(err) {
 		// This happenes when there is no unit, e.g. on submit. Thus we don't need
 		// to check against anything. Se we do nothing and go ahead by simply
@@ -109,7 +109,7 @@ func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
 	}
 
 	var newSliceIDs []string
-	for _, us := range unitStatusList {
+	for _, us := range usl {
 		if us.SliceID == "" {
 			// This unit has no explicit slice ID. Skip it.
 			continue
@@ -158,7 +158,7 @@ func contains(l []string, e string) bool {
 
 func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 	// Lookup existing slice IDs.
-	unitStatusList, err := c.groupStatusWithValidate(req)
+	usl, err := c.groupStatusWithValidate(req)
 	if IsUnitNotFound(err) {
 		// This happens when no unit is found, e.g. on submit. In this case we
 		// simply go ahead, because we have no existing IDs to ignore.
@@ -177,7 +177,7 @@ func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 		for {
 			newID := NewID()
 
-			ok, err := containsUnitStatusSliceID(unitStatusList, newID)
+			ok, err := containsUnitStatusSliceID(usl, newID)
 			if err != nil {
 				return Request{}, maskAny(err)
 			}
