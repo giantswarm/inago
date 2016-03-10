@@ -36,7 +36,7 @@ clean:
 	@builder get dep -b 7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7 https://github.com/spf13/pflag.git $(GOPATH)/src/github.com/spf13/pflag
 	@builder get dep -b 983d3a5fab1bf04d1b412465d2d9f8430e2e917e https://github.com/ryanuber/columnize.git $(GOPATH)/src/github.com/ryanuber/columnize
 	@builder get dep -b e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502 https://github.com/satori/go.uuid.git $(GOPATH)/src/github.com/satori/go.uuid
-	@builder get dep -b 51ed24df9dfd342d701d40b62c00ee5ad4826e45 https://github.com/giantswarm/request-context.git $(GOPATH)/src/github.com/giantswarm/request-context
+	@builder get dep -b 0.4.1 https://github.com/giantswarm/request-context.git $(GOPATH)/src/github.com/giantswarm/request-context
 	@builder get dep -b 56b76bdf51f7708750eac80fa38b952bb9f32639 https://github.com/mattn/go-isatty.git $(GOPATH)/src/github.com/mattn/go-isatty
 
 	@builder get dep https://github.com/onsi/gomega.git $(GOPATH)/src/github.com/onsi/gomega
