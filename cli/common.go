@@ -19,7 +19,7 @@ var (
 
 var (
 	statusHeader = "Group | Units | FDState | FCState | SAState {{if .Verbose}}| Hash {{end}}| IP | Machine"
-	statusBody   = "{{.Group}}@{{.UnitState.Slice}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
+	statusBody   = "{{.Group}}@{{.UnitState.SliceID}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
 		"{{.MachineState.SystemdActive}}{{if .Verbose}} | {{.MachineState.UnitHash}}{{end}} | {{.MachineState.IP}} | {{.MachineState.ID}}"
 )
 
@@ -58,7 +58,6 @@ func createStatus(group string, usl controller.UnitStatusList) ([]string, error)
 			})
 
 			out.WriteString("\n")
-
 		}
 	}
 

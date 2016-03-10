@@ -9,27 +9,34 @@ import (
 )
 
 func (c controller) getNumRunningSlices(req Request) (int, error) {
-	usl, err := c.groupStatus(req)
+	groupStatus, err := c.groupStatus(req)
 	if IsUnitNotFound(err) {
 		return 0, nil
 	} else if err != nil {
 		return 0, maskAny(err)
 	}
 
+	grouped, err := UnitStatusList(groupStatus).Group()
+	if err != nil {
+		return 0, maskAny(err)
+	}
+
 	var sliceIDs []string
-	for _, us := range usl {
-		if contains(sliceIDs, us.Slice) {
-			// We already tracked this ID. Ho ahead.
+	for _, us := range grouped {
+		groupedStatuses := grouped.unitStatusesBySliceID(us.SliceID)
+		if len(groupedStatuses) > 1 {
+			// This group has an inconsistent state. Thus we do not consider it
+			// running.
 			continue
 		}
-		ok, err := unitHasStatus(us, StatusRunning)
+		ok, err := unitHasStatus(groupedStatuses[0], StatusRunning)
 		if err != nil {
 			return 0, maskAny(err)
 		}
 		if !ok {
 			continue
 		}
-		sliceIDs = append(sliceIDs, us.Slice)
+		sliceIDs = append(sliceIDs, us.SliceID)
 	}
 
 	return len(sliceIDs), nil
@@ -62,9 +69,16 @@ func (c controller) isGroupAdditionAllowed(req Request, maxGrowth int) (bool, er
 }
 
 func (c controller) addFirst(req Request, opts UpdateOptions) error {
-	req, err := c.runAddWorker(req, opts)
+	newReq, err := c.runAddWorker(req, opts)
 	if err != nil {
 		return maskAny(err)
+	}
+	n, err := c.getNumRunningSlices(newReq)
+	if err != nil {
+		return maskAny(err)
+	}
+	if n != len(newReq.SliceIDs) {
+		return maskAnyf(updateFailedError, "slice not running: %v", newReq.SliceIDs)
 	}
 	err = c.runRemoveWorker(req)
 	if err != nil {
@@ -75,12 +89,8 @@ func (c controller) addFirst(req Request, opts UpdateOptions) error {
 }
 
 func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, error) {
-	newReq := req
-	oldReq := req
-
 	// Create new random IDs.
-	var err error
-	newReq, err = c.ExtendWithRandomSliceIDs(newReq)
+	newReq, err := c.ExtendWithRandomSliceIDs(req)
 	if err != nil {
 		return Request{}, maskAny(err)
 	}
@@ -115,7 +125,7 @@ func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, erro
 
 	time.Sleep(time.Duration(opts.ReadySecs) * time.Second)
 
-	return oldReq, nil
+	return newReq, nil
 }
 
 func (c controller) removeFirst(req Request, opts UpdateOptions) error {
@@ -123,9 +133,16 @@ func (c controller) removeFirst(req Request, opts UpdateOptions) error {
 	if err != nil {
 		return maskAny(err)
 	}
-	_, err = c.runAddWorker(req, opts)
+	newReq, err := c.runAddWorker(req, opts)
 	if err != nil {
 		return maskAny(err)
+	}
+	n, err := c.getNumRunningSlices(newReq)
+	if err != nil {
+		return maskAny(err)
+	}
+	if n != len(newReq.SliceIDs) {
+		return maskAnyf(updateFailedError, "slice not running: %v", newReq.SliceIDs)
 	}
 
 	return nil

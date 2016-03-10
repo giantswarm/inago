@@ -12,7 +12,7 @@ type UnitStatusList []fleet.UnitStatus
 
 // Group returns a shortened version of usl where equal status
 // are replaced by one UnitStatus where the Name is replaced with "*".
-func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
+func (usl UnitStatusList) Group() (UnitStatusList, error) {
 	matchers := map[string]struct{}{}
 	newList := []fleet.UnitStatus{}
 
@@ -49,19 +49,16 @@ func (usl UnitStatusList) Group() ([]fleet.UnitStatus, error) {
 	return newList, nil
 }
 
-func (usl UnitStatusList) unitStatusBySliceID(sliceID string) (fleet.UnitStatus, error) {
+func (usl UnitStatusList) unitStatusesBySliceID(sliceID string) UnitStatusList {
+	var newList []fleet.UnitStatus
+
 	for _, us := range usl {
-		ID, err := common.SliceID(us.Name)
-		if err != nil {
-			return fleet.UnitStatus{}, maskAny(err)
-		}
-		if ID == sliceID {
-			// We are not interested in this slice during this iteration.
-			return us, nil
+		if us.SliceID == sliceID {
+			newList = append(newList, us)
 		}
 	}
 
-	return fleet.UnitStatus{}, maskAny(unitSliceNotFoundError)
+	return newList
 }
 
 // groupUnitStatus returns a subset of usl where the sliceID matches the sliceID
