@@ -4,7 +4,9 @@ package cli
 
 import (
 	"net/url"
+	"os"
 
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
@@ -19,8 +21,6 @@ var (
 		FleetEndpoint string
 		NoBlock       bool
 		Verbose       bool
-
-		LogColor bool
 	}
 
 	newController controller.Controller
@@ -41,7 +41,7 @@ var (
 				logging.SetLogLevel("DEBUG")
 			}
 
-			if globalFlags.LogColor {
+			if isatty.IsTerminal(os.Stderr.Fd()) {
 				logging.UseColor(true)
 			}
 
@@ -70,7 +70,6 @@ func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
 	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on synchronous actions or not")
 	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output or not")
-	MainCmd.PersistentFlags().BoolVar(&globalFlags.LogColor, "log-color", false, "whether to use colorful output for logs")
 
 	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)
