@@ -90,7 +90,7 @@ int-test: $(BIN) $(INT_TESTS)
 	@echo Running integration tests
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
-	sleep 5
+	sleep 10
 	docker run \
 		--rm \
 		-ti \
