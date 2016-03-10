@@ -2,3 +2,4 @@ inagoctl
 .gobuild/
 coverage.txt
 profile.out
+*.t.err
