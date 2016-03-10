@@ -11,6 +11,7 @@ import (
 	"github.com/giantswarm/inago/file-system/real"
 	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
 )
 
 var (
@@ -18,6 +19,8 @@ var (
 		FleetEndpoint string
 		NoBlock       bool
 		Verbose       bool
+
+		LogColor bool
 	}
 
 	newController controller.Controller
@@ -33,6 +36,14 @@ var (
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
 			// command runs.
+
+			if globalFlags.Verbose {
+				logging.SetLogLevel("DEBUG")
+			}
+
+			if globalFlags.LogColor {
+				logging.UseColor(true)
+			}
 
 			URL, err := url.Parse(globalFlags.FleetEndpoint)
 			if err != nil {
@@ -59,6 +70,7 @@ func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
 	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on synchronous actions or not")
 	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output or not")
+	MainCmd.PersistentFlags().BoolVar(&globalFlags.LogColor, "log-color", false, "whether to use colorful output for logs")
 
 	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)
