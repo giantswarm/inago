@@ -47,16 +47,9 @@ func updateRun(cmd *cobra.Command, args []string) {
 	req := controller.NewRequest(newRequestConfig)
 
 	req, err := newController.ExtendWithContent(req)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
-
+	handleUpdateCmdError(err)
 	req, err = newController.ExtendWithExistingSliceIDs(req)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
+	handleUpdateCmdError(err)
 
 	opts := controller.UpdateOptions{
 		MaxGrowth: updateFlags.MaxGrowth,
@@ -68,20 +61,12 @@ func updateRun(cmd *cobra.Command, args []string) {
 	}
 
 	taskObject, err := newController.Update(req, opts)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
+	handleUpdateCmdError(err)
 	taskObject, err = newController.WaitForTask(taskObject.ID, nil)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
+	handleUpdateCmdError(err)
+
 	req, err = newController.ExtendWithExistingSliceIDs(req)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
+	handleUpdateCmdError(err)
 
 	maybeBlockWithFeedback(blockWithFeedbackCtx{
 		Request:    req,
@@ -90,4 +75,11 @@ func updateRun(cmd *cobra.Command, args []string) {
 		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})
+}
+
+func handleUpdateCmdError(err error) {
+	if err != nil {
+		fmt.Printf("%#v\n", maskAny(err))
+		os.Exit(1)
+	}
 }

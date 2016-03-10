@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/fleet"
 )
 
 func DefaultNewRequest() RequestConfig {
@@ -100,7 +100,7 @@ func (c controller) readUnitFiles(dir string) (map[string]string, error) {
 
 func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
 	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesUnitBase(req))
-	if IsUnitNotFound(err) {
+	if fleet.IsUnitNotFound(err) {
 		// This happenes when there is no unit, e.g. on submit. Thus we don't need
 		// to check against anything. Se we do nothing and go ahead by simply
 		// creating a new random ID.
@@ -110,15 +110,15 @@ func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
 
 	var newSliceIDs []string
 	for _, us := range unitStatusList {
-		ID, err := common.SliceID(us.Name)
-		if err != nil {
-			return nil, maskAny(err)
+		if us.SliceID == "" {
+			// This unit has no explicit slice ID. Skip it.
+			continue
 		}
-		if contains(newSliceIDs, ID) {
+		if contains(newSliceIDs, us.SliceID) {
 			// We already tracked this ID. Go ahead.
 			continue
 		}
-		newSliceIDs = append(newSliceIDs, ID)
+		newSliceIDs = append(newSliceIDs, us.SliceID)
 	}
 
 	return newSliceIDs, nil
@@ -168,7 +168,12 @@ func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 
 	// Find enough sufficient IDs.
 	var newIDs []string
-	for range req.SliceIDs {
+	for _, sliceID := range req.SliceIDs {
+		if sliceID == "" {
+			// This unit has no explicit slice ID. Skip it.
+			continue
+		}
+
 		for {
 			newID := NewID()
 

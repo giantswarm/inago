@@ -29,6 +29,11 @@ func SliceID(name string) (string, error) {
 	}
 	ID := ExtExp.ReplaceAllString(suffix, "")
 
+	if ID == "" {
+		return ID, nil
+	}
+
+	// TODO test this
 	// Finally strip the @
 	return ID[1:], nil
 }
