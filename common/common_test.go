@@ -1,6 +1,7 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/juju/errgo"
@@ -123,4 +124,39 @@ func Test_UnitBase(t *testing.T) {
 			t.Fatal("case", i+1, "expected", testCase.Expected, "got", output)
 		}
 	}
+}
+
+// ExampleSliceID is an example of the SliceID function.
+func ExampleSliceID() {
+	for _, input := range []string{
+		"app@1.service",
+		"app@1.mount",
+		"app.service",
+		"app.mount",
+	} {
+		id, _ := SliceID(input)
+		fmt.Println(id)
+	}
+
+	// Output: 1
+	// 1
+	//
+	//
+}
+
+// ExampleUnitBase is an example of the UnitBase function.
+func ExampleUnitBase() {
+	for _, input := range []string{
+		"app@1.service",
+		"app@1.mount",
+		"app.service",
+		"app.mount",
+	} {
+		fmt.Println(UnitBase(input))
+	}
+
+	// Output: app
+	// app
+	// app
+	// app
 }
