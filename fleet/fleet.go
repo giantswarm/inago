@@ -30,7 +30,7 @@ type Config struct {
 	Client   *http.Client
 	Endpoint url.URL
 
-	// Logger provides a logger.
+	// Logger provides an initialised logger.
 	Logger logging.Logger
 }
 

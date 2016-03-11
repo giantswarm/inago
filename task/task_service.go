@@ -67,7 +67,7 @@ type Config struct {
 	// WaitSleep represents the time to sleep between state-check cycles.
 	WaitSleep time.Duration
 
-	// Logger provides a logger.
+	// Logger provides an initialised logger.
 	Logger logging.Logger
 }
 

@@ -39,7 +39,7 @@ type Config struct {
 	// time, the wait ends.
 	WaitTimeout time.Duration
 
-	// Logger provides a initialised logger.
+	// Logger provides an initialised logger.
 	Logger logging.Logger
 }
 
