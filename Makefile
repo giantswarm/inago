@@ -4,6 +4,7 @@ BUILD_PATH := $(shell pwd)/.gobuild
 GS_PATH := $(BUILD_PATH)/src/github.com/giantswarm
 GOPATH := $(BUILD_PATH)
 INT_TESTS_PATH := $(shell pwd)/int-tests
+VAGRANT_PATH := $(INT_TESTS_PATH)/vagrant
 
 GOVERSION=1.6
 
@@ -87,7 +88,13 @@ ci-test: $(SOURCE) VERSION .gobuild
 # Set fleet endpoint to a fleet API endpoint available to the container.
 int-test: $(BIN) $(INT_TESTS)
 	@echo Running integration tests
-	docker run \
+	@echo Starting CoreOS integration test machine
+	cd $(VAGRANT_PATH) && vagrant up
+	sleep 10
+	# With the dash before docker we don't exit if the 'docker run' returns with
+	# an error and run the rest of the target definition. Why? We want to destroy
+	# the test machine in any case.
+	-docker run \
 		--rm \
 		-ti \
 		-e FLEET_ENDPOINT=$(FLEET_ENDPOINT) \
@@ -95,3 +102,5 @@ int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
+	@echo Destroying the integration test machine
+	cd $(VAGRANT_PATH) && vagrant destroy -f
