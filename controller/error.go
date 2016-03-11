@@ -74,6 +74,20 @@ func IsInvalidArgument(err error) bool {
 	return errgo.Cause(err) == invalidArgumentError
 }
 
+var updateFailedError = errgo.Newf("update failed")
+
+// IsUpdateFailed asserts updateFailedError.
+func IsUpdateFailed(err error) bool {
+	return errgo.Cause(err) == updateFailedError
+}
+
+var updateNotAllowedError = errgo.Newf("update not allowed")
+
+// IsUpdateNotAllowed asserts updateNotAllowedError.
+func IsUpdateNotAllowed(err error) bool {
+	return errgo.Cause(err) == updateNotAllowedError
+}
+
 var noUnitsInGroupError = errgo.New("no units in group")
 
 // IsNoUnitsInGroup returns true if the given error cause is noUnitsInGroupError.

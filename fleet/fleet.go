@@ -83,8 +83,8 @@ type UnitStatus struct {
 	// Name represents the unit file name.
 	Name string
 
-	// Slice represents the slice expression. E.g. @1, or @foo, or @5., etc..
-	Slice string
+	// Slice represents the slice ID. E.g. 1, or foo, or 5., etc..
+	SliceID string
 }
 
 // Fleet defines the interface a fleet client needs to implement to provide
@@ -321,7 +321,7 @@ func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 			Desired: ffu.DesiredState,
 			Machine: []MachineStatus{},
 			Name:    ffu.Name,
-			Slice:   ID,
+			SliceID: ID,
 		}
 		for _, ffus := range foundFleetUnitStates {
 			if ffu.Name != ffus.Name {

@@ -1,0 +1,23 @@
+#cloud-config
+
+---
+coreos:
+  etcd2:
+    advertise-client-urls: http://$public_ipv4:2379
+    initial-advertise-peer-urls: http://$private_ipv4:2380
+    listen-client-urls: http://0.0.0.0:2379,http://0.0.0.0:4001
+    listen-peer-urls: http://$private_ipv4:2380
+    discovery: https://discovery.etcd.io/<token>
+  fleet:
+    public-ip: "$public_ipv4"
+  units:
+  - name: etcd2.service
+    command: start
+  - name: fleet.service
+    command: start
+  - name: fleet.socket
+    drop-ins:
+    - name: 30-ListenStream.conf
+      content: |
+        [Socket]
+        ListenStream=0.0.0.0:49153

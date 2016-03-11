@@ -6,20 +6,6 @@ import (
 	"regexp"
 )
 
-// UnitBase returns the base of the unit name. The base is considered
-// everything up to the @ character, if any, or the given name without
-// extension.
-//
-//   app@1.service  =>  app
-//   app@1.mount    =>  app
-//   app.service    =>  app
-//   app.mount      =>  app
-//
-func UnitBase(name string) string {
-	name = groupExp.ReplaceAllString(name, "")
-	return ExtExp.ReplaceAllString(name, "")
-}
-
 // ExtExp matches unit file extensions.
 //
 //   app@1.service  =>  .service
@@ -31,8 +17,8 @@ var ExtExp = regexp.MustCompile(`(?m)\.[a-z]*$`)
 
 // SliceID takes a unit file name and returns its slice ID.
 //
-//   app@1.service  =>  @1
-//   app@1.mount    =>  @1
+//   app@1.service  =>  1
+//   app@1.mount    =>  1
 //   app.service    =>
 //   app.mount      =>
 //
@@ -43,7 +29,12 @@ func SliceID(name string) (string, error) {
 	}
 	ID := ExtExp.ReplaceAllString(suffix, "")
 
-	return ID, nil
+	if ID == "" {
+		return ID, nil
+	}
+
+	// Finally strip the @
+	return ID[1:], nil
 }
 
 var groupExp = regexp.MustCompile("@(.*)")
@@ -56,4 +47,18 @@ func sliceSuffix(name string) (string, error) {
 		return "", maskAny(invalidArgumentsError)
 	}
 	return found[0], nil
+}
+
+// UnitBase returns the base of the unit name. The base is considered
+// everything up to the @ character, if any, or the given name without
+// extension.
+//
+//   app@1.service  =>  app
+//   app@1.mount    =>  app
+//   app.service    =>  app
+//   app.mount      =>  app
+//
+func UnitBase(name string) string {
+	name = groupExp.ReplaceAllString(name, "")
+	return ExtExp.ReplaceAllString(name, "")
 }
