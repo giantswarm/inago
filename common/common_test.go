@@ -2,53 +2,73 @@ package common
 
 import (
 	"testing"
+
+	"github.com/juju/errgo"
 )
 
 func Test_SliceID(t *testing.T) {
 	var testCases = []struct {
 		Input    string
 		Expected string
+		Error    error
 	}{
 		{
 			Input:    "app@1.service",
 			Expected: "1",
+			Error:    nil,
 		},
 		{
 			Input:    "app@foo.service",
 			Expected: "foo",
+			Error:    nil,
 		},
 		{
 			Input:    "app@1.mount",
 			Expected: "1",
+			Error:    nil,
 		},
 		{
 			Input:    "app@foo.mount",
 			Expected: "foo",
+			Error:    nil,
 		},
 
 		{
 			Input:    "app.service",
 			Expected: "",
+			Error:    nil,
 		},
 		{
 			Input:    "app.mount",
 			Expected: "",
+			Error:    nil,
 		},
 
 		{
 			Input:    "app@1",
 			Expected: "1",
+			Error:    nil,
 		},
 		{
 			Input:    "app@foo",
 			Expected: "foo",
+			Error:    nil,
+		},
+
+		{
+			Input: `
+				app@foo
+				app@foo
+			`,
+			Expected: "",
+			Error:    invalidArgumentsError,
 		},
 	}
 
 	for i, testCase := range testCases {
 		output, err := SliceID(testCase.Input)
-		if err != nil {
-			t.Fatal("case", i+1, "expected", nil, "got", err)
+		if errgo.Cause(err) != errgo.Cause(testCase.Error) {
+			t.Fatal("case", i+1, "expected", errgo.Cause(testCase.Error), "got", errgo.Cause(err))
 		}
 		if output != testCase.Expected {
 			t.Fatal("case", i+1, "expected", testCase.Expected, "got", output)
