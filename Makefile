@@ -91,6 +91,9 @@ int-test: $(BIN) $(INT_TESTS)
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
+	# With the dash before docker we don't exit if the 'docker run' returns with
+	# an error and run the rest of the target definition. Why? We want to destroy
+	# the test machine in any case.
 	-docker run \
 		--rm \
 		-ti \
