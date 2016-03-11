@@ -60,6 +60,11 @@ func updateRun(cmd *cobra.Command, args []string) {
 
 	taskObject, err := newController.Update(req, opts)
 	handleUpdateCmdError(err)
+	// The update creates new slices. Thus new slice IDs. We want to give the
+	// feedback about the new slice IDs at the end. So we need to fetch the new
+	// slice IDs once the task has finished. We don't want to mix this specific
+	// detail with the general implementation of maybeBlockWithFeedback. Thus we
+	// wait for the task to be finished here manually.
 	taskObject, err = newController.WaitForTask(taskObject.ID, nil)
 	handleUpdateCmdError(err)
 
