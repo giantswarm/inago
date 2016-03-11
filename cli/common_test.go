@@ -31,12 +31,12 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-foo@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-bar@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-foo@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
-					unitStatus("example-bar@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
@@ -55,8 +55,8 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-foo", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-bar", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
@@ -73,12 +73,12 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-foo@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-bar@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-foo@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
-					unitStatus("example-bar@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
 				},
 				Verbose: true,
 			},
@@ -100,10 +100,10 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("myapp-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("myapp-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("myapp-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					loadedUnitStatus("myapp-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
@@ -120,10 +120,10 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "launched"),
-					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
-					unitStatus("example-foo@2.service", "2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
-					unitStatus("example-bar@2.service", "2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					loadedUnitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "launched"),
+					loadedUnitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					loadedUnitStatus("example-foo@2.service", "2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					loadedUnitStatus("example-bar@2.service", "2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
 				},
 				Verbose: false,
 			},
@@ -133,6 +133,45 @@ func Test_Common_createStatus(t *testing.T) {
 				"example@1 | example-foo@1.service | launched | loaded | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
 				"example@1 | example-bar@1.service | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
 				"example@2 | * | launched | launched | inactive | 172.17.8.101 | 505e0d7802d7439a924c269b76f34b5f",
+				"",
+			},
+		},
+
+		// A group who is NOT loaded onto a machine
+		testCase{
+			Comment: "A group with a MachineState should still render (verbose)",
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unloadedUnitStatus("example-1@1.service", "1", "active"),
+					unloadedUnitStatus("example-2@1.service", "1", "active"),
+				},
+				Verbose: true,
+			},
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | Hash | IP | Machine",
+				"",
+				"example@1 | example-1@1.service | active | inactive | - | - | - | -",
+				"example@1 | example-2@1.service | active | inactive | - | - | - | -",
+				"",
+			},
+		},
+
+		// A group who is NOT loaded onto a machine
+		testCase{
+			Comment: "A group with a MachineState should still render",
+			Input: input{
+				Group: "example",
+				USL: controller.UnitStatusList{
+					unloadedUnitStatus("example-1@1.service", "1", "active"),
+					unloadedUnitStatus("example-2@1.service", "1", "active"),
+				},
+				Verbose: false,
+			},
+			Expected: []string{
+				"Group | Units | FDState | FCState | SAState | IP | Machine",
+				"",
+				"example@1 | * | active | inactive | - | - | -",
 				"",
 			},
 		},
@@ -149,7 +188,7 @@ func Test_Common_createStatus(t *testing.T) {
 	}
 }
 
-func unitStatus(name, sliceID, machineIP, machineID, currentState, desiredState string) fleet.UnitStatus {
+func loadedUnitStatus(name, sliceID, machineIP, machineID, currentState, desiredState string) fleet.UnitStatus {
 	return fleet.UnitStatus{
 		Current: currentState,
 		Desired: desiredState,
@@ -162,6 +201,16 @@ func unitStatus(name, sliceID, machineIP, machineID, currentState, desiredState 
 				UnitHash:      "4311",
 			},
 		},
+		Name:    name,
+		SliceID: sliceID,
+	}
+}
+
+func unloadedUnitStatus(name, sliceID, desiredState string) fleet.UnitStatus {
+	return fleet.UnitStatus{
+		Current: "inactive",
+		Desired: desiredState,
+		Machine: []fleet.MachineStatus{},
 		Name:    name,
 		SliceID: sliceID,
 	}
