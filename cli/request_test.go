@@ -1,4 +1,4 @@
-package controller
+package cli
 
 import (
 	"os"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/juju/errgo"
 
+	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/fake"
 )
 
@@ -19,8 +20,8 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 	testCases := []struct {
 		Setup    []testFileSystemSetup
 		Error    error
-		Input    Request
-		Expected Request
+		Input    controller.Request
+		Expected controller.Request
 	}{
 		// This test ensures that loading a single unit from a directory results in
 		// the expected controller request.
@@ -33,17 +34,17 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 				},
 			},
 			Error: nil,
-			Input: Request{
-				RequestConfig: RequestConfig{
+			Input: controller.Request{
+				RequestConfig: controller.RequestConfig{
 					Group:    "dirname",
 					SliceIDs: []string{},
 				},
 			},
-			Expected: Request{
-				RequestConfig: RequestConfig{
+			Expected: controller.Request{
+				RequestConfig: controller.RequestConfig{
 					SliceIDs: []string{},
 				},
-				Units: []Unit{
+				Units: []controller.Unit{
 					{
 						Name:    "dirname_unit.service",
 						Content: "some unit content",
@@ -57,8 +58,8 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		{
 			Setup:    []testFileSystemSetup{},
 			Error:    nil,
-			Input:    Request{},
-			Expected: Request{},
+			Input:    controller.Request{},
+			Expected: controller.Request{},
 		},
 
 		// This test ensures that trying to load unit files when no files are in
@@ -70,13 +71,13 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 				Path: "dirname",
 				Err:  errgo.New("no such file or directory"),
 			},
-			Input: Request{
-				RequestConfig: RequestConfig{
+			Input: controller.Request{
+				RequestConfig: controller.RequestConfig{
 					Group:    "dirname",
 					SliceIDs: []string{},
 				},
 			},
-			Expected: Request{},
+			Expected: controller.Request{},
 		},
 	}
 
@@ -90,11 +91,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			}
 		}
 
-		newControllerConfig := DefaultConfig()
-		newControllerConfig.FileSystem = newFileSystem
-		newController := NewController(newControllerConfig)
-
-		output, err := newController.ExtendWithContent(testCase.Input)
+		output, err := extendRequestWithContent(newFileSystem, testCase.Input)
 		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
 			t.Fatal("case", i+1, "expected", testCase.Error, "got", err)
 		}

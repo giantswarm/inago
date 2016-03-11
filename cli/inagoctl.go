@@ -9,6 +9,7 @@ import (
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/real"
+	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 )
 
@@ -21,6 +22,7 @@ var (
 
 	newController controller.Controller
 	newFleet      fleet.Fleet
+	fs            filesystemspec.FileSystem
 
 	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
@@ -31,6 +33,7 @@ var (
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
 			// command runs.
+			fs = filesystemreal.NewFileSystem()
 
 			URL, err := url.Parse(globalFlags.FleetEndpoint)
 			if err != nil {
@@ -46,7 +49,6 @@ var (
 
 			newControllerConfig := controller.DefaultConfig()
 			newControllerConfig.Fleet = newFleet
-			newControllerConfig.FileSystem = filesystemreal.NewFileSystem()
 			newController = controller.NewController(newControllerConfig)
 		},
 	}

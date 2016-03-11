@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"path/filepath"
 	"regexp"
 
 	"github.com/giantswarm/inago/fleet"
@@ -75,29 +74,6 @@ func (r Request) ExtendSlices() (Request, error) {
 	return r, nil
 }
 
-func (c controller) readUnitFiles(dir string) (map[string]string, error) {
-	fileInfos, err := c.FileSystem.ReadDir(dir)
-	if err != nil {
-		return nil, maskAny(err)
-	}
-
-	unitFiles := map[string]string{}
-	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-			continue
-		}
-
-		raw, err := c.FileSystem.ReadFile(filepath.Join(dir, fileInfo.Name()))
-		if err != nil {
-			return nil, maskAny(err)
-		}
-
-		unitFiles[fileInfo.Name()] = string(raw)
-	}
-
-	return unitFiles, nil
-}
-
 func (c controller) getExistingSliceIDs(req Request) ([]string, error) {
 	usl, err := c.Fleet.GetStatusWithMatcher(matchesUnitBase(req))
 	if fleet.IsUnitNotFound(err) {
@@ -130,18 +106,6 @@ func (c controller) ExtendWithExistingSliceIDs(req Request) (Request, error) {
 		return Request{}, maskAny(err)
 	}
 	req.SliceIDs = newSliceIDs
-
-	return req, nil
-}
-
-func (c controller) ExtendWithContent(req Request) (Request, error) {
-	unitFiles, err := c.readUnitFiles(req.Group)
-	if err != nil {
-		return Request{}, maskAny(err)
-	}
-	for name, content := range unitFiles {
-		req.Units = append(req.Units, Unit{Name: name, Content: content})
-	}
 
 	return req, nil
 }
