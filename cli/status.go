@@ -24,8 +24,6 @@ func statusRun(cmd *cobra.Command, args []string) {
 	switch len(args) {
 	case 1:
 		group = args[0]
-	case 0:
-		fallthrough
 	default:
 		cmd.Help()
 		os.Exit(1)

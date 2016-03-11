@@ -34,8 +34,6 @@ func submitRun(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		scale = n
-	case 0:
-		fallthrough
 	default:
 		cmd.Help()
 		os.Exit(1)
