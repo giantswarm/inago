@@ -4,3 +4,4 @@ coverage.txt
 profile.out
 *.t.err
 .vagrant
+user-data
