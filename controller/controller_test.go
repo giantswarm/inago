@@ -5,12 +5,22 @@ import (
 	"testing"
 	"time"
 
+	"github.com/giantswarm/request-context"
 	"github.com/juju/errgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
+)
+
+var logger = requestcontext.MustGetLogger(
+	requestcontext.LoggerConfig{
+		Name:                "inago",
+		Level:               "DEBUG",
+		Color:               false,
+		IncludeNameInFormat: false,
+	},
 )
 
 func Test_Request_ExtendSlices(t *testing.T) {
@@ -323,10 +333,10 @@ func givenController() (Controller, *fleetMock) {
 func givenControllerWithConfig(fmc fleetMockConfig) (Controller, *fleetMock) {
 	newFleetMock := newFleetMock(fmc)
 
-	newTaskServiceConfig := task.DefaultConfig()
+	newTaskServiceConfig := task.DefaultConfig(&logger)
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
-	newControllerConfig := DefaultConfig()
+	newControllerConfig := DefaultConfig(&logger)
 	newControllerConfig.Fleet = newFleetMock
 	newControllerConfig.TaskService = newTaskService
 	newControllerConfig.WaitCount = 1

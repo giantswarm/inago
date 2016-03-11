@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/giantswarm/request-context"
 	. "github.com/onsi/gomega"
 
 	"github.com/coreos/fleet/machine"
@@ -12,12 +13,21 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var logger = requestcontext.MustGetLogger(
+	requestcontext.LoggerConfig{
+		Name:                "inago",
+		Level:               "DEBUG",
+		Color:               false,
+		IncludeNameInFormat: false,
+	},
+)
+
 // Test_Fleet_DefaultConfig_Success verifies that the default config contains a
 // basic valid fleet config and a valid fleet instance can be created.
 func Test_Fleet_DefaultConfig_Success(t *testing.T) {
 	RegisterTestingT(t)
 
-	cfg := DefaultConfig()
+	cfg := DefaultConfig(&logger)
 	Expect(cfg.Endpoint).To(Not(BeZero()))
 	Expect(cfg.Client).To(Not(BeZero()))
 
@@ -31,7 +41,7 @@ func Test_Fleet_DefaultConfig_Success(t *testing.T) {
 func Test_Fleet_DefaultConfig_Failure_001(t *testing.T) {
 	RegisterTestingT(t)
 
-	cfg := DefaultConfig()
+	cfg := DefaultConfig(&logger)
 	Expect(cfg.Endpoint).To(Not(BeZero()))
 	Expect(cfg.Client).To(Not(BeZero()))
 
@@ -48,7 +58,7 @@ func Test_Fleet_DefaultConfig_Failure_001(t *testing.T) {
 func Test_Fleet_DefaultConfig_Failure_002(t *testing.T) {
 	RegisterTestingT(t)
 
-	cfg := DefaultConfig()
+	cfg := DefaultConfig(&logger)
 	Expect(cfg.Endpoint).To(Not(BeZero()))
 	Expect(cfg.Client).To(Not(BeZero()))
 
@@ -64,11 +74,11 @@ func Test_Fleet_DefaultConfig_Failure_002(t *testing.T) {
 func Test_Fleet_DefaultConfig_Failure_003(t *testing.T) {
 	RegisterTestingT(t)
 
-	oldCfg := DefaultConfig()
+	oldCfg := DefaultConfig(&logger)
 	Expect(oldCfg.Endpoint).To(Not(BeZero()))
 	Expect(oldCfg.Client).To(Not(BeZero()))
 
-	newCfg := DefaultConfig()
+	newCfg := DefaultConfig(&logger)
 	Expect(newCfg.Endpoint).To(Not(BeZero()))
 	Expect(newCfg.Client).To(Not(BeZero()))
 
@@ -79,7 +89,7 @@ func givenMockedFleet() (*fleetClientMock, *fleet) {
 	mock := &fleetClientMock{}
 	return mock, &fleet{
 		Client: mock,
-		Config: DefaultConfig(),
+		Config: DefaultConfig(&logger),
 	}
 }
 
