@@ -1,234 +1,14 @@
 package cli
 
 import (
-	"fmt"
 	"net"
-	"os"
 	"testing"
 
-	"github.com/juju/errgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/giantswarm/inago/file-system/fake"
 	"github.com/giantswarm/inago/fleet"
 )
-
-type testFileSystemSetup struct {
-	FileName    string
-	FileContent []byte
-	FilePerm    os.FileMode
-}
-
-func Test_Common_createRequestWithContent(t *testing.T) {
-	testCases := []struct {
-		Setup    []testFileSystemSetup
-		Input    []string
-		Error    error
-		Expected controller.Request
-	}{
-		// This test ensures that loading a single unit from a directory results in
-		// the expected controller request.
-		{
-			Setup: []testFileSystemSetup{
-				{
-					FileName:    "dirname/dirname_unit.service",
-					FileContent: []byte("some unit content"),
-					FilePerm:    os.FileMode(0644),
-				},
-			},
-			Input: []string{"dirname"},
-			Error: nil,
-			Expected: controller.Request{
-				SliceIDs: []string{},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit.service",
-						Content: "some unit content",
-					},
-				},
-			},
-		},
-
-		// This test ensures that trying to load unit files with invalid input
-		// throws an error.
-		{
-			Setup:    []testFileSystemSetup{},
-			Input:    []string{},
-			Error:    invalidArgumentsError,
-			Expected: controller.Request{},
-		},
-
-		// This test ensures that trying to load unit files when no files are in
-		// the file system throws an error.
-		{
-			Setup: []testFileSystemSetup{},
-			Input: []string{"dirname"},
-			Error: &os.PathError{
-				Op:   "open",
-				Path: "dirname",
-				Err:  errgo.New("no such file or directory"),
-			},
-			Expected: controller.Request{},
-		},
-
-		// This test ensures that loading a single unit from a directory with the
-		// slice expression "@1" results in the expected controller request.
-		{
-			Setup: []testFileSystemSetup{
-				{
-					FileName:    "dirname/dirname_unit@.service",
-					FileContent: []byte("some unit content"),
-					FilePerm:    os.FileMode(0644),
-				},
-			},
-			Input: []string{"dirname@1"},
-			Error: nil,
-			Expected: controller.Request{
-				SliceIDs: []string{"1"},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit@.service",
-						Content: "some unit content",
-					},
-				},
-			},
-		},
-
-		// This test ensures that loading a single unit from a directory with the
-		// slice expression "@1", "@foo" and "@5" results in the expected
-		// controller request.
-		{
-			Setup: []testFileSystemSetup{
-				{
-					FileName:    "dirname/dirname_unit@.service",
-					FileContent: []byte("some unit content"),
-					FilePerm:    os.FileMode(0644),
-				},
-			},
-			Input: []string{"dirname@1", "dirname@foo", "dirname@5"},
-			Error: nil,
-			Expected: controller.Request{
-				SliceIDs: []string{"1", "foo", "5"},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit@.service",
-						Content: "some unit content",
-					},
-				},
-			},
-		},
-	}
-
-	for i, testCase := range testCases {
-		newFileSystem = filesystemfake.NewFileSystem()
-
-		for _, setup := range testCase.Setup {
-			err := newFileSystem.WriteFile(setup.FileName, setup.FileContent, setup.FilePerm)
-			if err != nil {
-				t.Fatalf("FileSystem.WriteFile returned error: %#v", err)
-			}
-		}
-
-		output, err := createRequestWithContent(testCase.Input)
-		fmt.Printf("output: %#v\n", output)
-		fmt.Printf("err: %#v\n", err)
-		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
-			t.Fatalf("(test case %d) createRequestWithContent was expected to return error: %#v", i+1, testCase.Error)
-		}
-
-		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
-			t.Fatalf("(test case %d) sliceIDs of generated output differs from expected sliceIDs", i+1)
-		}
-
-		for i, outputUnit := range output.Units {
-			if outputUnit.Name != testCase.Expected.Units[i].Name {
-				t.Fatalf("output unit name '%s' is not equal to expected unit name '%s'", outputUnit.Name, testCase.Expected.Units[i].Name)
-			}
-		}
-	}
-}
-
-func Test_Common_createRequest(t *testing.T) {
-	testCases := []struct {
-		Input    []string
-		Error    error
-		Expected controller.Request
-	}{
-		// This test ensures that loading a single unit from a directory results in
-		// the expected controller request.
-		{
-			Input: []string{"dirname"},
-			Error: nil,
-			Expected: controller.Request{
-				SliceIDs: []string{},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit.service",
-						Content: "some unit content",
-					},
-				},
-			},
-		},
-
-		// This test ensures that trying to load unit files with invalid input
-		// throws an error.
-		{
-			Input:    []string{},
-			Error:    invalidArgumentsError,
-			Expected: controller.Request{},
-		},
-
-		// This test ensures that loading a single unit from a directory with the
-		// slice expression "@1" results in the expected controller request.
-		{
-			Input: []string{"dirname@1"},
-			Error: nil,
-			Expected: controller.Request{
-				SliceIDs: []string{"1"},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit@.service",
-						Content: "some unit content",
-					},
-				},
-			},
-		},
-
-		// This test ensures that loading a single unit from a directory with the
-		// slice expression "@1", "@foo" and "@5" results in the expected
-		// controller request.
-		{
-			Input: []string{"dirname@1", "dirname@foo", "dirname@5"},
-			Expected: controller.Request{
-				SliceIDs: []string{"1", "foo", "5"},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit@.service",
-						Content: "some unit content",
-					},
-				},
-			},
-		},
-	}
-
-	for i, testCase := range testCases {
-		output, err := createRequest(testCase.Input)
-		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
-			t.Fatalf("createRequest was expected to return error: %#v", testCase.Error)
-		}
-
-		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
-			t.Fatalf("(test case %d) sliceIDs of generated output differs from expected sliceIDs", i+1)
-		}
-
-		for i, outputUnit := range output.Units {
-			if outputUnit.Name != testCase.Expected.Units[i].Name {
-				t.Fatalf("output unit name '%s' is not equal to expected unit name '%s'", outputUnit.Name, testCase.Expected.Units[i].Name)
-			}
-		}
-	}
-}
 
 func Test_Common_createStatus(t *testing.T) {
 	RegisterTestingT(t)
@@ -251,12 +31,12 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
-					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-foo@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-bar@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-foo@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					unitStatus("example-bar@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
@@ -275,8 +55,8 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-foo", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
@@ -293,12 +73,12 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-foo@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-bar@2.service", "@2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
-					unitStatus("example-foo@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
-					unitStatus("example-bar@3.service", "@3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-foo@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-bar@2.service", "2", "172.17.8.102", "9ebb53b04b0d46fb94b4fd1b3f562d2b", "loaded", "loaded"),
+					unitStatus("example-foo@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
+					unitStatus("example-bar@3.service", "3", "172.17.8.103", "e3cb5f13a9164ba5b7eff6c920475e61", "loaded", "loaded"),
 				},
 				Verbose: true,
 			},
@@ -320,10 +100,10 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("myapp-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
-					unitStatus("myapp-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("myapp-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
+					unitStatus("myapp-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "loaded"),
 				},
 				Verbose: false,
 			},
@@ -340,10 +120,10 @@ func Test_Common_createStatus(t *testing.T) {
 			Input: input{
 				Group: "example",
 				USL: controller.UnitStatusList{
-					unitStatus("example-foo@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "launched"),
-					unitStatus("example-bar@1.service", "@1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
-					unitStatus("example-foo@2.service", "@2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
-					unitStatus("example-bar@2.service", "@2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					unitStatus("example-foo@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "loaded", "launched"),
+					unitStatus("example-bar@1.service", "1", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					unitStatus("example-foo@2.service", "2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
+					unitStatus("example-bar@2.service", "2", "172.17.8.101", "505e0d7802d7439a924c269b76f34b5f", "launched", "launched"),
 				},
 				Verbose: false,
 			},
@@ -369,7 +149,7 @@ func Test_Common_createStatus(t *testing.T) {
 	}
 }
 
-func unitStatus(name, slice, machineIP, machineID, currentState, desiredState string) fleet.UnitStatus {
+func unitStatus(name, sliceID, machineIP, machineID, currentState, desiredState string) fleet.UnitStatus {
 	return fleet.UnitStatus{
 		Current: currentState,
 		Desired: desiredState,
@@ -382,7 +162,7 @@ func unitStatus(name, slice, machineIP, machineID, currentState, desiredState st
 				UnitHash:      "4311",
 			},
 		},
-		Name:  name,
-		Slice: slice,
+		Name:    name,
+		SliceID: sliceID,
 	}
 }

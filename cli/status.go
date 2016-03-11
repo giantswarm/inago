@@ -20,14 +20,31 @@ var (
 )
 
 func statusRun(cmd *cobra.Command, args []string) {
-	req, err := createRequest(args)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+	group := ""
+	switch len(args) {
+	case 1:
+		group = args[0]
+	default:
+		cmd.Help()
 		os.Exit(1)
 	}
 
-	group := dirnameFromSlices(args)
+	newRequestConfig := controller.DefaultRequestConfig()
+	newRequestConfig.Group = group
+	req := controller.NewRequest(newRequestConfig)
+
+	req, err := newController.ExtendWithExistingSliceIDs(req)
+	handleStatusCmdError(req, err)
+
 	statusList, err := newController.GetStatus(req)
+	handleStatusCmdError(req, err)
+
+	data, err := createStatus(req.Group, statusList)
+	handleStatusCmdError(req, err)
+	fmt.Println(columnize.SimpleFormat(data))
+}
+
+func handleStatusCmdError(req controller.Request, err error) {
 	if controller.IsUnitNotFound(err) || controller.IsUnitSliceNotFound(err) {
 		if req.SliceIDs == nil {
 			fmt.Printf("Failed to find group '%s'.\n", req.Group)
@@ -41,11 +58,4 @@ func statusRun(cmd *cobra.Command, args []string) {
 		fmt.Printf("%#v\n", maskAny(err))
 		os.Exit(1)
 	}
-
-	data, err := createStatus(group, statusList)
-	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
-		os.Exit(1)
-	}
-	fmt.Println(columnize.SimpleFormat(data))
 }
