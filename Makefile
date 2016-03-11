@@ -91,7 +91,7 @@ int-test: $(BIN) $(INT_TESTS)
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
-	docker run \
+	-docker run \
 		--rm \
 		-ti \
 		-e FLEET_ENDPOINT=$(FLEET_ENDPOINT) \
@@ -100,5 +100,4 @@ int-test: $(BIN) $(INT_TESTS)
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
 	@echo Destroying the integration test machine
-	# TODO destroy the machine if the tests fail
 	cd $(VAGRANT_PATH) && vagrant destroy -f
