@@ -33,7 +33,6 @@ func SliceID(name string) (string, error) {
 		return ID, nil
 	}
 
-	// TODO test this
 	// Finally strip the @
 	return ID[1:], nil
 }
