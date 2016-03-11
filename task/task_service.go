@@ -3,9 +3,8 @@ package task
 import (
 	"time"
 
+	"github.com/giantswarm/request-context"
 	"github.com/satori/go.uuid"
-
-	"github.com/giantswarm/inago/logging"
 )
 
 // Action represents any work to be done when executing a task.
@@ -66,14 +65,18 @@ type Config struct {
 
 	// WaitSleep represents the time to sleep between state-check cycles.
 	WaitSleep time.Duration
+
+	// Logger provides a logger.
+	Logger *requestcontext.Logger
 }
 
 // DefaultConfig returns a best effort default configuration for the
 // task service.
-func DefaultConfig() Config {
+func DefaultConfig(logger *requestcontext.Logger) Config {
 	newConfig := Config{
 		Storage:   NewMemoryStorage(),
 		WaitSleep: 1 * time.Second,
+		Logger:    logger,
 	}
 
 	return newConfig
@@ -93,8 +96,6 @@ type taskService struct {
 }
 
 func (ts *taskService) Create(action Action) (*Task, error) {
-	logger := logging.GetLogger()
-
 	taskObject := &Task{
 		ID:           uuid.NewV4().String(),
 		ActiveStatus: StatusStarted,
@@ -106,7 +107,7 @@ func (ts *taskService) Create(action Action) (*Task, error) {
 		if err != nil {
 			_, markErr := ts.MarkAsFailedWithError(taskObject, err)
 			if markErr != nil {
-				logger.Error(nil, "[E] Task.MarkAsFailed failed: %#v", maskAny(markErr))
+				ts.Config.Logger.Error(nil, "[E] Task.MarkAsFailed failed: %#v", maskAny(markErr))
 				return
 			}
 			return
@@ -114,7 +115,7 @@ func (ts *taskService) Create(action Action) (*Task, error) {
 
 		_, err = ts.MarkAsSucceeded(taskObject)
 		if err != nil {
-			logger.Error(nil, "[E] Task.MarkAsSucceeded failed: %#v", maskAny(err))
+			ts.Config.Logger.Error(nil, "[E] Task.MarkAsSucceeded failed: %#v", maskAny(err))
 			return
 		}
 	}()

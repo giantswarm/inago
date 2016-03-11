@@ -13,9 +13,9 @@ import (
 	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
+	"github.com/giantswarm/request-context"
 
 	"github.com/giantswarm/inago/common"
-	"github.com/giantswarm/inago/logging"
 )
 
 const (
@@ -29,11 +29,14 @@ const (
 type Config struct {
 	Client   *http.Client
 	Endpoint url.URL
+
+	// Logger provides a logger.
+	Logger *requestcontext.Logger
 }
 
 // DefaultConfig provides a set of configurations with default values by best
 // effort.
-func DefaultConfig() Config {
+func DefaultConfig(logger *requestcontext.Logger) Config {
 	URL, err := url.Parse("file:///var/run/fleet.sock")
 	if err != nil {
 		panic(err)
@@ -42,6 +45,7 @@ func DefaultConfig() Config {
 	newConfig := Config{
 		Client:   &http.Client{},
 		Endpoint: *URL,
+		Logger:   logger,
 	}
 
 	return newConfig
@@ -184,7 +188,7 @@ type fleet struct {
 }
 
 func (f fleet) Submit(name, content string) error {
-	logging.GetLogger().Debug(nil, "Submitting unit '%v' to fleet", name)
+	f.Config.Logger.Debug(nil, "Submitting unit '%v' to fleet", name)
 
 	unitFile, err := unit.NewUnitFile(content)
 	if err != nil {
@@ -206,7 +210,7 @@ func (f fleet) Submit(name, content string) error {
 }
 
 func (f fleet) Start(name string) error {
-	logging.GetLogger().Debug(nil, "Starting unit '%v'", name)
+	f.Config.Logger.Debug(nil, "Starting unit '%v'", name)
 
 	err := f.Client.SetUnitTargetState(name, unitStateLaunched)
 	if err != nil {
@@ -217,7 +221,7 @@ func (f fleet) Start(name string) error {
 }
 
 func (f fleet) Stop(name string) error {
-	logging.GetLogger().Debug(nil, "Stopping unit '%v'", name)
+	f.Config.Logger.Debug(nil, "Stopping unit '%v'", name)
 
 	err := f.Client.SetUnitTargetState(name, unitStateLoaded)
 	if err != nil {
@@ -228,7 +232,7 @@ func (f fleet) Stop(name string) error {
 }
 
 func (f fleet) Destroy(name string) error {
-	logging.GetLogger().Debug(nil, "Destroying unit '%v'", name)
+	f.Config.Logger.Debug(nil, "Destroying unit '%v'", name)
 
 	err := f.Client.DestroyUnit(name)
 	if err != nil {

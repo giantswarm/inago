@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/giantswarm/request-context"
+
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
 )
@@ -37,18 +39,21 @@ type Config struct {
 	// status. When the desired status was not reached within the given period of
 	// time, the wait ends.
 	WaitTimeout time.Duration
+
+	// Logger provides a initialised logger.
+	Logger *requestcontext.Logger
 }
 
 // DefaultConfig provides a set of configurations with default values by best
 // effort.
-func DefaultConfig() Config {
-	newFleetConfig := fleet.DefaultConfig()
+func DefaultConfig(logger *requestcontext.Logger) Config {
+	newFleetConfig := fleet.DefaultConfig(logger)
 	newFleet, err := fleet.NewFleet(newFleetConfig)
 	if err != nil {
 		panic(err)
 	}
 
-	newTaskServiceConfig := task.DefaultConfig()
+	newTaskServiceConfig := task.DefaultConfig(logger)
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
 	newConfig := Config{
@@ -57,6 +62,7 @@ func DefaultConfig() Config {
 		WaitCount:   3,
 		WaitSleep:   1 * time.Second,
 		WaitTimeout: 5 * time.Minute,
+		Logger:      logger,
 	}
 
 	return newConfig

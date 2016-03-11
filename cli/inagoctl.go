@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/giantswarm/request-context"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
@@ -23,6 +24,7 @@ var (
 		Verbose       bool
 	}
 
+	newLogger     *requestcontext.Logger
 	newController controller.Controller
 	newFileSystem filesystemspec.FileSystem
 	newFleet      fleet.Fleet
@@ -37,27 +39,31 @@ var (
 			// This callback is executed after flags are parsed and before any
 			// command runs.
 
+			logLevel := "INFO"
 			if globalFlags.Verbose {
-				logging.SetLogLevel("DEBUG")
+				logLevel = "DEBUG"
 			}
 
-			if isatty.IsTerminal(os.Stderr.Fd()) {
-				logging.UseColor(true)
-			}
+			newLogger = logging.NewLogger(
+				logging.NewConfig(
+					logLevel,
+					isatty.IsTerminal(os.Stderr.Fd()),
+				),
+			)
 
 			URL, err := url.Parse(globalFlags.FleetEndpoint)
 			if err != nil {
 				panic(err)
 			}
 
-			newFleetConfig := fleet.DefaultConfig()
+			newFleetConfig := fleet.DefaultConfig(newLogger)
 			newFleetConfig.Endpoint = *URL
 			newFleet, err = fleet.NewFleet(newFleetConfig)
 			if err != nil {
 				panic(err)
 			}
 
-			newControllerConfig := controller.DefaultConfig()
+			newControllerConfig := controller.DefaultConfig(newLogger)
 			newControllerConfig.Fleet = newFleet
 			newController = controller.NewController(newControllerConfig)
 
