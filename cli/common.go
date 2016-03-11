@@ -1,68 +1,12 @@
 package cli
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"regexp"
-	"strings"
-	"text/template"
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/task"
 )
-
-var (
-	atExp    = regexp.MustCompile("@")
-	groupExp = regexp.MustCompile("@(.*)")
-)
-
-var (
-	statusHeader = "Group | Units | FDState | FCState | SAState {{if .Verbose}}| Hash {{end}}| IP | Machine"
-	statusBody   = "{{.Group}}{{if .UnitState.SliceID}}@{{.UnitState.SliceID}}{{end}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
-		"{{.MachineState.SystemdActive}}{{if .Verbose}} | {{.MachineState.UnitHash}}{{end}} | {{.MachineState.IP}} | {{.MachineState.ID}}"
-)
-
-func createStatus(group string, usl controller.UnitStatusList) ([]string, error) {
-	if !globalFlags.Verbose {
-		var err error
-		usl, err = usl.Group()
-		if err != nil {
-			return nil, maskAny(err)
-		}
-	}
-
-	out := bytes.NewBufferString("")
-
-	header := template.Must(template.New("header").Parse(statusHeader))
-	header.Execute(out, struct {
-		Verbose bool
-	}{
-		globalFlags.Verbose,
-	})
-	out.WriteString("\n\n")
-	tmpl := template.Must(template.New("row-format").Parse(statusBody))
-	for _, us := range usl {
-		for _, ms := range us.Machine {
-
-			tmpl.Execute(out, struct {
-				Verbose      bool
-				Group        string
-				UnitState    interface{}
-				MachineState interface{}
-			}{
-				globalFlags.Verbose,
-				group,
-				us,
-				ms,
-			})
-
-			out.WriteString("\n")
-		}
-	}
-
-	return strings.Split(out.String(), "\n"), nil
-}
 
 type blockWithFeedbackCtx struct {
 	Request    controller.Request

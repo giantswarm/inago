@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"bytes"
+	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/fleet"
@@ -315,4 +318,55 @@ func matchState(indexed, remote string) bool {
 
 	// The given remote state does not match the criteria of the indexed state.
 	return false
+}
+
+var (
+	atExp    = regexp.MustCompile("@")
+	groupExp = regexp.MustCompile("@(.*)")
+)
+
+var (
+	statusHeader = "Group | Units | FDState | FCState | SAState {{if .Expand}}| Hash {{end}}| IP | Machine"
+	statusBody   = "{{.Group}}{{if .UnitState.SliceID}}@{{.UnitState.SliceID}}{{end}} | {{.UnitState.Name}} | {{.UnitState.Desired}} | {{.UnitState.Current}} | " +
+		"{{.MachineState.SystemdActive}}{{if .Expand}} | {{.MachineState.UnitHash}}{{end}} | {{.MachineState.IP}} | {{.MachineState.ID}}"
+)
+
+func CreateStatus(group string, usl UnitStatusList, expand bool) ([]string, error) {
+	if !expand {
+		var err error
+		usl, err = usl.Group()
+		if err != nil {
+			return nil, maskAny(err)
+		}
+	}
+
+	out := bytes.NewBufferString("")
+
+	header := template.Must(template.New("header").Parse(statusHeader))
+	header.Execute(out, struct {
+		Expand bool
+	}{
+		expand,
+	})
+	out.WriteString("\n\n")
+
+	tmpl := template.Must(template.New("row-format").Parse(statusBody))
+	for _, us := range usl {
+		for _, ms := range us.Machine {
+			tmpl.Execute(out, struct {
+				Expand       bool
+				Group        string
+				UnitState    interface{}
+				MachineState interface{}
+			}{
+				expand,
+				group,
+				us,
+				ms,
+			})
+			out.WriteString("\n")
+		}
+	}
+
+	return strings.Split(out.String(), "\n"), nil
 }

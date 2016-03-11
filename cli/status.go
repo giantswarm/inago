@@ -39,7 +39,7 @@ func statusRun(cmd *cobra.Command, args []string) {
 	statusList, err := newController.GetStatus(req)
 	handleStatusCmdError(req, err)
 
-	data, err := createStatus(req.Group, statusList)
+	data, err := controller.CreateStatus(req.Group, statusList, globalFlags.Verbose)
 	handleStatusCmdError(req, err)
 	fmt.Println(columnize.SimpleFormat(data))
 }
