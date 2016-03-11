@@ -14,7 +14,6 @@ import (
 	"github.com/giantswarm/inago/file-system/real"
 	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
-	"github.com/giantswarm/inago/logging"
 )
 
 var (
@@ -44,12 +43,15 @@ var (
 				logLevel = "DEBUG"
 			}
 
-			newLogger = logging.NewLogger(
-				logging.NewConfig(
-					logLevel,
-					isatty.IsTerminal(os.Stderr.Fd()),
-				),
+			logger := requestcontext.MustGetLogger(
+				requestcontext.LoggerConfig{
+					Name:                "inago",
+					Level:               logLevel,
+					Color:               isatty.IsTerminal(os.Stderr.Fd()),
+					IncludeNameInFormat: false,
+				},
 			)
+			newLogger = &logger
 
 			URL, err := url.Parse(globalFlags.FleetEndpoint)
 			if err != nil {
