@@ -13,9 +13,9 @@ import (
 	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
-	"github.com/giantswarm/request-context"
 
 	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/logging"
 )
 
 const (
@@ -31,12 +31,12 @@ type Config struct {
 	Endpoint url.URL
 
 	// Logger provides a logger.
-	Logger *requestcontext.Logger
+	Logger logging.Logger
 }
 
 // DefaultConfig provides a set of configurations with default values by best
 // effort.
-func DefaultConfig(logger *requestcontext.Logger) Config {
+func DefaultConfig() Config {
 	URL, err := url.Parse("file:///var/run/fleet.sock")
 	if err != nil {
 		panic(err)
@@ -45,7 +45,7 @@ func DefaultConfig(logger *requestcontext.Logger) Config {
 	newConfig := Config{
 		Client:   &http.Client{},
 		Endpoint: *URL,
-		Logger:   logger,
+		Logger:   logging.NewLogger(logging.DefaultConfig()),
 	}
 
 	return newConfig

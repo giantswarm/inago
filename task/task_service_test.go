@@ -4,21 +4,10 @@ import (
 	"fmt"
 	"testing"
 	"time"
-
-	"github.com/giantswarm/request-context"
-)
-
-var logger = requestcontext.MustGetLogger(
-	requestcontext.LoggerConfig{
-		Name:                "inago",
-		Level:               "DEBUG",
-		Color:               false,
-		IncludeNameInFormat: false,
-	},
 )
 
 func Test_Task_TaskService_Create_Success(t *testing.T) {
-	newTaskService := NewTaskService(DefaultConfig(&logger))
+	newTaskService := NewTaskService(DefaultConfig())
 
 	testData := "invalid"
 
@@ -51,7 +40,7 @@ func Test_Task_TaskService_Create_Success(t *testing.T) {
 }
 
 func Test_Task_TastService_Create_Error(t *testing.T) {
-	newConfig := DefaultConfig(&logger)
+	newConfig := DefaultConfig()
 	newConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := NewTaskService(newConfig)
 
@@ -79,7 +68,7 @@ func Test_Task_TastService_Create_Error(t *testing.T) {
 }
 
 func Test_Task_TastService_Create_FetchState(t *testing.T) {
-	newConfig := DefaultConfig(&logger)
+	newConfig := DefaultConfig()
 	newConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := NewTaskService(newConfig)
 
@@ -119,7 +108,7 @@ func Test_Task_TastService_Create_FetchState(t *testing.T) {
 }
 
 func Test_Task_TastService_Create_Wait(t *testing.T) {
-	newConfig := DefaultConfig(&logger)
+	newConfig := DefaultConfig()
 	newConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := NewTaskService(newConfig)
 

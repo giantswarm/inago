@@ -4,16 +4,15 @@ package cli
 
 import (
 	"net/url"
-	"os"
 
-	"github.com/giantswarm/request-context"
-	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/real"
 	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
+	"github.com/giantswarm/inago/task"
 )
 
 var (
@@ -23,10 +22,11 @@ var (
 		Verbose       bool
 	}
 
-	newLogger     *requestcontext.Logger
-	newController controller.Controller
-	newFileSystem filesystemspec.FileSystem
-	newFleet      fleet.Fleet
+	newLogger      logging.Logger
+	newFleet       fleet.Fleet
+	newTaskService task.Service
+	newController  controller.Controller
+	newFileSystem  filesystemspec.FileSystem
 
 	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
@@ -38,35 +38,33 @@ var (
 			// This callback is executed after flags are parsed and before any
 			// command runs.
 
-			logLevel := "INFO"
+			loggingConfig := logging.DefaultConfig()
 			if globalFlags.Verbose {
-				logLevel = "DEBUG"
+				loggingConfig.LogLevel = "DEBUG"
 			}
-
-			logger := requestcontext.MustGetLogger(
-				requestcontext.LoggerConfig{
-					Name:                "inago",
-					Level:               logLevel,
-					Color:               isatty.IsTerminal(os.Stderr.Fd()),
-					IncludeNameInFormat: false,
-				},
-			)
-			newLogger = &logger
+			newLogger = logging.NewLogger(loggingConfig)
 
 			URL, err := url.Parse(globalFlags.FleetEndpoint)
 			if err != nil {
 				panic(err)
 			}
 
-			newFleetConfig := fleet.DefaultConfig(newLogger)
+			newFleetConfig := fleet.DefaultConfig()
 			newFleetConfig.Endpoint = *URL
+			newFleetConfig.Logger = newLogger
 			newFleet, err = fleet.NewFleet(newFleetConfig)
 			if err != nil {
 				panic(err)
 			}
 
-			newControllerConfig := controller.DefaultConfig(newLogger)
+			newTaskServiceConfig := task.DefaultConfig()
+			newTaskServiceConfig.Logger = newLogger
+			newTaskService = task.NewTaskService(newTaskServiceConfig)
+
+			newControllerConfig := controller.DefaultConfig()
+			newControllerConfig.Logger = newLogger
 			newControllerConfig.Fleet = newFleet
+			newControllerConfig.TaskService = newTaskService
 			newController = controller.NewController(newControllerConfig)
 
 			newFileSystem = filesystemreal.NewFileSystem()

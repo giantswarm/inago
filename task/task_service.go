@@ -3,8 +3,9 @@ package task
 import (
 	"time"
 
-	"github.com/giantswarm/request-context"
 	"github.com/satori/go.uuid"
+
+	"github.com/giantswarm/inago/logging"
 )
 
 // Action represents any work to be done when executing a task.
@@ -67,16 +68,16 @@ type Config struct {
 	WaitSleep time.Duration
 
 	// Logger provides a logger.
-	Logger *requestcontext.Logger
+	Logger logging.Logger
 }
 
 // DefaultConfig returns a best effort default configuration for the
 // task service.
-func DefaultConfig(logger *requestcontext.Logger) Config {
+func DefaultConfig() Config {
 	newConfig := Config{
 		Storage:   NewMemoryStorage(),
 		WaitSleep: 1 * time.Second,
-		Logger:    logger,
+		Logger:    logging.NewLogger(logging.DefaultConfig()),
 	}
 
 	return newConfig
