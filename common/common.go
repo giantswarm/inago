@@ -16,12 +16,6 @@ import (
 var ExtExp = regexp.MustCompile(`(?m)\.[a-z]*$`)
 
 // SliceID takes a unit file name and returns its slice ID.
-//
-//   app@1.service  =>  1
-//   app@1.mount    =>  1
-//   app.service    =>
-//   app.mount      =>
-//
 func SliceID(name string) (string, error) {
 	suffix, err := sliceSuffix(name)
 	if err != nil {
@@ -52,12 +46,6 @@ func sliceSuffix(name string) (string, error) {
 // UnitBase returns the base of the unit name. The base is considered
 // everything up to the @ character, if any, or the given name without
 // extension.
-//
-//   app@1.service  =>  app
-//   app@1.mount    =>  app
-//   app.service    =>  app
-//   app.mount      =>  app
-//
 func UnitBase(name string) string {
 	name = groupExp.ReplaceAllString(name, "")
 	return ExtExp.ReplaceAllString(name, "")
