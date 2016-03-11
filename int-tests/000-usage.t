@@ -11,6 +11,7 @@
     start       Starts the specified group or slices
     stop        Stops the specified group or slices
     destroy     Destroys the specified group or slices
+    update      update a group
     validate    validate groups
   
   Flags:
