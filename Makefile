@@ -88,6 +88,8 @@ ci-test: $(SOURCE) VERSION .gobuild
 # Set fleet endpoint to a fleet API endpoint available to the container.
 int-test: $(BIN) $(INT_TESTS)
 	@echo Running integration tests
+	@echo Creating CoreOS integration test machine user-data
+	cp $(VAGRANT_PATH)/user-data.sample $(VAGRANT_PATH)/user-data
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
@@ -104,3 +106,5 @@ int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH)
 	@echo Destroying the integration test machine
 	cd $(VAGRANT_PATH) && vagrant destroy -f
+	@echo Removing test machine user-data
+	rm $(VAGRANT_PATH)/user-data
