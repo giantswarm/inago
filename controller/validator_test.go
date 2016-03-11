@@ -14,7 +14,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test a group with no units in it is not valid.
 		{
 			request: Request{
-				Group: "empty",
+				RequestConfig: RequestConfig{
+					Group: "empty",
+				},
 			},
 			valid:        false,
 			errAssertion: IsNoUnitsInGroup,
@@ -22,7 +24,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test a group with one well-named unit is valid.
 		{
 			request: Request{
-				Group: "single",
+				RequestConfig: RequestConfig{
+					Group: "single",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "single-unit.service",
@@ -35,7 +39,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test a group with two well-named units is valid.
 		{
 			request: Request{
-				Group: "single",
+				RequestConfig: RequestConfig{
+					Group: "single",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "single-unit.service",
@@ -51,7 +57,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test a group with a scalable unit is valid.
 		{
 			request: Request{
-				Group: "scalable",
+				RequestConfig: RequestConfig{
+					Group: "scalable",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "scalable-unit@.service",
@@ -64,7 +72,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test a group with two scalable units is valid.
 		{
 			request: Request{
-				Group: "scalable",
+				RequestConfig: RequestConfig{
+					Group: "scalable",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "scalable-unit@.service",
@@ -80,7 +90,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test that a group mixing scalable and unscalable units is not valid.
 		{
 			request: Request{
-				Group: "mix",
+				RequestConfig: RequestConfig{
+					Group: "mix",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "mix-unit1.service",
@@ -96,7 +108,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test that units must be prefixed with their group name.
 		{
 			request: Request{
-				Group: "single",
+				RequestConfig: RequestConfig{
+					Group: "single",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "bad-prefix.service",
@@ -109,7 +123,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test that group names cannot contain @ symbols.
 		{
 			request: Request{
-				Group: "bad@groupname@",
+				RequestConfig: RequestConfig{
+					Group: "bad@groupname@",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "bad@groupname@.service",
@@ -122,7 +138,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test that unit names cannot contain multiple @ symbols.
 		{
 			request: Request{
-				Group: "group",
+				RequestConfig: RequestConfig{
+					Group: "group",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "group-un@it@.service",
@@ -135,7 +153,9 @@ func TestValidateRequest(t *testing.T) {
 		// Test that a group cannot have multiple units with the same name.
 		{
 			request: Request{
-				Group: "group",
+				RequestConfig: RequestConfig{
+					Group: "group",
+				},
 				Units: []Unit{
 					Unit{
 						Name: "group-unit1@.service",
@@ -181,10 +201,14 @@ func TestValidateMultipleRequest(t *testing.T) {
 		{
 			requests: []Request{
 				Request{
-					Group: "a",
+					RequestConfig: RequestConfig{
+						Group: "a",
+					},
 				},
 				Request{
-					Group: "b",
+					RequestConfig: RequestConfig{
+						Group: "b",
+					},
 				},
 			},
 			valid:        true,
@@ -194,10 +218,14 @@ func TestValidateMultipleRequest(t *testing.T) {
 		{
 			requests: []Request{
 				Request{
-					Group: "bat",
+					RequestConfig: RequestConfig{
+						Group: "bat",
+					},
 				},
 				Request{
-					Group: "batman",
+					RequestConfig: RequestConfig{
+						Group: "batman",
+					},
 				},
 			},
 			valid:        false,
@@ -207,10 +235,14 @@ func TestValidateMultipleRequest(t *testing.T) {
 		{
 			requests: []Request{
 				Request{
-					Group: "batwoman",
+					RequestConfig: RequestConfig{
+						Group: "batwoman",
+					},
 				},
 				Request{
-					Group: "batman",
+					RequestConfig: RequestConfig{
+						Group: "batman",
+					},
 				},
 			},
 			valid:        true,
@@ -220,10 +252,14 @@ func TestValidateMultipleRequest(t *testing.T) {
 		{
 			requests: []Request{
 				Request{
-					Group: "joker",
+					RequestConfig: RequestConfig{
+						Group: "joker",
+					},
 				},
 				Request{
-					Group: "joker",
+					RequestConfig: RequestConfig{
+						Group: "joker",
+					},
 				},
 			},
 			valid:        false,

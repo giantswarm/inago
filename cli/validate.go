@@ -44,7 +44,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 
 	requests := []controller.Request{}
 	for _, group := range groups {
-		newRequestConfig := controller.DefaultNewRequest()
+		newRequestConfig := controller.DefaultRequestConfig()
 		newRequestConfig.Group = group
 		request := controller.NewRequest(newRequestConfig)
 

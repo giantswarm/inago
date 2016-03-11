@@ -8,7 +8,7 @@ import (
 	"github.com/giantswarm/inago/fleet"
 )
 
-func DefaultNewRequest() RequestConfig {
+func DefaultRequestConfig() RequestConfig {
 	newConfig := RequestConfig{
 		Group:    "",
 		SliceIDs: []string{},

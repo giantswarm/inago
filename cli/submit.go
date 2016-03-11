@@ -41,7 +41,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	newRequestConfig := controller.DefaultNewRequest()
+	newRequestConfig := controller.DefaultRequestConfig()
 	newRequestConfig.Group = group
 	newRequestConfig.SliceIDs = strings.Split(strings.Repeat("x", scale), "")
 	req := controller.NewRequest(newRequestConfig)

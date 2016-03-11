@@ -22,7 +22,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// are given.
 		{
 			Input: Request{
-				SliceIDs: []string{},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{},
+				},
 				Units: []Unit{
 					{
 						Name:    "unit@.service",
@@ -31,7 +33,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 			Expected: Request{
-				SliceIDs: []string{},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{},
+				},
 				Units: []Unit{
 					{
 						Name:    "unit@.service",
@@ -45,7 +49,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// given.
 		{
 			Input: Request{
-				SliceIDs: []string{"1"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1"},
+				},
 				Units: []Unit{
 					{
 						Name:    "unit@.service",
@@ -54,7 +60,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 			Expected: Request{
-				SliceIDs: []string{"1"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1"},
+				},
 				Units: []Unit{
 					{
 						Name:    "unit@1.service",
@@ -68,7 +76,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// and multiple unit files are given.
 		{
 			Input: Request{
-				SliceIDs: []string{"1", "2"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1", "2"},
+				},
 				Units: []Unit{
 					{
 						Name:    "foo@.service",
@@ -81,7 +91,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 			Expected: Request{
-				SliceIDs: []string{"1", "2"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1", "2"},
+				},
 				Units: []Unit{
 					{
 						Name:    "foo@1.service",
@@ -107,7 +119,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// are given.
 		{
 			Input: Request{
-				SliceIDs: []string{"3", "5", "foo"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"3", "5", "foo"},
+				},
 				Units: []Unit{
 					{
 						Name:    "unit@.service",
@@ -116,7 +130,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 			Expected: Request{
-				SliceIDs: []string{"3", "5", "foo"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"3", "5", "foo"},
+				},
 				Units: []Unit{
 					{
 						Name:    "unit@3.service",
@@ -138,7 +154,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 		// so groups that do not want slices.
 		{
 			Input: Request{
-				SliceIDs: nil,
+				RequestConfig: RequestConfig{
+					SliceIDs: nil,
+				},
 				Units: []Unit{
 					{
 						Name:    "single-1.service",
@@ -151,7 +169,9 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 			Expected: Request{
-				SliceIDs: nil,
+				RequestConfig: RequestConfig{
+					SliceIDs: nil,
+				},
 				Units: []Unit{
 					{
 						Name:    "single-1.service",
@@ -195,7 +215,9 @@ func Test_validateUnitStatusWithRequest(t *testing.T) {
 		{
 			Error: nil,
 			Request: Request{
-				SliceIDs: []string{"1", "2"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1", "2"},
+				},
 			},
 			UnitStatusList: []fleet.UnitStatus{
 				{
@@ -212,7 +234,9 @@ func Test_validateUnitStatusWithRequest(t *testing.T) {
 		{
 			Error: errgo.New("unit slice not found: slice ID '3'"),
 			Request: Request{
-				SliceIDs: []string{"1", "2", "3"},
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1", "2", "3"},
+				},
 			},
 			UnitStatusList: []fleet.UnitStatus{
 				{
@@ -242,32 +266,40 @@ func Test_matchesGroupSlices(t *testing.T) {
 		{
 			InputUnitName: "demo-main@1.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: []string{"1", "2"},
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: []string{"1", "2"},
+				},
 			},
 			Output: true,
 		},
 		{
 			InputUnitName: "demo-main@1.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: []string{"3"},
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: []string{"3"},
+				},
 			},
 			Output: false,
 		},
 		{
 			InputUnitName: "other-main@1.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: []string{"1"},
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: []string{"1"},
+				},
 			},
 			Output: false,
 		},
 		{
 			InputUnitName: "other-main@1.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: []string{"2"},
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: []string{"2"},
+				},
 			},
 			Output: false,
 		},
@@ -275,8 +307,10 @@ func Test_matchesGroupSlices(t *testing.T) {
 		{
 			InputUnitName: "demo-main.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: nil,
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: nil,
+				},
 			},
 			Output: true,
 		},
@@ -284,16 +318,20 @@ func Test_matchesGroupSlices(t *testing.T) {
 		{
 			InputUnitName: "other-main.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: []string{"1", "2"},
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: []string{"1", "2"},
+				},
 			},
 			Output: false,
 		},
 		{
 			InputUnitName: "other-main.service",
 			InputRequest: Request{
-				Group:    "demo",
-				SliceIDs: nil,
+				RequestConfig: RequestConfig{
+					Group:    "demo",
+					SliceIDs: nil,
+				},
 			},
 			Output: false,
 		},
@@ -344,9 +382,11 @@ func TestController_Submit_Error(t *testing.T) {
 
 	// Execute
 	req := Request{
-		Group:    "single",
-		SliceIDs: nil,
-		Units:    []Unit{}, // Intentionally left empty!
+		RequestConfig: RequestConfig{
+			Group:    "single",
+			SliceIDs: nil,
+		},
+		Units: []Unit{}, // Intentionally left empty!
 	}
 
 	task, err := controller.Submit(req)
@@ -375,8 +415,10 @@ func TestController_Submit(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 		Units: []Unit{
 			{
 				Name:    "test-main@1.service",
@@ -415,8 +457,10 @@ func TestController_Start(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 	}
 	taskObject, err := controller.Start(req)
 	Expect(err).To(BeNil())
@@ -449,8 +493,10 @@ func TestController_Destroy(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 	}
 	taskObject, err := controller.Destroy(req)
 	Expect(err).To(BeNil())
@@ -483,8 +529,10 @@ func TestController_Stop(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 	}
 	taskObject, err := controller.Stop(req)
 	Expect(err).To(BeNil())
@@ -512,8 +560,10 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 
 	// Execute
 	status, err := controller.GetStatus(Request{
-		Group:    "test",
-		SliceIDs: []string{"1", "2"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1", "2"},
+		},
 	})
 
 	// Assert
@@ -569,8 +619,10 @@ func TestController_WaitForStatus_Success(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 		Units: []Unit{
 			{
 				Name:    "test-main@1.service",
@@ -611,8 +663,10 @@ func TestController_WaitForStatus_Closer(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 		Units: []Unit{
 			{
 				Name:    "test-main@1.service",
@@ -675,8 +729,10 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 
 	// Execute test
 	req := Request{
-		Group:    "test",
-		SliceIDs: []string{"1"},
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
 		Units: []Unit{
 			{
 				Name:    "test-main@1.service",

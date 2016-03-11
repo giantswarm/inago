@@ -98,8 +98,8 @@ func inputUnitStatusList(configs ...map[string][]string) UnitStatusList {
 	return unitStatusList
 }
 
-func expectedUnitStatusList(configs ...map[string][]string) []fleet.UnitStatus {
-	unitStatusList := []fleet.UnitStatus{}
+func expectedUnitStatusList(configs ...map[string][]string) UnitStatusList {
+	unitStatusList := UnitStatusList{}
 
 	i := 0
 	for _, c := range configs {
@@ -132,7 +132,7 @@ func Test_UnitStatusList_Group(t *testing.T) {
 	testCases := []struct {
 		Error    error
 		Input    UnitStatusList
-		Expected []fleet.UnitStatus
+		Expected UnitStatusList
 	}{
 		// This test ensures that creating our own status structures works as
 		// expected.

@@ -30,7 +30,7 @@ func startRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	newRequestConfig := controller.DefaultNewRequest()
+	newRequestConfig := controller.DefaultRequestConfig()
 	newRequestConfig.Group = group
 	req := controller.NewRequest(newRequestConfig)
 
