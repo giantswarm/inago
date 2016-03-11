@@ -86,14 +86,17 @@ ci-test: $(SOURCE) VERSION .gobuild
 	
 # Use with `GOOS=linux FLEET_ENDPOINT=http://192.168.99.1:49153/ make int-test`
 # Set fleet endpoint to a fleet API endpoint available to the container.
+
+# With the dash before docker we don't exit if the 'docker run' returns with
+# an error and run the rest of the target definition. Why? We want to destroy
+# the test machine in any case.
 int-test: $(BIN) $(INT_TESTS)
 	@echo Running integration tests
+	@echo Creating CoreOS integration test machine user-data
+	cp $(VAGRANT_PATH)/user-data.sample $(VAGRANT_PATH)/user-data
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
-	# With the dash before docker we don't exit if the 'docker run' returns with
-	# an error and run the rest of the target definition. Why? We want to destroy
-	# the test machine in any case.
 	-docker run \
 		--rm \
 		-ti \
@@ -104,3 +107,5 @@ int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH)
 	@echo Destroying the integration test machine
 	cd $(VAGRANT_PATH) && vagrant destroy -f
+	@echo Removing test machine user-data
+	rm $(VAGRANT_PATH)/user-data
