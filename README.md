@@ -19,6 +19,18 @@ Simply run the binary like `fleetctl`. See help usage for more information.
 inagoctl -h
 ```
 
+## Running integration tests
+
+Runnning `make int-test` will execute the integration test suit. The tests need
+to run against fleet. Starting and destroying the test machine is done via the
+make target, so you don't need to start a machine yourself.
+
+### Integration Test Machine Configuration
+
+1. Copy `inago/int-tests/vagrant/user-data.sample` to `inago/int-tests/vagrant/user-data`
+2. Set the `FLEET_ENDPOINT` environment variable to IP listed under the vboxnet
+interface of your docker-machine.
+
 ## Further Steps
 
 Check more detailed documentation: [docs](docs)
