@@ -143,3 +143,10 @@ var groupsSameNameError = errgo.New("group named with same name as another group
 func IsGroupsSameName(err error) bool {
 	return errgo.Cause(err) == groupsSameNameError
 }
+
+var invalidSubmitRequestSlicesGivenError = errgo.New("invalid submit request: slice ids given")
+
+// InvalidSubmitRequestSlicesGiven returns true if the given error cause is invalidSubmitRequestSlicesGivenError.
+func InvalidSubmitRequestSlicesGiven(err error) bool {
+	return errgo.Cause(err) == invalidSubmitRequestSlicesGivenError
+}
