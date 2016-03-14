@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
+	"golang.org/x/net/context"
 
 	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
@@ -94,7 +95,7 @@ func TestFleetSubmit_Success(t *testing.T) {
 
 	fleetClientMock, fleet := givenMockedFleet()
 	fleetClientMock.On("CreateUnit", mock.AnythingOfType("*schema.Unit")).Once().Return(nil, nil)
-	err := fleet.Submit("unit.service", "[Unit]\n"+
+	err := fleet.Submit(context.Background(), "unit.service", "[Unit]\n"+
 		"Description=This is a test unit\n"+
 		"[Service]\n"+
 		"ExecStart=/bin/echo Hello World!\n")
@@ -117,7 +118,7 @@ func TestFleetStart_Success(t *testing.T) {
 	mock, fleet := givenMockedFleet()
 	mock.On("SetUnitTargetState", "unit.service", unitStateLaunched).Once().Return(nil)
 
-	err := fleet.Start("unit.service")
+	err := fleet.Start(context.Background(), "unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
 	mock.AssertExpectations(t)
@@ -128,7 +129,7 @@ func TestFleetStop_Success(t *testing.T) {
 
 	mock, fleet := givenMockedFleet()
 	mock.On("SetUnitTargetState", "unit.service", unitStateLoaded).Once().Return(nil)
-	err := fleet.Stop("unit.service")
+	err := fleet.Stop(context.Background(), "unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
 	mock.AssertExpectations(t)
@@ -139,7 +140,7 @@ func TestFleetDestroy_Success(t *testing.T) {
 
 	mock, fleet := givenMockedFleet()
 	mock.On("DestroyUnit", "unit.service").Once().Return(nil)
-	err := fleet.Destroy("unit.service")
+	err := fleet.Destroy(context.Background(), "unit.service")
 
 	Expect(err).To(Not(HaveOccurred()))
 	mock.AssertExpectations(t)
