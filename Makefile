@@ -37,15 +37,16 @@ clean:
 	@builder get dep -b 7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7 https://github.com/spf13/pflag.git $(GOPATH)/src/github.com/spf13/pflag
 	@builder get dep -b 983d3a5fab1bf04d1b412465d2d9f8430e2e917e https://github.com/ryanuber/columnize.git $(GOPATH)/src/github.com/ryanuber/columnize
 	@builder get dep -b e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502 https://github.com/satori/go.uuid.git $(GOPATH)/src/github.com/satori/go.uuid
-	@builder get dep -b 0.4.1 https://github.com/giantswarm/request-context.git $(GOPATH)/src/github.com/giantswarm/request-context
 	@builder get dep -b 56b76bdf51f7708750eac80fa38b952bb9f32639 https://github.com/mattn/go-isatty.git $(GOPATH)/src/github.com/mattn/go-isatty
+	@builder get dep -b e7da8edaa52631091740908acaf2c2d4c9b3ce90 https://github.com/golang/net.git $(GOPATH)/src/golang.org/x/net
+	@builder get dep -b d2e44aa77b7195c0ef782189985dd8550e22e4de https://github.com/op/go-logging.git $(GOPATH)/src/github.com/op/go-logging
 
 	@builder get dep https://github.com/onsi/gomega.git $(GOPATH)/src/github.com/onsi/gomega
 	@builder get dep https://github.com/stretchr/testify.git $(GOPATH)/src/github.com/stretchr/testify
 	@builder get dep https://github.com/davecgh/go-spew.git $(GOPATH)/src/github.com/davecgh/go-spew
 	@builder get dep https://github.com/pmezard/go-difflib.git $(GOPATH)/src/github.com/pmezard/go-difflib
 	@builder get dep https://github.com/stretchr/objx.git $(GOPATH)/src/github.com/stretchr/objx
-	@builder get dep https://gopkg.in/op/go-logging.v1.git $(GOPATH)/src/gopkg.in/op/go-logging.v1
+
 deps:
 	@${MAKE} -B -s .gobuild
 

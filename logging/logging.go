@@ -5,16 +5,17 @@ import (
 	"os"
 
 	"github.com/mattn/go-isatty"
+	"golang.org/x/net/context"
 )
 
 // Logger provides an interface for other loggers to implement.
 type Logger interface {
-	Debug(context Context, f string, v ...interface{})
-	Info(context Context, f string, v ...interface{})
-	Notice(context Context, f string, v ...interface{})
-	Warning(context Context, f string, v ...interface{})
-	Error(context Context, f string, v ...interface{})
-	Critical(context Context, f string, v ...interface{})
+	Debug(ctx context.Context, f string, v ...interface{})
+	Info(ctx context.Context, f string, v ...interface{})
+	Notice(ctx context.Context, f string, v ...interface{})
+	Warning(ctx context.Context, f string, v ...interface{})
+	Error(ctx context.Context, f string, v ...interface{})
+	Critical(ctx context.Context, f string, v ...interface{})
 }
 
 // Config provides a configuration for loggers.
@@ -27,9 +28,6 @@ type Config struct {
 	Color bool
 }
 
-// Context represents additional data to pass to a logger.
-type Context map[string]interface{}
-
 // DefaultConfig returns a Config set by best effort.
 func DefaultConfig() Config {
 	return Config{
@@ -39,7 +37,7 @@ func DefaultConfig() Config {
 	}
 }
 
-// NewLogger returns a logger.
+// NewLogger returns a Logger.
 func NewLogger(config Config) Logger {
-	return NewRequestContextLogger(config)
+	return NewGoLoggingLogger(config)
 }
