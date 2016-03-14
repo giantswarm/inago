@@ -21,14 +21,14 @@ inagoctl -h
 
 ## Running integration tests
 
-Runnning `make int-test` will execute the integration test suit in a docker container.
+Runnning `make int-test` will execute the integration test suite in a docker container.
 The tests need to run against fleet, so we manage a vagrant box. Starting and destroying
 this test machine is done via the make target `int-test`.
 
 ### Integration Test Machine Configuration
 
 Since the integration tests run in your docker machine (not the fleet machine), we need to
-provide it with an IP. We use portfowarding on your host for this.
+provide it with an IP. We use port fowarding on your host for this.
 Set the `FLEET_ENDPOINT` environment variable to `http://ip:491563`, with the IP listed
 under the vboxnet interface of your docker-machine.
 
