@@ -1,5 +1,11 @@
 [Unit]
 Description=Inago Demo Unit
+Requires=mygroup-bar@%i.service
+After=mygroup-bar@%i.service
 
 [Service]
 ExecStart=/bin/bash -c "while true; do echo Hi; sleep 10; done"
+
+
+[X-Fleet]
+MachineOf=mygroup-bar@%i.service

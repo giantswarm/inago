@@ -4,11 +4,14 @@
 package controller
 
 import (
-	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
+	"github.com/coreos/fleet/unit"
+
+	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/file-system/fake"
+	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
@@ -20,6 +23,8 @@ type Config struct {
 	// Dependencies.
 
 	Fleet fleet.Fleet
+
+	FileSystem filesystemspec.FileSystem
 
 	TaskService task.Service
 
@@ -57,6 +62,7 @@ func DefaultConfig() Config {
 
 	newConfig := Config{
 		Fleet:       newFleet,
+		FileSystem:  filesystemfake.NewFileSystem(),
 		TaskService: newTaskService,
 		WaitCount:   3,
 		WaitSleep:   1 * time.Second,
@@ -70,6 +76,18 @@ func DefaultConfig() Config {
 // Controller defines the interface a controller needs to implement to provide
 // operations for groups of unit files against a fleet cluster.
 type Controller interface {
+	ExtendWithContent(req Request) (Request, error)
+	ExtendWithExistingSliceIDs(req Request) (Request, error)
+	ExtendWithRandomSliceIDs(req Request) (Request, error)
+
+	// GroupNeedsUpdate checks if the given group should be updated or not. To
+	// make a decision the unit content of each unit of each slice is compared
+	// using its unit hash. As soon as one unit hash differs, or a unit cannot be
+	// found, Inago assumes the whole group slice to be "dirty" and returns true
+	// having the group slices removed from the given req that are up to date,
+	// otherwise false, leaving the req as it is.
+	GroupNeedsUpdate(req Request) (Request, bool, error)
+
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
 	Submit(req Request) (*task.Task, error)
@@ -97,6 +115,12 @@ type Controller interface {
 	// given task has reached the final status, the final task representation is
 	// returned.
 	WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error)
+
+	// Update updates the given group on best effort with respect to the given
+	// opts. The given req identifies the group to update. The given options
+	// define the strategy used to update the given group. See also
+	// UpdateOptions.
+	Update(req Request, opts UpdateOptions) (*task.Task, error)
 }
 
 // NewController creates a new Controller that is configured with the given
@@ -128,50 +152,48 @@ type Unit struct {
 	Content string
 }
 
-// Request represents a controller request. This is used to process some action
-// on the controller.
-type Request struct {
-	// Group represents the plain group name without any slice expression.
-	Group string
+func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
+	// This becomes the new filtered list with all dirty slice IDs that needs to
+	// be updated.
+	var newSliceIDs []string
 
-	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
-	// "5", etc..
-	SliceIDs []string
-
-	// Units represents a list of unit files that is supposed to be extended
-	// using the provided slice IDs.
-	Units []Unit
-}
-
-var unitExp = regexp.MustCompile("@.service")
-
-// ExtendSlices extends unit files with respect to the given slice IDs. Having
-// slice IDs "1" and "2" and having unit files "foo@.service" and
-// "bar@.service" results in the following extended unit files.
-//
-// 	 foo@1.service
-// 	 bar@1.service
-// 	 foo@2.service
-// 	 bar@2.service
-//
-func (r Request) ExtendSlices() (Request, error) {
-	if len(r.SliceIDs) == 0 {
-		return r, nil
+	usl, err := c.groupStatus(req)
+	if err != nil {
+		return Request{}, false, maskAny(err)
 	}
-	newRequest := Request{
-		SliceIDs: r.SliceIDs,
-		Units:    []Unit{},
+	uhis, err := groupUnitHashInfos(usl)
+	if err != nil {
+		return Request{}, false, maskAny(err)
 	}
+	for _, u := range req.Units {
+		unitFile, err := unit.NewUnitFile(u.Content)
+		if err != nil {
+			return Request{}, false, maskAny(err)
+		}
+		hash := unitFile.Hash().String()
 
-	for _, sliceID := range r.SliceIDs {
-		for _, unit := range r.Units {
-			newUnit := unit
-			newUnit.Name = unitExp.ReplaceAllString(newUnit.Name, fmt.Sprintf("@%s.service", sliceID))
-			newRequest.Units = append(newRequest.Units, newUnit)
+		for _, uhi := range uhis {
+			if common.UnitBase(u.Name) != uhi.Base {
+				continue
+			}
+			if hash == uhi.Hash {
+				continue
+			}
+			if contains(newSliceIDs, uhi.SliceID) {
+				// We already tracked this ID. Go ahead.
+				continue
+			}
+
+			newSliceIDs = append(newSliceIDs, uhi.SliceID)
 		}
 	}
 
-	return newRequest, nil
+	if newSliceIDs == nil {
+		return req, false, nil
+	}
+	req.SliceIDs = newSliceIDs
+
+	return req, true, nil
 }
 
 func (c controller) Submit(req Request) (*task.Task, error) {
@@ -310,6 +332,36 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
+func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) {
+	action := func() error {
+		req, ok, err := c.GroupNeedsUpdate(req)
+		if err != nil {
+			return maskAny(err)
+		}
+
+		if !ok {
+			// Group does not need to be updated. Do nothing.
+			return maskAnyf(updateNotAllowedError, "units already up to date")
+		}
+
+		err = c.UpdateWithStrategy(req, opts)
+		if err != nil {
+			return maskAny(err)
+		}
+
+		// TODO retry operations
+
+		return nil
+	}
+
+	taskObject, err := c.TaskService.Create(action)
+	if err != nil {
+		return nil, maskAny(err)
+	}
+
+	return taskObject, nil
+}
+
 func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
 	status, err := c.groupStatusWithValidate(req)
 	return status, maskAny(err)
@@ -335,20 +387,17 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 			}
 
 			for _, us := range unitStatusList {
-				for _, ms := range us.Machine {
-					aggregated, err := AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
-					if err != nil {
-						fail <- maskAny(err)
-						return
-					}
-
-					if aggregated != desired {
-						// Whenever the aggregated status does not match the desired
-						// status, we reset the counter.
-						count = 0
-						time.Sleep(c.WaitSleep)
-						continue L1
-					}
+				ok, err := unitHasStatus(us, desired)
+				if err != nil {
+					fail <- maskAny(err)
+					return
+				}
+				if !ok {
+					// Whenever the aggregated status does not match the desired
+					// status, we reset the counter.
+					count = 0
+					time.Sleep(c.WaitSleep)
+					continue L1
 				}
 			}
 
@@ -421,7 +470,11 @@ func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, er
 
 func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Request) error {
 	for _, sliceID := range req.SliceIDs {
-		if !containsUnitStatusSliceID(unitStatusList, sliceID) {
+		ok, err := containsUnitStatusSliceID(unitStatusList, sliceID)
+		if err != nil {
+			return maskAny(err)
+		}
+		if !ok {
 			// This happens when at least one of the units is not found.
 			return maskAnyf(unitSliceNotFoundError, "slice ID '%s'", sliceID)
 		}
@@ -430,16 +483,18 @@ func validateUnitStatusWithRequest(unitStatusList []fleet.UnitStatus, req Reques
 	return nil
 }
 
-func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string) bool {
-	sliceID = fmt.Sprintf("@%s.service", sliceID)
-
+func containsUnitStatusSliceID(unitStatusList []fleet.UnitStatus, sliceID string) (bool, error) {
 	for _, us := range unitStatusList {
-		if strings.HasSuffix(us.Name, sliceID) {
-			return true
+		ID, err := common.SliceID(us.Name)
+		if err != nil {
+			return false, maskAny(err)
+		}
+		if ID == sliceID {
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // matchesGroupSlices returns a matcher compatible with fleet.GetStatusWithMatcher
@@ -454,16 +509,42 @@ func matchesGroupSlices(request Request) func(string) bool {
 	}
 
 	// Normal version that matches on group prefix and slice ID suffix.
-	return func(unitname string) bool {
-		if !strings.HasPrefix(unitname, request.Group) {
+	return func(unitName string) bool {
+		if !strings.HasPrefix(unitName, request.Group) {
 			return false
 		}
 
 		for _, sliceID := range request.SliceIDs {
-			if strings.HasSuffix(unitname, "@"+sliceID+".service") {
+			// TODO fix extension
+			if strings.HasSuffix(unitName, "@"+sliceID+".service") {
 				return true
 			}
 		}
+
+		return false
+	}
+}
+
+func matchesUnitBase(request Request) func(string) bool {
+	// If only the group name is of interest, return shorter version
+	if request.Units == nil || len(request.Units) == 0 {
+		return func(name string) bool {
+			return strings.HasPrefix(name, request.Group)
+		}
+	}
+
+	// Normal version that matches on group prefix and slice ID suffix.
+	return func(unitName string) bool {
+		if !strings.HasPrefix(unitName, request.Group) {
+			return false
+		}
+
+		for _, u := range request.Units {
+			if common.UnitBase(u.Name) == common.UnitBase(unitName) {
+				return true
+			}
+		}
+
 		return false
 	}
 }

@@ -43,7 +43,11 @@ func validateRun(cmd *cobra.Command, args []string) {
 
 	requests := []controller.Request{}
 	for _, group := range groups {
-		request, err := createRequestWithContent([]string{group})
+		newRequestConfig := controller.DefaultRequestConfig()
+		newRequestConfig.Group = group
+		request := controller.NewRequest(newRequestConfig)
+
+		request, err := newController.ExtendWithContent(request)
 		if err != nil {
 			newLogger.Error(nil, "%#v", maskAny(err))
 			os.Exit(1)

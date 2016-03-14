@@ -9,7 +9,6 @@ import (
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/real"
-	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
@@ -26,7 +25,6 @@ var (
 	newFleet       fleet.Fleet
 	newTaskService task.Service
 	newController  controller.Controller
-	newFileSystem  filesystemspec.FileSystem
 
 	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
@@ -65,9 +63,8 @@ var (
 			newControllerConfig.Logger = newLogger
 			newControllerConfig.Fleet = newFleet
 			newControllerConfig.TaskService = newTaskService
+			newControllerConfig.FileSystem = filesystemreal.NewFileSystem()
 			newController = controller.NewController(newControllerConfig)
-
-			newFileSystem = filesystemreal.NewFileSystem()
 		},
 	}
 )
@@ -82,6 +79,7 @@ func init() {
 	MainCmd.AddCommand(startCmd)
 	MainCmd.AddCommand(stopCmd)
 	MainCmd.AddCommand(destroyCmd)
+	MainCmd.AddCommand(updateCmd)
 	MainCmd.AddCommand(validateCmd)
 }
 
