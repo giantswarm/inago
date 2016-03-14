@@ -1,8 +1,6 @@
 Create a group to play around with.
   $ mkdir update-group
-  $ touch update-group/update-group-foo@.service
   $ echo "[Unit]\nDescription=Inago Update Test Unit\n\n[Service]\nExecStart=/bin/bash -c \"while true; do echo Hi; sleep 10; done\"" > update-group/update-group-foo@.service
-  $ touch update-group/update-group-bar@.service
   $ echo "[Unit]\nDescription=Inago Update Test Unit\n\n[Service]\nExecStart=/bin/bash -c \"while true; do echo Hi; sleep 10; done\"" > update-group/update-group-bar@.service
 
 Validate the test group.
