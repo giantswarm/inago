@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -30,7 +29,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 		group = args[0]
 		n, err := strconv.Atoi(args[1])
 		if err != nil {
-			fmt.Printf("%#v\n", maskAny(err))
+			newLogger.Error(nil, "%#v\n", maskAny(err))
 			os.Exit(1)
 		}
 		scale = n
@@ -46,18 +45,18 @@ func submitRun(cmd *cobra.Command, args []string) {
 
 	req, err := extendRequestWithContent(fs, req)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		newLogger.Error(nil, "%#v\n", maskAny(err))
 		os.Exit(1)
 	}
 	req, err = newController.ExtendWithRandomSliceIDs(req)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		newLogger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
 	taskObject, err := newController.Submit(req)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		newLogger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 

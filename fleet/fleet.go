@@ -15,6 +15,7 @@ import (
 	"github.com/coreos/fleet/unit"
 
 	"github.com/giantswarm/inago/common"
+	"github.com/giantswarm/inago/logging"
 )
 
 const (
@@ -28,6 +29,9 @@ const (
 type Config struct {
 	Client   *http.Client
 	Endpoint url.URL
+
+	// Logger provides an initialised logger.
+	Logger logging.Logger
 }
 
 // DefaultConfig provides a set of configurations with default values by best
@@ -41,6 +45,7 @@ func DefaultConfig() Config {
 	newConfig := Config{
 		Client:   &http.Client{},
 		Endpoint: *URL,
+		Logger:   logging.NewLogger(logging.DefaultConfig()),
 	}
 
 	return newConfig
@@ -183,6 +188,8 @@ type fleet struct {
 }
 
 func (f fleet) Submit(name, content string) error {
+	f.Config.Logger.Debug(nil, "Submitting unit '%v' to fleet", name)
+
 	unitFile, err := unit.NewUnitFile(content)
 	if err != nil {
 		return maskAny(err)
@@ -203,6 +210,8 @@ func (f fleet) Submit(name, content string) error {
 }
 
 func (f fleet) Start(name string) error {
+	f.Config.Logger.Debug(nil, "Starting unit '%v'", name)
+
 	err := f.Client.SetUnitTargetState(name, unitStateLaunched)
 	if err != nil {
 		return maskAny(err)
@@ -212,6 +221,8 @@ func (f fleet) Start(name string) error {
 }
 
 func (f fleet) Stop(name string) error {
+	f.Config.Logger.Debug(nil, "Stopping unit '%v'", name)
+
 	err := f.Client.SetUnitTargetState(name, unitStateLoaded)
 	if err != nil {
 		return maskAny(err)
@@ -221,6 +232,8 @@ func (f fleet) Stop(name string) error {
 }
 
 func (f fleet) Destroy(name string) error {
+	f.Config.Logger.Debug(nil, "Destroying unit '%v'", name)
+
 	err := f.Client.DestroyUnit(name)
 	if err != nil {
 		return maskAny(err)

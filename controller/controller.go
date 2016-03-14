@@ -11,6 +11,7 @@ import (
 
 	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
 )
 
@@ -38,6 +39,9 @@ type Config struct {
 	// status. When the desired status was not reached within the given period of
 	// time, the wait ends.
 	WaitTimeout time.Duration
+
+	// Logger provides an initialised logger.
+	Logger logging.Logger
 }
 
 // DefaultConfig provides a set of configurations with default values by best
@@ -58,6 +62,7 @@ func DefaultConfig() Config {
 		WaitCount:   3,
 		WaitSleep:   1 * time.Second,
 		WaitTimeout: 5 * time.Minute,
+		Logger:      logging.NewLogger(logging.DefaultConfig()),
 	}
 
 	return newConfig

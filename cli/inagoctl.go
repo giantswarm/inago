@@ -11,6 +11,8 @@ import (
 	"github.com/giantswarm/inago/file-system/real"
 	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
+	"github.com/giantswarm/inago/task"
 )
 
 var (
@@ -20,9 +22,11 @@ var (
 		Verbose       bool
 	}
 
-	newController controller.Controller
-	newFleet      fleet.Fleet
-	fs            filesystemspec.FileSystem
+	fs             filesystemspec.FileSystem
+	newLogger      logging.Logger
+	newFleet       fleet.Fleet
+	newTaskService task.Service
+	newController  controller.Controller
 
 	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
@@ -35,6 +39,12 @@ var (
 			// command runs.
 			fs = filesystemreal.NewFileSystem()
 
+			loggingConfig := logging.DefaultConfig()
+			if globalFlags.Verbose {
+				loggingConfig.LogLevel = "DEBUG"
+			}
+			newLogger = logging.NewLogger(loggingConfig)
+
 			URL, err := url.Parse(globalFlags.FleetEndpoint)
 			if err != nil {
 				panic(err)
@@ -42,13 +52,21 @@ var (
 
 			newFleetConfig := fleet.DefaultConfig()
 			newFleetConfig.Endpoint = *URL
+			newFleetConfig.Logger = newLogger
 			newFleet, err = fleet.NewFleet(newFleetConfig)
 			if err != nil {
 				panic(err)
 			}
 
+			newTaskServiceConfig := task.DefaultConfig()
+			newTaskServiceConfig.Logger = newLogger
+			newTaskService = task.NewTaskService(newTaskServiceConfig)
+
 			newControllerConfig := controller.DefaultConfig()
+			newControllerConfig.Logger = newLogger
 			newControllerConfig.Fleet = newFleet
+			newControllerConfig.TaskService = newTaskService
+
 			newController = controller.NewController(newControllerConfig)
 		},
 	}

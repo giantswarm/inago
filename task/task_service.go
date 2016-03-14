@@ -1,10 +1,11 @@
 package task
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/satori/go.uuid"
+
+	"github.com/giantswarm/inago/logging"
 )
 
 // Action represents any work to be done when executing a task.
@@ -65,6 +66,9 @@ type Config struct {
 
 	// WaitSleep represents the time to sleep between state-check cycles.
 	WaitSleep time.Duration
+
+	// Logger provides an initialised logger.
+	Logger logging.Logger
 }
 
 // DefaultConfig returns a best effort default configuration for the
@@ -73,6 +77,7 @@ func DefaultConfig() Config {
 	newConfig := Config{
 		Storage:   NewMemoryStorage(),
 		WaitSleep: 1 * time.Second,
+		Logger:    logging.NewLogger(logging.DefaultConfig()),
 	}
 
 	return newConfig
@@ -103,7 +108,7 @@ func (ts *taskService) Create(action Action) (*Task, error) {
 		if err != nil {
 			_, markErr := ts.MarkAsFailedWithError(taskObject, err)
 			if markErr != nil {
-				fmt.Printf("[E] Task.MarkAsFailed failed: %#v\n", maskAny(markErr))
+				ts.Config.Logger.Error(nil, "[E] Task.MarkAsFailed failed: %#v", maskAny(markErr))
 				return
 			}
 			return
@@ -111,7 +116,7 @@ func (ts *taskService) Create(action Action) (*Task, error) {
 
 		_, err = ts.MarkAsSucceeded(taskObject)
 		if err != nil {
-			fmt.Printf("[E] Task.MarkAsSucceeded failed: %#v\n", maskAny(err))
+			ts.Config.Logger.Error(nil, "[E] Task.MarkAsSucceeded failed: %#v", maskAny(err))
 			return
 		}
 	}()

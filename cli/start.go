@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -34,13 +33,13 @@ func startRun(cmd *cobra.Command, args []string) {
 
 	req, err := newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		newLogger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
 	taskObject, err := newController.Start(req)
 	if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		newLogger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 

@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -29,7 +28,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		files, err := ioutil.ReadDir(".")
 		if err != nil {
-			fmt.Printf("%#v\n", maskAny(err))
+			newLogger.Error(nil, "%#v", maskAny(err))
 			os.Exit(1)
 		}
 
@@ -50,7 +49,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 
 		request, err := extendRequestWithContent(fs, request)
 		if err != nil {
-			fmt.Printf("%#v\n", maskAny(err))
+			newLogger.Error(nil, "%#v", maskAny(err))
 			os.Exit(1)
 		}
 		requests = append(requests, request)
@@ -59,16 +58,16 @@ func validateRun(cmd *cobra.Command, args []string) {
 	for _, request := range requests {
 		ok, err := controller.ValidateRequest(request)
 		if ok {
-			fmt.Printf("Group '%v' is valid.\n", request.Group)
+			newLogger.Info(nil, "Group '%v' is valid.", request.Group)
 		} else {
-			fmt.Printf("Group '%v' not valid: %v.\n", request.Group, err)
+			newLogger.Info(nil, "Group '%v' not valid: %v.", request.Group, err)
 		}
 	}
 
 	ok, err := controller.ValidateMultipleRequest(requests)
 	if ok {
-		fmt.Println("Groups are valid globally.")
+		newLogger.Info(nil, "Groups are valid globally.")
 	} else {
-		fmt.Println("Groups are not valid globally:", err)
+		newLogger.Info(nil, "Groups are not valid globally:", err)
 	}
 }

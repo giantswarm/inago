@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"fmt"
 	"net"
 	"os"
 	"regexp"
@@ -91,27 +90,27 @@ func maybeBlockWithFeedback(ctx blockWithFeedbackCtx) {
 	if !ctx.NoBlock {
 		taskObject, err := newController.WaitForTask(ctx.TaskID, ctx.Closer)
 		if err != nil {
-			fmt.Printf("%#v\n", maskAny(err))
+			newLogger.Error(nil, "%#v", maskAny(err))
 			os.Exit(1)
 		}
 
 		if task.HasFailedStatus(taskObject) {
 			if ctx.Request.SliceIDs == nil {
-				fmt.Printf("Failed to %s group '%s'. (%s)\n", ctx.Descriptor, ctx.Request.Group, taskObject.Error)
+				newLogger.Error(nil, "Failed to %s group '%s'. (%s)", ctx.Descriptor, ctx.Request.Group, taskObject.Error)
 			} else if len(ctx.Request.SliceIDs) == 0 {
-				fmt.Printf("Failed to %s all slices of group '%s'. (%s)\n", ctx.Descriptor, ctx.Request.Group, taskObject.Error)
+				newLogger.Error(nil, "Failed to %s all slices of group '%s'. (%s)", ctx.Descriptor, ctx.Request.Group, taskObject.Error)
 			} else {
-				fmt.Printf("Failed to %s %d slices for group '%s': %v. (%s)\n", ctx.Descriptor, len(ctx.Request.SliceIDs), ctx.Request.Group, ctx.Request.SliceIDs, taskObject.Error)
+				newLogger.Error(nil, "Failed to %s %d slices for group '%s': %v. (%s)", ctx.Descriptor, len(ctx.Request.SliceIDs), ctx.Request.Group, ctx.Request.SliceIDs, taskObject.Error)
 			}
 			os.Exit(1)
 		}
 	}
 
 	if ctx.Request.SliceIDs == nil {
-		fmt.Printf("Succeeded to %s group '%s'.\n", ctx.Descriptor, ctx.Request.Group)
+		newLogger.Info(nil, "Succeeded to %s group '%s'.", ctx.Descriptor, ctx.Request.Group)
 	} else if len(ctx.Request.SliceIDs) == 0 {
-		fmt.Printf("Succeeded to %s all slices of group '%s'.\n", ctx.Descriptor, ctx.Request.Group)
+		newLogger.Info(nil, "Succeeded to %s all slices of group '%s'.", ctx.Descriptor, ctx.Request.Group)
 	} else {
-		fmt.Printf("Succeeded to %s %d slices for group '%s': %v.\n", ctx.Descriptor, len(ctx.Request.SliceIDs), ctx.Request.Group, ctx.Request.SliceIDs)
+		newLogger.Info(nil, "Succeeded to %s %d slices for group '%s': %v.", ctx.Descriptor, len(ctx.Request.SliceIDs), ctx.Request.Group, ctx.Request.SliceIDs)
 	}
 }

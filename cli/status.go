@@ -47,15 +47,15 @@ func statusRun(cmd *cobra.Command, args []string) {
 func handleStatusCmdError(req controller.Request, err error) {
 	if controller.IsUnitNotFound(err) || controller.IsUnitSliceNotFound(err) {
 		if req.SliceIDs == nil {
-			fmt.Printf("Failed to find group '%s'.\n", req.Group)
+			newLogger.Error(nil, "Failed to find group '%s'.", req.Group)
 		} else if len(req.SliceIDs) == 0 {
-			fmt.Printf("Failed to find all slices of group '%s'.\n", req.Group)
+			newLogger.Error(nil, "Failed to find all slices of group '%s'.", req.Group)
 		} else {
-			fmt.Printf("Failed to find %d slices for group '%s': %v.\n", len(req.SliceIDs), req.Group, req.SliceIDs)
+			newLogger.Error(nil, "Failed to find %d slices for group '%s': %v.", len(req.SliceIDs), req.Group, req.SliceIDs)
 		}
 		os.Exit(1)
 	} else if err != nil {
-		fmt.Printf("%#v\n", maskAny(err))
+		newLogger.Error(nil, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 }
