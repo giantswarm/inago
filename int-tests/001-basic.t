@@ -1,6 +1,5 @@
 Create a group to play around with.
   $ mkdir test-group
-  $ touch test-group/test-group-unit.service
   $ echo "[Unit]\nDescription=Inago Test Unit\n\n[Service]\nExecStart=/bin/bash -c \"while true; do echo Hi; sleep 10; done\"" > test-group/test-group-unit.service
 
 
