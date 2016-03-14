@@ -10,6 +10,15 @@ import (
 	"github.com/giantswarm/inago/file-system/fake"
 )
 
+func givenSomeUnitFileContent() string {
+	return "[Unit]\n" +
+		"Description=Some Unit File Content\n" +
+		"\n" +
+		"[Service]\n" +
+		"ExecStart=/bin/bash -c 'while true; do echo nothing to see, go along; done'\n"
+
+}
+
 type testFileSystemSetup struct {
 	FileName    string
 	FileContent []byte
@@ -47,7 +56,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 				Units: []controller.Unit{
 					{
 						Name:    "dirname_unit.service",
-						Content: "some unit content",
+						Content: givenSomeUnitFileContent(),
 					},
 				},
 			},
@@ -79,6 +88,32 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			},
 			Expected: controller.Request{},
 		},
+
+		// This test ensures that folders inside a group folder are ignored
+		{
+			Setup: []testFileSystemSetup{
+				{FileName: "groupname/someotherdiretctory/REAMDE.md", FileContent: []byte("DO NOT READ ME"), FilePerm: os.FileMode(0644)},
+				{FileName: "groupname/groupname-1.service", FileContent: []byte(givenSomeUnitFileContent()), FilePerm: os.FileMode(0644)},
+				{FileName: "groupname/groupname-2.service", FileContent: []byte(givenSomeUnitFileContent()), FilePerm: os.FileMode(0644)},
+			},
+			Input: controller.Request{
+				RequestConfig: controller.RequestConfig{
+					Group: "groupname",
+				},
+			},
+			Expected: controller.Request{
+				Units: []controller.Unit{
+					{
+						Name:    "groupname-1.service",
+						Content: givenSomeUnitFileContent(),
+					},
+					{
+						Name:    "groupname-2.service",
+						Content: givenSomeUnitFileContent(),
+					},
+				},
+			},
+		},
 	}
 
 	for i, testCase := range testCases {
@@ -100,9 +135,12 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			t.Fatal("case", i+1, "expected", len(testCase.Expected.SliceIDs), "got", len(output.SliceIDs))
 		}
 
-		for i, outputUnit := range output.Units {
-			if outputUnit.Name != testCase.Expected.Units[i].Name {
-				t.Fatal("case", i+1, "expected", testCase.Expected.Units[i].Name, "got", outputUnit.Name)
+		if len(output.Units) != len(testCase.Expected.Units) {
+			t.Fatalf("case %d: expected %d units in output, got %d", i+1, len(testCase.Expected.Units), len(output.Units))
+		}
+		for j, outputUnit := range output.Units {
+			if outputUnit.Name != testCase.Expected.Units[j].Name {
+				t.Fatalf("case %d: expected %s, got %s", i+1, testCase.Expected.Units[j].Name, outputUnit.Name)
 			}
 		}
 	}
