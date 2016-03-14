@@ -9,6 +9,7 @@ import (
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/real"
+	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
@@ -21,6 +22,7 @@ var (
 		Verbose       bool
 	}
 
+	fs             filesystemspec.FileSystem
 	newLogger      logging.Logger
 	newFleet       fleet.Fleet
 	newTaskService task.Service
@@ -35,6 +37,7 @@ var (
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
 			// command runs.
+			fs = filesystemreal.NewFileSystem()
 
 			loggingConfig := logging.DefaultConfig()
 			if globalFlags.Verbose {
@@ -63,7 +66,7 @@ var (
 			newControllerConfig.Logger = newLogger
 			newControllerConfig.Fleet = newFleet
 			newControllerConfig.TaskService = newTaskService
-			newControllerConfig.FileSystem = filesystemreal.NewFileSystem()
+
 			newController = controller.NewController(newControllerConfig)
 		},
 	}

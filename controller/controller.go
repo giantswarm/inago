@@ -10,8 +10,6 @@ import (
 	"github.com/coreos/fleet/unit"
 
 	"github.com/giantswarm/inago/common"
-	"github.com/giantswarm/inago/file-system/fake"
-	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
@@ -23,8 +21,6 @@ type Config struct {
 	// Dependencies.
 
 	Fleet fleet.Fleet
-
-	FileSystem filesystemspec.FileSystem
 
 	TaskService task.Service
 
@@ -62,7 +58,6 @@ func DefaultConfig() Config {
 
 	newConfig := Config{
 		Fleet:       newFleet,
-		FileSystem:  filesystemfake.NewFileSystem(),
 		TaskService: newTaskService,
 		WaitCount:   3,
 		WaitSleep:   1 * time.Second,
@@ -76,7 +71,6 @@ func DefaultConfig() Config {
 // Controller defines the interface a controller needs to implement to provide
 // operations for groups of unit files against a fleet cluster.
 type Controller interface {
-	ExtendWithContent(req Request) (Request, error)
 	ExtendWithExistingSliceIDs(req Request) (Request, error)
 	ExtendWithRandomSliceIDs(req Request) (Request, error)
 

@@ -43,7 +43,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 	newRequestConfig.SliceIDs = strings.Split(strings.Repeat("x", scale), "")
 	req := controller.NewRequest(newRequestConfig)
 
-	req, err := newController.ExtendWithContent(req)
+	req, err := extendRequestWithContent(fs, req)
 	if err != nil {
 		newLogger.Error(nil, "%#v\n", maskAny(err))
 		os.Exit(1)
