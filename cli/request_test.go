@@ -138,9 +138,15 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		if len(output.Units) != len(testCase.Expected.Units) {
 			t.Fatalf("case %d: expected %d units in output, got %d", i+1, len(testCase.Expected.Units), len(output.Units))
 		}
-		for j, outputUnit := range output.Units {
-			if outputUnit.Name != testCase.Expected.Units[j].Name {
-				t.Fatalf("case %d: expected %s, got %s", i+1, testCase.Expected.Units[j].Name, outputUnit.Name)
+		for _, outputUnit := range testCase.Expected.Units {
+			found := false
+			for _, expectedUnit := range output.Units {
+				if outputUnit.Name == expectedUnit.Name {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("case %d: expected %s to be in output, not found", i+1, outputUnit.Name)
 			}
 		}
 	}
