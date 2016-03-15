@@ -8,6 +8,22 @@ import (
 	"github.com/giantswarm/inago/task"
 )
 
+func (c controller) executeTaskAction(f func(req Request) (*task.Task, error), req Request) error {
+	taskObject, err := f(req)
+	if err != nil {
+		return maskAny(err)
+	}
+	closer := make(<-chan struct{})
+	taskObject, err = c.WaitForTask(taskObject.ID, closer)
+	if err != nil {
+		return maskAny(err)
+	}
+	if task.HasFailedStatus(taskObject) {
+		return maskAny(fmt.Errorf(taskObject.Error))
+	}
+	return nil
+}
+
 func (c controller) getNumRunningSlices(req Request) (int, error) {
 	groupStatus, err := c.groupStatus(req)
 	if IsUnitNotFound(err) {
@@ -96,31 +112,13 @@ func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, erro
 	}
 
 	// Submit.
-	taskObject, err := c.Submit(newReq)
-	if err != nil {
+	if err := c.executeTaskAction(c.Submit, newReq); err != nil {
 		return Request{}, maskAny(err)
-	}
-	closer := make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return Request{}, maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
-		return Request{}, maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	// Start.
-	taskObject, err = c.Start(newReq)
-	if err != nil {
+	if err := c.executeTaskAction(c.Start, newReq); err != nil {
 		return Request{}, maskAny(err)
-	}
-	closer = make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return Request{}, maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
-		return Request{}, maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	time.Sleep(time.Duration(opts.ReadySecs) * time.Second)
@@ -150,33 +148,14 @@ func (c controller) removeFirst(req Request, opts UpdateOptions) error {
 
 func (c controller) runRemoveWorker(req Request) error {
 	// Stop.
-	taskObject, err := c.Stop(req)
-	if err != nil {
+	if err := c.executeTaskAction(c.Stop, req); err != nil {
 		return maskAny(err)
-	}
-	closer := make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
-		return maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	// Destroy.
-	taskObject, err = c.Destroy(req)
-	if err != nil {
+	if err := c.executeTaskAction(c.Destroy, req); err != nil {
 		return maskAny(err)
 	}
-	closer = make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
-		return maskAny(fmt.Errorf(taskObject.Error))
-	}
-
 	return nil
 }
 
