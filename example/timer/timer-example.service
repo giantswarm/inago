@@ -1,0 +1,5 @@
+[Unit]
+Description=Inago Timer Example Service
+
+[Service]
+ExecStart=/bin/bash -c "echo Beep"

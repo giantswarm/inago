@@ -1,0 +1,9 @@
+[Unit]
+Description=Inago Timer Example Timer
+
+[Timer]
+OnCalendar=weekly
+Persistent=true     
+ 
+[Install]
+WantedBy=timers.target
