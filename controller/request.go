@@ -7,6 +7,7 @@ import (
 	"github.com/giantswarm/inago/fleet"
 )
 
+// DefaultRequestConfig returns a RequestConfig by best effort.
 func DefaultRequestConfig() RequestConfig {
 	newConfig := RequestConfig{
 		Group:    "",
@@ -16,6 +17,7 @@ func DefaultRequestConfig() RequestConfig {
 	return newConfig
 }
 
+// RequestConfig represents the configuration of a Request.
 type RequestConfig struct {
 	// Group represents the plain group name without any slice expression.
 	Group string
@@ -39,6 +41,7 @@ type Request struct {
 	Units []Unit
 }
 
+// NewRequest returns a Request, given a RequestConfig.
 func NewRequest(config RequestConfig) Request {
 	req := Request{
 		RequestConfig: config,
