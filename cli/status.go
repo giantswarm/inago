@@ -13,9 +13,9 @@ import (
 
 var (
 	statusCmd = &cobra.Command{
-		Use:   "status [group-slice] ...",
-		Short: "status of a group",
-		Long:  "status of a group",
+		Use:   "status <group>",
+		Short: "Get group status",
+		Long:  "Print the status of a group",
 		Run:   statusRun,
 	}
 )

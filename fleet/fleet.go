@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/machine"
@@ -115,10 +114,6 @@ type Fleet interface {
 	// GetStatus fetches the current status of a unit. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
 	GetStatus(ctx context.Context, name string) (UnitStatus, error)
-
-	// GetStatusWithExpression fetches the current status of units based on a
-	// regular expression instead of a plain string.
-	GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 
 	// GetStatusWithMatcher returns a []UnitStatus, with an element for
 	// each unit where the given matcher returns true.
@@ -261,11 +256,6 @@ func (f fleet) GetStatus(ctx context.Context, name string) (UnitStatus, error) {
 	return unitStatus[0], nil
 }
 
-func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error) {
-	status, err := f.GetStatusWithMatcher(exp.MatchString)
-	return status, maskAny(err)
-}
-
 // GetStatusWithMatcher returns a []UnitStatus, with an element for
 // each unit where the given matcher returns true.
 func (f fleet) GetStatusWithMatcher(matcher func(s string) bool) ([]UnitStatus, error) {
@@ -305,7 +295,7 @@ func (f fleet) GetStatusWithMatcher(matcher func(s string) bool) ([]UnitStatus, 
 	}
 
 	// Create our own unit status.
-	ourStatusList, err := f.createOurStatusList(foundFleetUnits, foundFleetUnitStates, machineStates)
+	ourStatusList, err := mapFleetStateToUnitStatusList(foundFleetUnits, foundFleetUnitStates, machineStates)
 	if err != nil {
 		return []UnitStatus{}, maskAny(err)
 	}
@@ -313,7 +303,7 @@ func (f fleet) GetStatusWithMatcher(matcher func(s string) bool) ([]UnitStatus, 
 	return ourStatusList, nil
 }
 
-func (f fleet) ipFromUnitState(unitState *schema.UnitState, machineStates []machine.MachineState) (net.IP, error) {
+func ipFromUnitState(unitState *schema.UnitState, machineStates []machine.MachineState) (net.IP, error) {
 	for _, ms := range machineStates {
 		if unitState.MachineID == ms.ID {
 			return net.ParseIP(ms.PublicIP), nil
@@ -323,7 +313,7 @@ func (f fleet) ipFromUnitState(unitState *schema.UnitState, machineStates []mach
 	return nil, maskAny(ipNotFoundError)
 }
 
-func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState, machines []machine.MachineState) ([]UnitStatus, error) {
+func mapFleetStateToUnitStatusList(foundFleetUnits []*schema.Unit, foundFleetUnitStates []*schema.UnitState, machines []machine.MachineState) ([]UnitStatus, error) {
 	ourStatusList := []UnitStatus{}
 
 	for _, ffu := range foundFleetUnits {
@@ -343,7 +333,7 @@ func (f fleet) createOurStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 			if ffu.Name != ffus.Name {
 				continue
 			}
-			IP, err := f.ipFromUnitState(ffus, machines)
+			IP, err := ipFromUnitState(ffus, machines)
 			if err != nil {
 				return []UnitStatus{}, maskAny(err)
 			}

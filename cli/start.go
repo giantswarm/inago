@@ -10,9 +10,9 @@ import (
 
 var (
 	startCmd = &cobra.Command{
-		Use:   "start [group [group..]]",
-		Short: "Starts the specified group or slices",
-		Long:  "Starts a group or the specified slices",
+		Use:   "start <group|slice...>",
+		Short: "Start a group",
+		Long:  "Start the specified group, or slices",
 		Run:   startRun,
 	}
 )

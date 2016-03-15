@@ -10,9 +10,9 @@ import (
 
 var (
 	stopCmd = &cobra.Command{
-		Use:   "stop [group [group..]]",
-		Short: "Stops the specified group or slices",
-		Long:  "Stops a group or the specified slices",
+		Use:   "stop <group|slice...>",
+		Short: "Stop a group",
+		Long:  "Stop the specified group, or slices",
 		Run:   stopRun,
 	}
 )

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net"
+	"strings"
 	"testing"
 	"time"
 
@@ -405,6 +406,12 @@ func TestController_Submit(t *testing.T) {
 
 	// Mocks
 	controller, fleetMock := givenController()
+
+	fleetMock.On("Submit", mock.MatchedBy(func(unitname string) bool {
+		// "test-main@xxx.service", "content"
+		return strings.HasPrefix(unitname, "test-main@") &&
+			strings.HasSuffix(unitname, ".service")
+	}), "content").Return(nil).Once()
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 		[]fleet.UnitStatus{
 			{
@@ -413,17 +420,16 @@ func TestController_Submit(t *testing.T) {
 		},
 		nil,
 	)
-	fleetMock.On("Submit", "test-main@1.service", "content").Return(nil).Once()
 
 	// Execute test
 	req := Request{
 		RequestConfig: RequestConfig{
-			Group:    "test",
-			SliceIDs: []string{"1"},
+			Group:         "test",
+			DesiredSlices: 1,
 		},
 		Units: []Unit{
 			{
-				Name:    "test-main@1.service",
+				Name:    "test-main@.service",
 				Content: "content",
 			},
 		},

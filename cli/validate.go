@@ -13,9 +13,9 @@ import (
 
 var (
 	validateCmd = &cobra.Command{
-		Use:   "validate",
-		Short: "validate groups",
-		Long:  "validate groups",
+		Use:   "validate [directory]",
+		Short: "Validate groups",
+		Long:  "Validate group directories on the local filesystem",
 		Run:   validateRun,
 	}
 )

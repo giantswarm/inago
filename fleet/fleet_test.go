@@ -195,7 +195,7 @@ func TestFleetGetStatusWithMatcher__Success(t *testing.T) {
 	}))
 }
 
-func Test_Fleet_createOurStatusList(t *testing.T) {
+func Test_Fleet_mapFleetStateToUnitStatusList(t *testing.T) {
 	testCases := []struct {
 		Error                error
 		FoundFleetUnits      []*schema.Unit
@@ -277,14 +277,13 @@ func Test_Fleet_createOurStatusList(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		_, fleet := givenMockedFleet()
-		ourStatusList, err := fleet.createOurStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates, testCase.FleetMachines)
+		statusList, err := mapFleetStateToUnitStatusList(testCase.FoundFleetUnits, testCase.FoundFleetUnitStates, testCase.FleetMachines)
 		if err != nil {
-			t.Fatalf("Fleet.createOurStatusList returned error: %#v", err)
+			t.Fatalf("Fleet.mapFleetStateToUnitStatusList returned error: %#v", err)
 		}
 
-		if !reflect.DeepEqual(ourStatusList, testCase.UnitStatusList) {
-			t.Fatalf("generated status list '%#v' is not equal to expected status list '%#v'", ourStatusList, testCase.UnitStatusList)
+		if !reflect.DeepEqual(statusList, testCase.UnitStatusList) {
+			t.Fatalf("generated status list '%#v' is not equal to expected status list '%#v'", statusList, testCase.UnitStatusList)
 		}
 	}
 }

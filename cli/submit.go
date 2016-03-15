@@ -8,13 +8,15 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
+	"github.com/giantswarm/inago/file-system/spec"
+	"github.com/juju/errgo"
 )
 
 var (
 	submitCmd = &cobra.Command{
 		Use:   "submit <group> [scale]",
-		Short: "submit a group",
-		Long:  "submit a group",
+		Short: "Submit a group",
+		Long:  "Submit a group to the cluster, with an optional scale",
 		Run:   submitRun,
 	}
 )
@@ -40,17 +42,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	newRequestConfig := controller.DefaultRequestConfig()
-	newRequestConfig.Group = group
-	newRequestConfig.SliceIDs = strings.Split(strings.Repeat("x", scale), "")
-	req := controller.NewRequest(newRequestConfig)
-
-	req, err := extendRequestWithContent(fs, req)
-	if err != nil {
-		newLogger.Error(newCtx, "%#v\n", maskAny(err))
-		os.Exit(1)
-	}
-	req, err = newController.ExtendWithRandomSliceIDs(req)
+	req, err := createSubmitRequest(fs, group, scale)
 	if err != nil {
 		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
@@ -69,4 +61,26 @@ func submitRun(cmd *cobra.Command, args []string) {
 		TaskID:     taskObject.ID,
 		Closer:     nil,
 	})
+}
+
+func createSubmitRequest(fs filesystemspec.FileSystem, group string, scale int) (controller.Request, error) {
+	newRequestConfig := controller.DefaultRequestConfig()
+	newRequestConfig.Group = group
+
+	req := controller.NewRequest(newRequestConfig)
+	req, err := extendRequestWithContent(fs, req)
+	if err != nil {
+		return controller.Request{}, err
+	}
+
+	if strings.Contains(req.Units[0].Name, "@") {
+		req.DesiredSlices = scale
+	} else {
+		if scale != 1 {
+			return controller.Request{}, errgo.Newf("invalid scale: must be 1 for unscalable groups")
+		}
+		req.DesiredSlices = 1
+	}
+	req.SliceIDs = nil
+	return req, nil
 }

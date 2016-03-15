@@ -34,8 +34,8 @@ var (
 	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
 		Use:   "inagoctl",
-		Short: "orchestrate groups of unit files on Fleet clusters",
-		Long:  "orchestrate groups of unit files on Fleet clusters",
+		Short: "Inago orchestrates groups of units on Fleet clusters",
+		Long:  "Inago orchestrates groups of units on Fleet clusters",
 		Run:   mainRun,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
@@ -79,8 +79,8 @@ var (
 
 func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
-	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on synchronous actions or not")
-	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output or not")
+	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on synchronous actions")
+	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output")
 
 	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)

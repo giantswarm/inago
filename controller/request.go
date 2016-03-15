@@ -23,6 +23,10 @@ type RequestConfig struct {
 	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
 	// "5", etc..
 	SliceIDs []string
+
+	// DesiredSlices defines the number of random sliceIDs that should be generated
+	// when submitting new groups.
+	DesiredSlices int
 }
 
 // Request represents a controller request. This is used to process some action
@@ -132,12 +136,7 @@ func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 
 	// Find enough sufficient IDs.
 	var newIDs []string
-	for _, sliceID := range req.SliceIDs {
-		if sliceID == "" {
-			// This unit has no explicit slice ID. Skip it.
-			continue
-		}
-
+	for i := 0; i < req.DesiredSlices; i++ {
 		for {
 			newID := NewID()
 

@@ -10,9 +10,9 @@ import (
 
 var (
 	destroyCmd = &cobra.Command{
-		Use:   "destroy [group [group..]]",
-		Short: "Destroys the specified group or slices",
-		Long:  "Destroys a group or the specified slices",
+		Use:   "destroy <group|slice...>",
+		Short: "Destroy a group",
+		Long:  "Destroy the specified group, or slices",
 		Run:   destroyRun,
 	}
 )

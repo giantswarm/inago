@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"net"
 	"os"
-	"regexp"
 	"strings"
 	"text/template"
 
@@ -13,11 +12,6 @@ import (
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
-)
-
-var (
-	atExp    = regexp.MustCompile("@")
-	groupExp = regexp.MustCompile("@(.*)")
 )
 
 var (

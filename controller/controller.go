@@ -73,7 +73,6 @@ func DefaultConfig() Config {
 // operations for groups of unit files against a fleet cluster.
 type Controller interface {
 	ExtendWithExistingSliceIDs(req Request) (Request, error)
-	ExtendWithRandomSliceIDs(req Request) (Request, error)
 
 	// GroupNeedsUpdate checks if the given group should be updated or not. To
 	// make a decision the unit content of each unit of each slice is compared
@@ -194,12 +193,17 @@ func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
 func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error) {
 	c.Config.Logger.Debug(ctx, "controller: handling submit")
 
-	if ok, err := ValidateRequest(req); !ok {
+	if ok, err := ValidateSubmitRequest(req); !ok {
 		return nil, maskAny(err)
 	}
 
 	action := func(ctx context.Context) error {
-		extended, err := req.ExtendSlices()
+		extended, err := c.ExtendWithRandomSliceIDs(req)
+		if err != nil {
+			return err
+		}
+
+		extended, err = extended.ExtendSlices()
 		if err != nil {
 			return maskAny(err)
 		}
