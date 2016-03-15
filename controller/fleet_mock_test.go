@@ -5,6 +5,7 @@ import (
 	"regexp"
 
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/fleet"
 )
@@ -42,23 +43,23 @@ type fleetMock struct {
 	mock.Mock
 }
 
-func (fm *fleetMock) Submit(name, content string) error {
+func (fm *fleetMock) Submit(ctx context.Context, name, content string) error {
 	args := fm.Called(name, content)
 	return args.Error(0)
 }
-func (fm *fleetMock) Start(name string) error {
+func (fm *fleetMock) Start(ctx context.Context, name string) error {
 	args := fm.Called(name)
 	return args.Error(0)
 }
-func (fm *fleetMock) Stop(name string) error {
+func (fm *fleetMock) Stop(ctx context.Context, name string) error {
 	args := fm.Called(name)
 	return args.Error(0)
 }
-func (fm *fleetMock) Destroy(name string) error {
+func (fm *fleetMock) Destroy(ctx context.Context, name string) error {
 	args := fm.Called(name)
 	return args.Error(0)
 }
-func (fm *fleetMock) GetStatus(name string) (fleet.UnitStatus, error) {
+func (fm *fleetMock) GetStatus(ctx context.Context, name string) (fleet.UnitStatus, error) {
 	args := fm.Called(name)
 	return args.Get(0).(fleet.UnitStatus), args.Error(1)
 }

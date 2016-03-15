@@ -6,6 +6,7 @@ import (
 
 	"github.com/ryanuber/columnize"
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/controller"
 )
@@ -20,6 +21,8 @@ var (
 )
 
 func statusRun(cmd *cobra.Command, args []string) {
+	newLogger.Debug(newCtx, "cli: starting status")
+
 	group := ""
 	switch len(args) {
 	case 1:
@@ -34,28 +37,28 @@ func statusRun(cmd *cobra.Command, args []string) {
 	req := controller.NewRequest(newRequestConfig)
 
 	req, err := newController.ExtendWithExistingSliceIDs(req)
-	handleStatusCmdError(req, err)
+	handleStatusCmdError(newCtx, req, err)
 
-	statusList, err := newController.GetStatus(req)
-	handleStatusCmdError(req, err)
+	statusList, err := newController.GetStatus(newCtx, req)
+	handleStatusCmdError(newCtx, req, err)
 
 	data, err := createStatus(req.Group, statusList)
-	handleStatusCmdError(req, err)
+	handleStatusCmdError(newCtx, req, err)
 	fmt.Println(columnize.SimpleFormat(data))
 }
 
-func handleStatusCmdError(req controller.Request, err error) {
+func handleStatusCmdError(ctx context.Context, req controller.Request, err error) {
 	if controller.IsUnitNotFound(err) || controller.IsUnitSliceNotFound(err) {
 		if req.SliceIDs == nil {
-			newLogger.Error(nil, "Failed to find group '%s'.", req.Group)
+			newLogger.Error(ctx, "Failed to find group '%s'.", req.Group)
 		} else if len(req.SliceIDs) == 0 {
-			newLogger.Error(nil, "Failed to find all slices of group '%s'.", req.Group)
+			newLogger.Error(ctx, "Failed to find all slices of group '%s'.", req.Group)
 		} else {
-			newLogger.Error(nil, "Failed to find %d slices for group '%s': %v.", len(req.SliceIDs), req.Group, req.SliceIDs)
+			newLogger.Error(ctx, "Failed to find %d slices for group '%s': %v.", len(req.SliceIDs), req.Group, req.SliceIDs)
 		}
 		os.Exit(1)
 	} else if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(ctx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 }

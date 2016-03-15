@@ -22,6 +22,8 @@ var (
 )
 
 func submitRun(cmd *cobra.Command, args []string) {
+	newLogger.Debug(newCtx, "cli: starting submit")
+
 	group := ""
 	scale := 1
 	switch len(args) {
@@ -31,7 +33,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 		group = args[0]
 		n, err := strconv.Atoi(args[1])
 		if err != nil {
-			newLogger.Error(nil, "%#v\n", maskAny(err))
+			newLogger.Error(newCtx, "%#v\n", maskAny(err))
 			os.Exit(1)
 		}
 		scale = n
@@ -42,17 +44,17 @@ func submitRun(cmd *cobra.Command, args []string) {
 
 	req, err := createSubmitRequest(fs, group, scale)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	taskObject, err := newController.Submit(req)
+	taskObject, err := newController.Submit(newCtx, req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	maybeBlockWithFeedback(blockWithFeedbackCtx{
+	maybeBlockWithFeedback(newCtx, blockWithFeedbackCtx{
 		Request:    req,
 		Descriptor: "submit",
 		NoBlock:    globalFlags.NoBlock,

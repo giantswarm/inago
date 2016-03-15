@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/coreos/fleet/unit"
+	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/fleet"
@@ -83,37 +84,37 @@ type Controller interface {
 
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Submit(req Request) (*task.Task, error)
+	Submit(ctx context.Context, req Request) (*task.Task, error)
 
 	// Start starts a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to launched.
-	Start(req Request) (*task.Task, error)
+	Start(ctx context.Context, req Request) (*task.Task, error)
 
 	// Stop stops a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
-	Stop(req Request) (*task.Task, error)
+	Stop(ctx context.Context, req Request) (*task.Task, error)
 
 	// Destroy delets a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to inactive.
-	Destroy(req Request) (*task.Task, error)
+	Destroy(ctx context.Context, req Request) (*task.Task, error)
 
 	// GetStatus fetches the current status of a group. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
-	GetStatus(req Request) ([]fleet.UnitStatus, error)
+	GetStatus(ctx context.Context, req Request) ([]fleet.UnitStatus, error)
 
 	// WaitForStatus waits for a group to reach the given status.
-	WaitForStatus(req Request, desired Status, closer <-chan struct{}) error
+	WaitForStatus(ctx context.Context, req Request, desired Status, closer <-chan struct{}) error
 
 	// WaitForTask waits for the given task to reach a final status. Once the
 	// given task has reached the final status, the final task representation is
 	// returned.
-	WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error)
+	WaitForTask(ctx context.Context, taskID string, closer <-chan struct{}) (*task.Task, error)
 
 	// Update updates the given group on best effort with respect to the given
 	// opts. The given req identifies the group to update. The given options
 	// define the strategy used to update the given group. See also
 	// UpdateOptions.
-	Update(req Request, opts UpdateOptions) (*task.Task, error)
+	Update(ctx context.Context, req Request, opts UpdateOptions) (*task.Task, error)
 }
 
 // NewController creates a new Controller that is configured with the given
@@ -189,12 +190,14 @@ func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
 	return req, true, nil
 }
 
-func (c controller) Submit(req Request) (*task.Task, error) {
+func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling submit")
+
 	if ok, err := ValidateSubmitRequest(req); !ok {
 		return nil, maskAny(err)
 	}
 
-	action := func() error {
+	action := func(ctx context.Context) error {
 		extended, err := c.ExtendWithRandomSliceIDs(req)
 		if err != nil {
 			return err
@@ -206,14 +209,14 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 		}
 
 		for _, unit := range extended.Units {
-			err := c.Fleet.Submit(unit.Name, unit.Content)
+			err := c.Fleet.Submit(ctx, unit.Name, unit.Content)
 			if err != nil {
 				return maskAny(err)
 			}
 		}
 
 		closer := make(chan struct{})
-		err = c.WaitForStatus(req, StatusStopped, closer)
+		err = c.WaitForStatus(ctx, req, StatusStopped, closer)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -223,7 +226,7 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 		return nil
 	}
 
-	taskObject, err := c.TaskService.Create(action)
+	taskObject, err := c.TaskService.Create(ctx, action)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -231,22 +234,24 @@ func (c controller) Submit(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Start(req Request) (*task.Task, error) {
-	action := func() error {
+func (c controller) Start(ctx context.Context, req Request) (*task.Task, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling start")
+
+	action := func(ctx context.Context) error {
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
 
 		for _, unitStatus := range unitStatusList {
-			err := c.Fleet.Start(unitStatus.Name)
+			err := c.Fleet.Start(ctx, unitStatus.Name)
 			if err != nil {
 				return maskAny(err)
 			}
 		}
 
 		closer := make(chan struct{})
-		err = c.WaitForStatus(req, StatusRunning, closer)
+		err = c.WaitForStatus(ctx, req, StatusRunning, closer)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -256,7 +261,7 @@ func (c controller) Start(req Request) (*task.Task, error) {
 		return nil
 	}
 
-	taskObject, err := c.TaskService.Create(action)
+	taskObject, err := c.TaskService.Create(ctx, action)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -264,22 +269,24 @@ func (c controller) Start(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Stop(req Request) (*task.Task, error) {
-	action := func() error {
+func (c controller) Stop(ctx context.Context, req Request) (*task.Task, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling stop")
+
+	action := func(ctx context.Context) error {
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
 
 		for _, unitStatus := range unitStatusList {
-			err := c.Fleet.Stop(unitStatus.Name)
+			err := c.Fleet.Stop(ctx, unitStatus.Name)
 			if err != nil {
 				return maskAny(err)
 			}
 		}
 
 		closer := make(chan struct{})
-		err = c.WaitForStatus(req, StatusStopped, closer)
+		err = c.WaitForStatus(ctx, req, StatusStopped, closer)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -289,7 +296,7 @@ func (c controller) Stop(req Request) (*task.Task, error) {
 		return nil
 	}
 
-	taskObject, err := c.TaskService.Create(action)
+	taskObject, err := c.TaskService.Create(ctx, action)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -297,22 +304,24 @@ func (c controller) Stop(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Destroy(req Request) (*task.Task, error) {
-	action := func() error {
+func (c controller) Destroy(ctx context.Context, req Request) (*task.Task, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling destroy")
+
+	action := func(ctx context.Context) error {
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
 
 		for _, unitStatus := range unitStatusList {
-			err := c.Fleet.Destroy(unitStatus.Name)
+			err := c.Fleet.Destroy(ctx, unitStatus.Name)
 			if err != nil {
 				return maskAny(err)
 			}
 		}
 
 		closer := make(chan struct{})
-		err = c.WaitForStatus(req, StatusNotFound, closer)
+		err = c.WaitForStatus(ctx, req, StatusNotFound, closer)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -322,7 +331,7 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 		return nil
 	}
 
-	taskObject, err := c.TaskService.Create(action)
+	taskObject, err := c.TaskService.Create(ctx, action)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -330,8 +339,10 @@ func (c controller) Destroy(req Request) (*task.Task, error) {
 	return taskObject, nil
 }
 
-func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) {
-	action := func() error {
+func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions) (*task.Task, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling update")
+
+	action := func(ctx context.Context) error {
 		req, ok, err := c.GroupNeedsUpdate(req)
 		if err != nil {
 			return maskAny(err)
@@ -342,7 +353,7 @@ func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) 
 			return maskAnyf(updateNotAllowedError, "units already up to date")
 		}
 
-		err = c.UpdateWithStrategy(req, opts)
+		err = c.UpdateWithStrategy(ctx, req, opts)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -352,7 +363,7 @@ func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) 
 		return nil
 	}
 
-	taskObject, err := c.TaskService.Create(action)
+	taskObject, err := c.TaskService.Create(ctx, action)
 	if err != nil {
 		return nil, maskAny(err)
 	}
@@ -360,12 +371,16 @@ func (c controller) Update(req Request, opts UpdateOptions) (*task.Task, error) 
 	return taskObject, nil
 }
 
-func (c controller) GetStatus(req Request) ([]fleet.UnitStatus, error) {
+func (c controller) GetStatus(ctx context.Context, req Request) ([]fleet.UnitStatus, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling getting status")
+
 	status, err := c.groupStatusWithValidate(req)
 	return status, maskAny(err)
 }
 
-func (c controller) WaitForStatus(req Request, desired Status, closer <-chan struct{}) error {
+func (c controller) WaitForStatus(ctx context.Context, req Request, desired Status, closer <-chan struct{}) error {
+	c.Config.Logger.Debug(ctx, "controller: handling waiting for status")
+
 	fail := make(chan error)
 	done := make(chan struct{})
 
@@ -424,8 +439,10 @@ func (c controller) WaitForStatus(req Request, desired Status, closer <-chan str
 	}
 }
 
-func (c controller) WaitForTask(taskID string, closer <-chan struct{}) (*task.Task, error) {
-	taskObject, err := c.TaskService.WaitForFinalStatus(taskID, closer)
+func (c controller) WaitForTask(ctx context.Context, taskID string, closer <-chan struct{}) (*task.Task, error) {
+	c.Config.Logger.Debug(ctx, "controller: handling waiting for task")
+
+	taskObject, err := c.TaskService.WaitForFinalStatus(ctx, taskID, closer)
 	return taskObject, maskAny(err)
 }
 
