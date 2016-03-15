@@ -12,6 +12,7 @@ import (
 	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
 	"github.com/coreos/fleet/unit"
+	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/logging"
@@ -96,23 +97,23 @@ type UnitStatus struct {
 type Fleet interface {
 	// Submit schedules a unit on the configured fleet cluster. This is done by
 	// setting the unit's target state to loaded.
-	Submit(name, content string) error
+	Submit(ctx context.Context, name, content string) error
 
 	// Start starts a unit on the configured fleet cluster. This is done by
 	// setting the unit's target state to launched.
-	Start(name string) error
+	Start(ctx context.Context, name string) error
 
 	// Stop stops a unit on the configured fleet cluster. This is done by
 	// setting the unit's target state to loaded.
-	Stop(name string) error
+	Stop(ctx context.Context, name string) error
 
 	// Destroy delets a unit on the configured fleet cluster. This is done by
 	// setting the unit's target state to inactive.
-	Destroy(name string) error
+	Destroy(ctx context.Context, name string) error
 
 	// GetStatus fetches the current status of a unit. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
-	GetStatus(name string) (UnitStatus, error)
+	GetStatus(ctx context.Context, name string) (UnitStatus, error)
 
 	// GetStatusWithMatcher returns a []UnitStatus, with an element for
 	// each unit where the given matcher returns true.
@@ -182,8 +183,8 @@ type fleet struct {
 	Client client.API
 }
 
-func (f fleet) Submit(name, content string) error {
-	f.Config.Logger.Debug(nil, "Submitting unit '%v' to fleet", name)
+func (f fleet) Submit(ctx context.Context, name, content string) error {
+	f.Config.Logger.Debug(ctx, "fleet: submitting unit '%v'", name)
 
 	unitFile, err := unit.NewUnitFile(content)
 	if err != nil {
@@ -204,8 +205,8 @@ func (f fleet) Submit(name, content string) error {
 	return nil
 }
 
-func (f fleet) Start(name string) error {
-	f.Config.Logger.Debug(nil, "Starting unit '%v'", name)
+func (f fleet) Start(ctx context.Context, name string) error {
+	f.Config.Logger.Debug(ctx, "fleet: starting unit '%v'", name)
 
 	err := f.Client.SetUnitTargetState(name, unitStateLaunched)
 	if err != nil {
@@ -215,8 +216,8 @@ func (f fleet) Start(name string) error {
 	return nil
 }
 
-func (f fleet) Stop(name string) error {
-	f.Config.Logger.Debug(nil, "Stopping unit '%v'", name)
+func (f fleet) Stop(ctx context.Context, name string) error {
+	f.Config.Logger.Debug(ctx, "fleet: stopping unit '%v'", name)
 
 	err := f.Client.SetUnitTargetState(name, unitStateLoaded)
 	if err != nil {
@@ -226,8 +227,8 @@ func (f fleet) Stop(name string) error {
 	return nil
 }
 
-func (f fleet) Destroy(name string) error {
-	f.Config.Logger.Debug(nil, "Destroying unit '%v'", name)
+func (f fleet) Destroy(ctx context.Context, name string) error {
+	f.Config.Logger.Debug(ctx, "fleet: destroying unit '%v'", name)
 
 	err := f.Client.DestroyUnit(name)
 	if err != nil {
@@ -237,7 +238,9 @@ func (f fleet) Destroy(name string) error {
 	return nil
 }
 
-func (f fleet) GetStatus(name string) (UnitStatus, error) {
+func (f fleet) GetStatus(ctx context.Context, name string) (UnitStatus, error) {
+	f.Config.Logger.Debug(ctx, "fleet: getting status of unit '%v'", name)
+
 	matcher := func(s string) bool {
 		return name == s
 	}

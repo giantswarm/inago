@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/real"
@@ -27,6 +28,8 @@ var (
 	newFleet       fleet.Fleet
 	newTaskService task.Service
 	newController  controller.Controller
+
+	newCtx context.Context
 
 	// MainCmd contains the cobra.Command to execute inagoctl.
 	MainCmd = &cobra.Command{
@@ -68,6 +71,8 @@ var (
 			newControllerConfig.TaskService = newTaskService
 
 			newController = controller.NewController(newControllerConfig)
+
+			newCtx = context.Background()
 		},
 	}
 )

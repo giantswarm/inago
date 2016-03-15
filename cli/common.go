@@ -7,6 +7,8 @@ import (
 	"strings"
 	"text/template"
 
+	"golang.org/x/net/context"
+
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
@@ -80,31 +82,31 @@ type blockWithFeedbackCtx struct {
 	Closer     chan struct{}
 }
 
-func maybeBlockWithFeedback(ctx blockWithFeedbackCtx) {
-	if !ctx.NoBlock {
-		taskObject, err := newController.WaitForTask(ctx.TaskID, ctx.Closer)
+func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
+	if !bctx.NoBlock {
+		taskObject, err := newController.WaitForTask(ctx, bctx.TaskID, bctx.Closer)
 		if err != nil {
-			newLogger.Error(nil, "%#v", maskAny(err))
+			newLogger.Error(ctx, "%#v", maskAny(err))
 			os.Exit(1)
 		}
 
 		if task.HasFailedStatus(taskObject) {
-			if ctx.Request.SliceIDs == nil {
-				newLogger.Error(nil, "Failed to %s group '%s'. (%s)", ctx.Descriptor, ctx.Request.Group, taskObject.Error)
-			} else if len(ctx.Request.SliceIDs) == 0 {
-				newLogger.Error(nil, "Failed to %s all slices of group '%s'. (%s)", ctx.Descriptor, ctx.Request.Group, taskObject.Error)
+			if bctx.Request.SliceIDs == nil {
+				newLogger.Error(ctx, "Failed to %s group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error)
+			} else if len(bctx.Request.SliceIDs) == 0 {
+				newLogger.Error(ctx, "Failed to %s all slices of group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error)
 			} else {
-				newLogger.Error(nil, "Failed to %s %d slices for group '%s': %v. (%s)", ctx.Descriptor, len(ctx.Request.SliceIDs), ctx.Request.Group, ctx.Request.SliceIDs, taskObject.Error)
+				newLogger.Error(ctx, "Failed to %s %d slices for group '%s': %v. (%s)", bctx.Descriptor, len(bctx.Request.SliceIDs), bctx.Request.Group, bctx.Request.SliceIDs, taskObject.Error)
 			}
 			os.Exit(1)
 		}
 	}
 
-	if ctx.Request.SliceIDs == nil {
-		newLogger.Info(nil, "Succeeded to %s group '%s'.", ctx.Descriptor, ctx.Request.Group)
-	} else if len(ctx.Request.SliceIDs) == 0 {
-		newLogger.Info(nil, "Succeeded to %s all slices of group '%s'.", ctx.Descriptor, ctx.Request.Group)
+	if bctx.Request.SliceIDs == nil {
+		newLogger.Info(ctx, "Succeeded to %s group '%s'.", bctx.Descriptor, bctx.Request.Group)
+	} else if len(bctx.Request.SliceIDs) == 0 {
+		newLogger.Info(ctx, "Succeeded to %s all slices of group '%s'.", bctx.Descriptor, bctx.Request.Group)
 	} else {
-		newLogger.Info(nil, "Succeeded to %s %d slices for group '%s': %v.", ctx.Descriptor, len(ctx.Request.SliceIDs), ctx.Request.Group, ctx.Request.SliceIDs)
+		newLogger.Info(ctx, "Succeeded to %s %d slices for group '%s': %v.", bctx.Descriptor, len(bctx.Request.SliceIDs), bctx.Request.Group, bctx.Request.SliceIDs)
 	}
 }

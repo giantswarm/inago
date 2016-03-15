@@ -9,6 +9,7 @@ import (
 	"github.com/juju/errgo"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/mock"
+	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
@@ -391,7 +392,7 @@ func TestController_Submit_Error(t *testing.T) {
 		Units: []Unit{}, // Intentionally left empty!
 	}
 
-	task, err := controller.Submit(req)
+	task, err := controller.Submit(context.Background(), req)
 
 	// Assert
 	Expect(task).To(BeNil())
@@ -433,10 +434,10 @@ func TestController_Submit(t *testing.T) {
 			},
 		},
 	}
-	taskObject, err := controller.Submit(req)
+	taskObject, err := controller.Submit(context.Background(), req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject.ID, nil)
+	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert
@@ -469,10 +470,10 @@ func TestController_Start(t *testing.T) {
 			SliceIDs: []string{"1"},
 		},
 	}
-	taskObject, err := controller.Start(req)
+	taskObject, err := controller.Start(context.Background(), req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject.ID, nil)
+	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert
@@ -505,10 +506,10 @@ func TestController_Destroy(t *testing.T) {
 			SliceIDs: []string{"1"},
 		},
 	}
-	taskObject, err := controller.Destroy(req)
+	taskObject, err := controller.Destroy(context.Background(), req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject.ID, nil)
+	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert
@@ -541,10 +542,10 @@ func TestController_Stop(t *testing.T) {
 			SliceIDs: []string{"1"},
 		},
 	}
-	taskObject, err := controller.Stop(req)
+	taskObject, err := controller.Stop(context.Background(), req)
 	Expect(err).To(BeNil())
 
-	_, err = controller.WaitForTask(taskObject.ID, nil)
+	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
 	Expect(err).To(BeNil())
 
 	// Assert
@@ -566,7 +567,7 @@ func TestController_Status_ErrorOnMismatchingSliceIDs(t *testing.T) {
 	).Once()
 
 	// Execute
-	status, err := controller.GetStatus(Request{
+	status, err := controller.GetStatus(context.Background(), Request{
 		RequestConfig: RequestConfig{
 			Group:    "test",
 			SliceIDs: []string{"1", "2"},
@@ -637,11 +638,11 @@ func TestController_WaitForStatus_Success(t *testing.T) {
 			},
 		},
 	}
-	taskObject, err := controller.Start(req)
+	taskObject, err := controller.Start(context.Background(), req)
 	Expect(err).To(BeNil())
 	Expect(task.HasFinalStatus(taskObject)).To(Not(BeTrue()))
 
-	taskObject, err = controller.WaitForTask(taskObject.ID, nil)
+	taskObject, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
 	Expect(err).To(BeNil())
 	Expect(task.HasSucceededStatus(taskObject)).To(BeTrue())
 
@@ -685,7 +686,7 @@ func TestController_WaitForStatus_Closer(t *testing.T) {
 	closer := make(chan struct{}, 1)
 	closer <- struct{}{}
 
-	err := controller.WaitForStatus(req, desired, closer)
+	err := controller.WaitForStatus(context.Background(), req, desired, closer)
 	Expect(err).To(BeNil())
 }
 
@@ -750,6 +751,6 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 	desired := StatusRunning
 	closer := make(chan struct{}, 1)
 
-	err := c.WaitForStatus(req, desired, closer)
+	err := c.WaitForStatus(context.Background(), req, desired, closer)
 	Expect(IsWaitTimeoutReached(err)).To(BeTrue()) // Because WaitForStatus is 0 nothing should happen but directly return the error
 }
