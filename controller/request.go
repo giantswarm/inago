@@ -51,7 +51,7 @@ func NewRequest(config RequestConfig) Request {
 	return req
 }
 
-var unitExp = regexp.MustCompile("@.service")
+var unitExp = regexp.MustCompile("@.")
 
 // ExtendSlices extends unit files with respect to the given slice IDs. Having
 // slice IDs "1" and "2" and having unit files "foo@.service" and
@@ -72,7 +72,7 @@ func (r Request) ExtendSlices() (Request, error) {
 		for _, unit := range r.Units {
 			newUnit := unit
 			// TODO fix extension
-			newUnit.Name = unitExp.ReplaceAllString(newUnit.Name, fmt.Sprintf("@%s.service", sliceID))
+			newUnit.Name = unitExp.ReplaceAllString(newUnit.Name, fmt.Sprintf("@%s.", sliceID))
 			newUnits = append(newUnits, newUnit)
 		}
 	}
