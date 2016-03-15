@@ -13,8 +13,8 @@ import (
 var (
 	submitCmd = &cobra.Command{
 		Use:   "submit <group> [scale]",
-		Short: "submit a group",
-		Long:  "submit a group",
+		Short: "Submit a group",
+		Long:  "Submit a group to the cluster, with an optional scale",
 		Run:   submitRun,
 	}
 )
