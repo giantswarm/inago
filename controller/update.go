@@ -120,7 +120,7 @@ func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, erro
 		return Request{}, maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		return Request{}, maskAny(err)
+		return Request{}, maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	time.Sleep(time.Duration(opts.ReadySecs) * time.Second)
@@ -160,7 +160,7 @@ func (c controller) runRemoveWorker(req Request) error {
 		return maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		return maskAny(err)
+		return maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	// Destroy.
@@ -174,7 +174,7 @@ func (c controller) runRemoveWorker(req Request) error {
 		return maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		return maskAny(err)
+		return maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	return nil
