@@ -245,15 +245,13 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 			}
 			if ok {
 				go func() {
-					v := atomic.AddInt64(&addInProgress, 1)
-					addInProgress = v
+					atomic.AddInt64(&addInProgress, 1)
 					err := c.addFirst(ctx, newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
-					v = atomic.AddInt64(&addInProgress, -1)
-					addInProgress = v
+					atomic.AddInt64(&addInProgress, -1)
 					done <- struct{}{}
 				}()
 
@@ -268,15 +266,13 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 			}
 			if ok {
 				go func() {
-					v := atomic.AddInt64(&removeInProgress, 1)
-					removeInProgress = v
+					atomic.AddInt64(&removeInProgress, 1)
 					err := c.removeFirst(ctx, newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
-					v = atomic.AddInt64(&removeInProgress, -1)
-					removeInProgress = v
+					atomic.AddInt64(&removeInProgress, -1)
 					done <- struct{}{}
 				}()
 
