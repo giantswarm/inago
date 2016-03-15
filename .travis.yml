@@ -8,6 +8,10 @@ go:
 notifications:
     email: false
 
+env:
+    - TEST_SUITE=unit
+    - TEST_SUITE=integration
+
 before_install:
 - wget https://downloads.giantswarm.io/builder/0.11.0/builder
 - chmod +x ./builder
@@ -15,6 +19,7 @@ before_install:
 - go get -u github.com/golang/lint/golint
 
 script:
+- echo $TEST_SUITE
 - make lint
 - make ci-test
 - make ci-build
