@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/machine"
@@ -114,10 +113,6 @@ type Fleet interface {
 	// GetStatus fetches the current status of a unit. If the unit cannot be
 	// found, an error that you can identify using IsUnitNotFound is returned.
 	GetStatus(name string) (UnitStatus, error)
-
-	// GetStatusWithExpression fetches the current status of units based on a
-	// regular expression instead of a plain string.
-	GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error)
 
 	// GetStatusWithMatcher returns a []UnitStatus, with an element for
 	// each unit where the given matcher returns true.
@@ -256,11 +251,6 @@ func (f fleet) GetStatus(name string) (UnitStatus, error) {
 	}
 
 	return unitStatus[0], nil
-}
-
-func (f fleet) GetStatusWithExpression(exp *regexp.Regexp) ([]UnitStatus, error) {
-	status, err := f.GetStatusWithMatcher(exp.MatchString)
-	return status, maskAny(err)
 }
 
 // GetStatusWithMatcher returns a []UnitStatus, with an element for
