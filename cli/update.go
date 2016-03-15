@@ -17,9 +17,9 @@ var (
 	}
 
 	updateCmd = &cobra.Command{
-		Use:   "update [group]",
-		Short: "update a group",
-		Long:  "update a group",
+		Use:   "update <group>",
+		Short: "Update a group",
+		Long:  "Update a group to the latest version on the local filesystem",
 		Run:   updateRun,
 	}
 )
