@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -58,16 +59,16 @@ func validateRun(cmd *cobra.Command, args []string) {
 	for _, request := range requests {
 		ok, err := controller.ValidateRequest(request)
 		if ok {
-			newLogger.Info(newCtx, "Group '%v' is valid.", request.Group)
+			fmt.Printf("Group '%v' is valid.\n", request.Group)
 		} else {
-			newLogger.Info(newCtx, "Group '%v' not valid: %v.", request.Group, err)
+			fmt.Printf("Group '%v' not valid: %v.\n", request.Group, err)
 		}
 	}
 
 	ok, err := controller.ValidateMultipleRequest(requests)
 	if ok {
-		newLogger.Info(newCtx, "Groups are valid globally.")
+		fmt.Println("Groups are valid globally.")
 	} else {
-		newLogger.Info(newCtx, "Groups are not valid globally:", err)
+		fmt.Printf("Groups are not valid globally: %v\n", err)
 	}
 }
