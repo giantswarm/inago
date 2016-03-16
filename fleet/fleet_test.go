@@ -274,6 +274,59 @@ func Test_Fleet_mapFleetStateToUnitStatusList(t *testing.T) {
 				},
 			},
 		},
+		// This test checks that our fleet status mapper overwrites the inactive-CurrentState
+		// of the fleet Unit with the DesiredState.
+		{
+			Error: nil,
+			FoundFleetUnits: []*schema.Unit{
+				{
+					CurrentState: "inactive", // For global units, the fleet CurrentState is always 'inactive'
+					DesiredState: "launched",
+					MachineID:    "",
+					Name:         "name-1",
+					Options: []*schema.UnitOption{
+						{Section:"Unit", Name: "Description", Value: "Test Unit"},
+						{Section:"Service", Name: "ExecStart", Value: "/bin/bash -c 'echo ping'"},
+						{Section:"x-Fleet", Name: "Global", Value: "true"},
+					},
+				},
+			},
+			FoundFleetUnitStates: []*schema.UnitState{
+				{
+					MachineID:          "machine-ID-1",
+					Name:               "name-1",
+					SystemdActiveState: "active",
+					SystemdSubState:    "running",
+					Hash:               "1234",
+				},
+			},
+			FleetMachines: []machine.MachineState{
+				{
+					ID:       "machine-ID-1",
+					PublicIP: "10.0.0.1",
+				},
+				{
+					ID:       "machine-ID-2",
+					PublicIP: "10.0.0.2",
+				},
+			},
+			UnitStatusList: []UnitStatus{
+				{
+					Current: "launched", // NOTE: Here we expect the fleet code to return sthg else than what was given by fleet
+					Desired: "launched",
+					Machine: []MachineStatus{
+						{
+							ID:            "machine-ID-1",
+							IP:            net.ParseIP("10.0.0.1"),
+							SystemdActive: "active",
+							SystemdSub:    "running",
+							UnitHash:      "1234",
+						},
+					},
+					Name: "name-1",
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {

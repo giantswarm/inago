@@ -4,6 +4,7 @@
 package fleet
 
 import (
+	"strings"
 	"net"
 	"net/http"
 	"net/url"
@@ -363,7 +364,9 @@ func mapFleetStateToUnitStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 
 func isFleetGlobalUnit(options []*schema.UnitOption) bool {
 	for _, option := range options {
-		if option.Section == "X-Fleet" && option.Name == "Global" && option.Value == "true" {
+		if strings.EqualFold(option.Section, "X-Fleet") &&
+		 strings.EqualFold(option.Name, "Global") &&
+		 strings.EqualFold(option.Value, "true") {
 			return true
 		}
 	}
