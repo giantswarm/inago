@@ -5,8 +5,26 @@ import (
 	"sync/atomic"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/giantswarm/inago/task"
 )
+
+func (c controller) executeTaskAction(f func(ctx context.Context, req Request) (*task.Task, error), ctx context.Context, req Request) error {
+	taskObject, err := f(ctx, req)
+	if err != nil {
+		return maskAny(err)
+	}
+	closer := make(<-chan struct{})
+	taskObject, err = c.WaitForTask(ctx, taskObject.ID, closer)
+	if err != nil {
+		return maskAny(err)
+	}
+	if task.HasFailedStatus(taskObject) {
+		return maskAny(fmt.Errorf(taskObject.Error))
+	}
+	return nil
+}
 
 func (c controller) getNumRunningSlices(req Request) (int, error) {
 	groupStatus, err := c.groupStatus(req)
@@ -68,8 +86,8 @@ func (c controller) isGroupAdditionAllowed(req Request, maxGrowth int) (bool, er
 	return false, nil
 }
 
-func (c controller) addFirst(req Request, opts UpdateOptions) error {
-	newReq, err := c.runAddWorker(req, opts)
+func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOptions) error {
+	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -80,7 +98,7 @@ func (c controller) addFirst(req Request, opts UpdateOptions) error {
 	if n != len(newReq.SliceIDs) {
 		return maskAnyf(updateFailedError, "slice not running: %v", newReq.SliceIDs)
 	}
-	err = c.runRemoveWorker(req)
+	err = c.runRemoveWorker(ctx, req)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -88,7 +106,7 @@ func (c controller) addFirst(req Request, opts UpdateOptions) error {
 	return nil
 }
 
-func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, error) {
+func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOptions) (Request, error) {
 	// Create new random IDs.
 	newReq, err := c.ExtendWithRandomSliceIDs(req)
 	if err != nil {
@@ -96,30 +114,12 @@ func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, erro
 	}
 
 	// Submit.
-	taskObject, err := c.Submit(newReq)
-	if err != nil {
+	if err := c.executeTaskAction(c.Submit, ctx, newReq); err != nil {
 		return Request{}, maskAny(err)
-	}
-	closer := make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return Request{}, maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
-		return Request{}, maskAny(fmt.Errorf(taskObject.Error))
 	}
 
 	// Start.
-	taskObject, err = c.Start(newReq)
-	if err != nil {
-		return Request{}, maskAny(err)
-	}
-	closer = make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return Request{}, maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
+	if err := c.executeTaskAction(c.Start, ctx, newReq); err != nil {
 		return Request{}, maskAny(err)
 	}
 
@@ -128,12 +128,12 @@ func (c controller) runAddWorker(req Request, opts UpdateOptions) (Request, erro
 	return newReq, nil
 }
 
-func (c controller) removeFirst(req Request, opts UpdateOptions) error {
-	err := c.runRemoveWorker(req)
+func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOptions) error {
+	err := c.runRemoveWorker(ctx, req)
 	if err != nil {
 		return maskAny(err)
 	}
-	newReq, err := c.runAddWorker(req, opts)
+	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -148,35 +148,16 @@ func (c controller) removeFirst(req Request, opts UpdateOptions) error {
 	return nil
 }
 
-func (c controller) runRemoveWorker(req Request) error {
+func (c controller) runRemoveWorker(ctx context.Context, req Request) error {
 	// Stop.
-	taskObject, err := c.Stop(req)
-	if err != nil {
-		return maskAny(err)
-	}
-	closer := make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
+	if err := c.executeTaskAction(c.Stop, ctx, req); err != nil {
 		return maskAny(err)
 	}
 
 	// Destroy.
-	taskObject, err = c.Destroy(req)
-	if err != nil {
+	if err := c.executeTaskAction(c.Destroy, ctx, req); err != nil {
 		return maskAny(err)
 	}
-	closer = make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
-	if err != nil {
-		return maskAny(err)
-	}
-	if task.HasFailedStatus(taskObject) {
-		return maskAny(err)
-	}
-
 	return nil
 }
 
@@ -213,7 +194,7 @@ type UpdateOptions struct {
 	ReadySecs int
 }
 
-func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
+func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts UpdateOptions) error {
 	fail := make(chan error, 1)
 	numTotal := len(req.SliceIDs)
 	done := make(chan struct{}, numTotal)
@@ -243,15 +224,13 @@ func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 			}
 			if ok {
 				go func() {
-					v := atomic.AddInt64(&addInProgress, 1)
-					addInProgress = v
-					err := c.addFirst(newReq, opts)
+					atomic.AddInt64(&addInProgress, 1)
+					err := c.addFirst(ctx, newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
-					v = atomic.AddInt64(&addInProgress, -1)
-					addInProgress = v
+					atomic.AddInt64(&addInProgress, -1)
 					done <- struct{}{}
 				}()
 
@@ -266,15 +245,13 @@ func (c controller) UpdateWithStrategy(req Request, opts UpdateOptions) error {
 			}
 			if ok {
 				go func() {
-					v := atomic.AddInt64(&removeInProgress, 1)
-					removeInProgress = v
-					err := c.removeFirst(newReq, opts)
+					atomic.AddInt64(&removeInProgress, 1)
+					err := c.removeFirst(ctx, newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
-					v = atomic.AddInt64(&removeInProgress, -1)
-					removeInProgress = v
+					atomic.AddInt64(&removeInProgress, -1)
 					done <- struct{}{}
 				}()
 

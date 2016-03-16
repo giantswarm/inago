@@ -213,6 +213,13 @@ var (
 	StatusIndex = []StatusContext{
 		{
 			FleetCurrent:  "inactive",
+			FleetDesired:  "launched",
+			SystemdActive: "active",
+			SystemdSub:    "running",
+			Aggregated:    StatusRunning,
+		},
+		{
+			FleetCurrent:  "inactive",
 			FleetDesired:  "*",
 			SystemdActive: "*",
 			SystemdSub:    "*",

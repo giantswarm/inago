@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	format = "%{time:2006-01-02 15:04:05} | %{level:-8s} | %{message}"
+	format = "%{time:2006-01-02 15:04:05.000} | %{level:-8s} | %{message}"
 )
 
 // NewGoLoggingLogger returns a GoLoggingLogger, given a Config.
@@ -76,7 +76,8 @@ func (gll GoLoggingLogger) Critical(ctx context.Context, f string, v ...interfac
 // formatLog formats the log record, adding a context if it exists.
 func (gll GoLoggingLogger) formatLog(ctx context.Context, f string, v ...interface{}) string {
 	if ctx != nil {
-		f = fmt.Sprintf("%v: "+f, ctx)
+		f = "%v: " + f
+		v = append([]interface{}{ctx}, v...)
 	}
 
 	return fmt.Sprintf(f, v...)

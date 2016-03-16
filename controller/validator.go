@@ -72,6 +72,16 @@ func StringsHaveOrNot(s []string, c string) bool {
 	return !(numStringsWithOccurence > 0 && numStringsWithOccurence < len(s))
 }
 
+// ValidateSubmitRequest validates that the given request contains no SliceIDs.
+// Otherwise it is identical to ValidateRequest().
+func ValidateSubmitRequest(request Request) (bool, error) {
+	if len(request.SliceIDs) != 0 {
+		return false, maskAny(invalidSubmitRequestSlicesGivenError)
+	}
+
+	return ValidateRequest(request)
+}
+
 // ValidateRequest takes a Request, and returns whether it is valid or not.
 // If the request is not valid, the error provides more details.
 func ValidateRequest(request Request) (bool, error) {
@@ -86,7 +96,6 @@ func ValidateRequest(request Request) (bool, error) {
 	}
 
 	unitNames := []string{}
-
 	for _, unit := range request.Units {
 		unitNames = append(unitNames, unit.Name)
 	}

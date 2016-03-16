@@ -4,24 +4,28 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"golang.org/x/net/context"
 )
 
 func Test_Task_TaskService_Create_Success(t *testing.T) {
 	newTaskService := NewTaskService(DefaultConfig())
 
 	testData := "invalid"
+	seenContextID := ""
 
-	action := func() error {
+	action := func(ctx context.Context) error {
 		testData = "valid"
+		seenContextID = ctx.Value(ContextTaskID).(string)
 		return nil
 	}
 
-	taskObject, err := newTaskService.Create(action)
+	taskObject, err := newTaskService.Create(context.Background(), action)
 	if err != nil {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
 
-	taskObject, err = newTaskService.WaitForFinalStatus(taskObject.ID, nil)
+	taskObject, err = newTaskService.WaitForFinalStatus(context.Background(), taskObject.ID, nil)
 	if err != nil {
 		t.Fatalf("TaskService.WaitForFinalStatus did return error: %#v", err)
 	}
@@ -34,6 +38,10 @@ func Test_Task_TaskService_Create_Success(t *testing.T) {
 		t.Fatalf("test data did NOT have a valid value")
 	}
 
+	if seenContextID != taskObject.ID {
+		t.Fatalf("Expected context to contain task-id '%s', but got '%s'", taskObject.ID, seenContextID)
+	}
+
 	if taskObject.Error != "" {
 		t.Fatalf("received task object did have a error")
 	}
@@ -44,16 +52,16 @@ func Test_Task_TastService_Create_Error(t *testing.T) {
 	newConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := NewTaskService(newConfig)
 
-	action := func() error {
+	action := func(ctx context.Context) error {
 		return fmt.Errorf("test error")
 	}
 
-	taskObject, err := newTaskService.Create(action)
+	taskObject, err := newTaskService.Create(context.Background(), action)
 	if err != nil {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
 
-	taskObject, err = newTaskService.WaitForFinalStatus(taskObject.ID, nil)
+	taskObject, err = newTaskService.WaitForFinalStatus(context.Background(), taskObject.ID, nil)
 	if err != nil {
 		t.Fatalf("TaskService.WaitForFinalStatus did return error: %#v", err)
 	}
@@ -72,16 +80,16 @@ func Test_Task_TastService_Create_FetchState(t *testing.T) {
 	newConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := NewTaskService(newConfig)
 
-	action := func() error {
+	action := func(ctx context.Context) error {
 		return nil
 	}
 
-	taskObject, err := newTaskService.Create(action)
+	taskObject, err := newTaskService.Create(context.Background(), action)
 	if err != nil {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
 
-	taskObject, err = newTaskService.WaitForFinalStatus(taskObject.ID, nil)
+	taskObject, err = newTaskService.WaitForFinalStatus(context.Background(), taskObject.ID, nil)
 	if err != nil {
 		t.Fatalf("TaskService.WaitForFinalStatus did return error: %#v", err)
 	}
@@ -91,13 +99,13 @@ func Test_Task_TastService_Create_FetchState(t *testing.T) {
 	}
 
 	// Fetching invalid state should not work.
-	_, err = newTaskService.FetchState("invalid")
+	_, err = newTaskService.FetchState(context.Background(), "invalid")
 	if !IsTaskObjectNotFound(err) {
 		t.Fatalf("TaskService.Create did NOT return proper error")
 	}
 
 	// Fetching valid state should work.
-	taskObject, err = newTaskService.FetchState(taskObject.ID)
+	taskObject, err = newTaskService.FetchState(context.Background(), taskObject.ID)
 	if err != nil {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
@@ -112,14 +120,14 @@ func Test_Task_TastService_Create_Wait(t *testing.T) {
 	newConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := NewTaskService(newConfig)
 
-	action := func() error {
+	action := func(ctx context.Context) error {
 		// Just something to do, so the task blocks
 		time.Sleep(300 * time.Millisecond)
 
 		return nil
 	}
 
-	originalTaskObject, err := newTaskService.Create(action)
+	originalTaskObject, err := newTaskService.Create(context.Background(), action)
 	if err != nil {
 		t.Fatalf("TaskService.Create did return error: %#v", err)
 	}
@@ -128,7 +136,7 @@ func Test_Task_TastService_Create_Wait(t *testing.T) {
 	closer := make(chan struct{}, 1)
 	closer <- struct{}{}
 
-	taskObject, err := newTaskService.WaitForFinalStatus(originalTaskObject.ID, closer)
+	taskObject, err := newTaskService.WaitForFinalStatus(context.Background(), originalTaskObject.ID, closer)
 	if err != nil {
 		t.Fatalf("TaskService.WaitForFinalStatus did return error: %#v", err)
 	}
@@ -136,7 +144,7 @@ func Test_Task_TastService_Create_Wait(t *testing.T) {
 		t.Fatalf("Expected canceled WaitForFinalStatus to return nil, nil")
 	}
 
-	taskObject, err = newTaskService.FetchState(originalTaskObject.ID)
+	taskObject, err = newTaskService.FetchState(context.Background(), originalTaskObject.ID)
 	if err != nil {
 		t.Fatalf("TaskService.FetchState did return error: %#v", err)
 	}

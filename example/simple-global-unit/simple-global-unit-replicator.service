@@ -1,0 +1,8 @@
+[Unit]
+Description=A simple global unit for fleet and Inago
+
+[Service]
+ExecStart=/bin/bash -c "while true; do echo hi; sleep 10; done"
+
+[X-Fleet]
+Global=true

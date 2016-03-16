@@ -295,6 +295,14 @@ func Test_Status_AggregateStatus(t *testing.T) {
 			ErrorMatcher: IsInvalidUnitStatus,
 			Expected:     "",
 		},
+		{
+			FC:           "inactive",
+			FD:           "launched",
+			SA:           "active",
+			SS:           "running",
+			ErrorMatcher: nil,
+			Expected:     StatusRunning,
+		},
 	}
 
 	for i, testCase := range testCases {

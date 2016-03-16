@@ -7,6 +7,7 @@ import (
 	"github.com/giantswarm/inago/fleet"
 )
 
+// DefaultRequestConfig returns a RequestConfig by best effort.
 func DefaultRequestConfig() RequestConfig {
 	newConfig := RequestConfig{
 		Group:    "",
@@ -16,6 +17,7 @@ func DefaultRequestConfig() RequestConfig {
 	return newConfig
 }
 
+// RequestConfig represents the configuration of a Request.
 type RequestConfig struct {
 	// Group represents the plain group name without any slice expression.
 	Group string
@@ -23,6 +25,10 @@ type RequestConfig struct {
 	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
 	// "5", etc..
 	SliceIDs []string
+
+	// DesiredSlices defines the number of random sliceIDs that should be generated
+	// when submitting new groups.
+	DesiredSlices int
 }
 
 // Request represents a controller request. This is used to process some action
@@ -35,6 +41,7 @@ type Request struct {
 	Units []Unit
 }
 
+// NewRequest returns a Request, given a RequestConfig.
 func NewRequest(config RequestConfig) Request {
 	req := Request{
 		RequestConfig: config,
@@ -132,12 +139,7 @@ func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 
 	// Find enough sufficient IDs.
 	var newIDs []string
-	for _, sliceID := range req.SliceIDs {
-		if sliceID == "" {
-			// This unit has no explicit slice ID. Skip it.
-			continue
-		}
-
+	for i := 0; i < req.DesiredSlices; i++ {
 		for {
 			newID := NewID()
 

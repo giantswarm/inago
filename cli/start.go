@@ -10,14 +10,16 @@ import (
 
 var (
 	startCmd = &cobra.Command{
-		Use:   "start [group [group..]]",
-		Short: "Starts the specified group or slices",
-		Long:  "Starts a group or the specified slices",
+		Use:   "start <group|slice...>",
+		Short: "Start a group",
+		Long:  "Start the specified group, or slices",
 		Run:   startRun,
 	}
 )
 
 func startRun(cmd *cobra.Command, args []string) {
+	newLogger.Debug(newCtx, "cli: starting start")
+
 	group := ""
 	switch len(args) {
 	case 1:
@@ -33,17 +35,17 @@ func startRun(cmd *cobra.Command, args []string) {
 
 	req, err := newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	taskObject, err := newController.Start(req)
+	taskObject, err := newController.Start(newCtx, req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	maybeBlockWithFeedback(blockWithFeedbackCtx{
+	maybeBlockWithFeedback(newCtx, blockWithFeedbackCtx{
 		Request:    req,
 		Descriptor: "start",
 		NoBlock:    globalFlags.NoBlock,

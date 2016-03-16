@@ -10,14 +10,16 @@ import (
 
 var (
 	stopCmd = &cobra.Command{
-		Use:   "stop [group [group..]]",
-		Short: "Stops the specified group or slices",
-		Long:  "Stops a group or the specified slices",
+		Use:   "stop <group|slice...>",
+		Short: "Stop a group",
+		Long:  "Stop the specified group, or slices",
 		Run:   stopRun,
 	}
 )
 
 func stopRun(cmd *cobra.Command, args []string) {
+	newLogger.Debug(newCtx, "cli: starting stop")
+
 	group := ""
 	switch len(args) {
 	case 1:
@@ -33,17 +35,17 @@ func stopRun(cmd *cobra.Command, args []string) {
 
 	req, err := newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	taskObject, err := newController.Stop(req)
+	taskObject, err := newController.Stop(newCtx, req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	maybeBlockWithFeedback(blockWithFeedbackCtx{
+	maybeBlockWithFeedback(newCtx, blockWithFeedbackCtx{
 		Request:    req,
 		Descriptor: "stop",
 		NoBlock:    globalFlags.NoBlock,

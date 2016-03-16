@@ -17,9 +17,9 @@ var (
 	}
 
 	updateCmd = &cobra.Command{
-		Use:   "update [group]",
-		Short: "update a group",
-		Long:  "update a group",
+		Use:   "update <group>",
+		Short: "Update a group",
+		Long:  "Update a group to the latest version on the local filesystem",
 		Run:   updateRun,
 	}
 )
@@ -31,6 +31,8 @@ func init() {
 }
 
 func updateRun(cmd *cobra.Command, args []string) {
+	newLogger.Debug(newCtx, "cli: starting update")
+
 	group := ""
 	switch len(args) {
 	case 1:
@@ -58,20 +60,20 @@ func updateRun(cmd *cobra.Command, args []string) {
 		// TODO Force flag for forcing the update even if the unit hashes do not differ?
 	}
 
-	taskObject, err := newController.Update(req, opts)
+	taskObject, err := newController.Update(newCtx, req, opts)
 	handleUpdateCmdError(err)
 	// The update creates new slices. Thus new slice IDs. We want to give the
 	// feedback about the new slice IDs at the end. So we need to fetch the new
 	// slice IDs once the task has finished. We don't want to mix this specific
 	// detail with the general implementation of maybeBlockWithFeedback. Thus we
 	// wait for the task to be finished here manually.
-	taskObject, err = newController.WaitForTask(taskObject.ID, nil)
+	taskObject, err = newController.WaitForTask(newCtx, taskObject.ID, nil)
 	handleUpdateCmdError(err)
 
 	req, err = newController.ExtendWithExistingSliceIDs(req)
 	handleUpdateCmdError(err)
 
-	maybeBlockWithFeedback(blockWithFeedbackCtx{
+	maybeBlockWithFeedback(newCtx, blockWithFeedbackCtx{
 		Request:    req,
 		Descriptor: "update",
 		NoBlock:    false,

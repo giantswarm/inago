@@ -10,14 +10,16 @@ import (
 
 var (
 	destroyCmd = &cobra.Command{
-		Use:   "destroy [group [group..]]",
-		Short: "Destroys the specified group or slices",
-		Long:  "Destroys a group or the specified slices",
+		Use:   "destroy <group|slice...>",
+		Short: "Destroy a group",
+		Long:  "Destroy the specified group, or slices",
 		Run:   destroyRun,
 	}
 )
 
 func destroyRun(cmd *cobra.Command, args []string) {
+	newLogger.Debug(newCtx, "cli: starting destroy")
+
 	group := ""
 	switch len(args) {
 	case 1:
@@ -33,17 +35,17 @@ func destroyRun(cmd *cobra.Command, args []string) {
 
 	req, err := newController.ExtendWithExistingSliceIDs(req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	taskObject, err := newController.Destroy(req)
+	taskObject, err := newController.Destroy(newCtx, req)
 	if err != nil {
-		newLogger.Error(nil, "%#v", maskAny(err))
+		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
 	}
 
-	maybeBlockWithFeedback(blockWithFeedbackCtx{
+	maybeBlockWithFeedback(newCtx, blockWithFeedbackCtx{
 		Request:    req,
 		Descriptor: "destroy",
 		NoBlock:    globalFlags.NoBlock,
