@@ -35,6 +35,17 @@ func validateRun(cmd *cobra.Command, args []string) {
 
 		for _, file := range files {
 			if file.IsDir() && !strings.HasPrefix(file.Name(), ".") {
+				// If the directory is empty, don't validate it
+				subfiles, err := ioutil.ReadDir(file.Name())
+				if err != nil {
+					newLogger.Critical(newCtx, "%#v", maskAny(err))
+					os.Exit(1)
+				}
+				if len(subfiles) == 0 {
+					continue
+				}
+				// The directory contains files, add it to the list of groups
+				// that should be validated
 				groups = append(groups, file.Name())
 			}
 		}
