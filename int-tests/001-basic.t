@@ -5,13 +5,13 @@ Create a group to play around with.
 
 Validate the test group.
   $ inagoctl validate test-group
-  Group 'test-group' is valid.
-  Groups are valid globally.
+  .*\|\scontext.Background: Group 'test-group' is valid. (re)
+  .*\|\scontext.Background: Groups are valid globally. (re)
 
 
 Submit the test group.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} submit test-group
-  Succeeded to submit all slices of group 'test-group'.
+  .*\|\scontext.Background: Succeeded to submit group 'test-group'. (re)
   $ sleep 5
 
 
@@ -24,7 +24,7 @@ Test the status of the test group, after submission.
 
 Start the test group.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} start test-group
-  Succeeded to start all slices of group 'test-group'.
+  .*\|\scontext.Background: Succeeded to start group 'test-group'. (re)
   $ sleep 5
 
 
@@ -37,7 +37,7 @@ Test the status of the test group, after starting.
 
 Stop the test group
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} stop test-group
-  Succeeded to stop all slices of group 'test-group'.
+  .*\|\scontext.Background: Succeeded to stop group 'test-group'. (re)
   $ sleep 5
 
 
@@ -50,11 +50,11 @@ Test the status of the test group, after stopping.
 
 Destroy the test group
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy test-group
-  Succeeded to destroy all slices of group 'test-group'.
+  .*\|\scontext.Background: Succeeded to destroy group 'test-group'. (re)
   $ sleep 5
 
 
 Test the status of the test group, after destruction.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status test-group
-  Failed to find all slices of group 'test-group'.
+  .*\|\scontext.Background: Failed to find group 'test-group'. (re)
   [1]
