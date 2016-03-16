@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/machine"
 	"github.com/coreos/fleet/schema"
@@ -329,10 +330,18 @@ func mapFleetStateToUnitStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 			Name:    ffu.Name,
 			SliceID: ID,
 		}
+
+		// FLEET-WEIRDNESS: In case of global units, the CurrentState seems to be always "inactive"
+		// To make the output a bit nicer, we overwrite it with DesiredState
+		if isFleetGlobalUnit(ffu.Options) {
+			ourUnitStatus.Current = ourUnitStatus.Desired
+		}
+
 		for _, ffus := range foundFleetUnitStates {
 			if ffu.Name != ffus.Name {
 				continue
 			}
+
 			IP, err := ipFromUnitState(ffus, machines)
 			if err != nil {
 				return []UnitStatus{}, maskAny(err)
@@ -350,4 +359,13 @@ func mapFleetStateToUnitStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 	}
 
 	return ourStatusList, nil
+}
+
+func isFleetGlobalUnit(options []*schema.UnitOption) bool {
+	for _, option := range options {
+		if option.Section == "X-Fleet" && option.Name == "Global" && option.Value == "true" {
+			return true
+		}
+	}
+	return false
 }
