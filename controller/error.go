@@ -14,10 +14,9 @@ type ValidationError struct {
 }
 
 func (e ValidationError) Error() string {
-	// TODO better error message
-	msg := "group or unit invalid:\n"
+	msg := "Validation Error found:\n"
 	for _, err := range e.causingErrors {
-		msg = msg + fmt.Sprintf("\t%v\n", err)
+		msg = msg + fmt.Sprintf("\t* %v\n", err)
 	}
 	return msg
 }
