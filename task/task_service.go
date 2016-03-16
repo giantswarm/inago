@@ -217,7 +217,4 @@ func (ts *taskService) WaitForFinalStatus(ctx context.Context, taskID string, cl
 			ts.Config.Logger.Debug(ctx, "task: does not have final status: %#v", taskObject)
 		}
 	}
-
-	ts.Config.Logger.Error(ctx, "task: waiting has fallen through")
-	return nil, nil
 }
