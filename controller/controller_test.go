@@ -186,6 +186,100 @@ func Test_Request_ExtendSlices(t *testing.T) {
 				},
 			},
 		},
+
+		// Test that a timer with no slice IDs is not affected by being extended.
+		{
+			Input: Request{
+				RequestConfig: RequestConfig{
+					SliceIDs: nil,
+				},
+				Units: []Unit{
+					{
+						Name:    "simple.timer",
+						Content: "some unit content",
+					},
+				},
+			},
+			Expected: Request{
+				RequestConfig: RequestConfig{
+					SliceIDs: nil,
+				},
+				Units: []Unit{
+					{
+						Name:    "simple.timer",
+						Content: "some unit content",
+					},
+				},
+			},
+		},
+
+		// Test that a timer with one slice ID is extended.
+		{
+			Input: Request{
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1"},
+				},
+				Units: []Unit{
+					{
+						Name:    "simple@.timer",
+						Content: "some unit content",
+					},
+				},
+			},
+			Expected: Request{
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1"},
+				},
+				Units: []Unit{
+					{
+						Name:    "simple@1.timer",
+						Content: "some unit content",
+					},
+				},
+			},
+		},
+
+		// Test that two timers with two slice IDs are properly extended.
+		{
+			Input: Request{
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"foo", "bar"},
+				},
+				Units: []Unit{
+					{
+						Name:    "alpha@.timer",
+						Content: "some unit content",
+					},
+					{
+						Name:    "beta@.timer",
+						Content: "some unit content",
+					},
+				},
+			},
+			Expected: Request{
+				RequestConfig: RequestConfig{
+					SliceIDs: []string{"1"},
+				},
+				Units: []Unit{
+					{
+						Name:    "alpha@foo.timer",
+						Content: "some unit content",
+					},
+					{
+						Name:    "beta@foo.timer",
+						Content: "some unit content",
+					},
+					{
+						Name:    "alpha@bar.timer",
+						Content: "some unit content",
+					},
+					{
+						Name:    "beta@bar.timer",
+						Content: "some unit content",
+					},
+				},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
