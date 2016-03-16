@@ -10,15 +10,28 @@ import (
 // It is returned when the validation fails. causingErrors contains all
 // errors that occurenced, while validating the request.
 type ValidationError struct {
-	causingErrors []error
+	CausingErrors []error
 }
 
 func (e ValidationError) Error() string {
 	msg := "Validation Error found:\n"
-	for _, err := range e.causingErrors {
+	for _, err := range e.CausingErrors {
 		msg = msg + fmt.Sprintf("\t* %v\n", err)
 	}
 	return msg
+}
+
+func (e *ValidationError) Add(err error) {
+	e.CausingErrors = append(e.CausingErrors, err)
+}
+
+func (e *ValidationError) Contains(err error) bool {
+	for _, ce := range e.CausingErrors {
+		if err == ce {
+			return true
+		}
+	}
+	return false
 }
 
 var (

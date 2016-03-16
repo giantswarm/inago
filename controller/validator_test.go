@@ -7,9 +7,9 @@ import (
 // TestValidateRequest tests the ValidateRequest function.
 func TestValidateRequest(t *testing.T) {
 	var tests = []struct {
-		request      Request
-		valid        bool
-		errAssertion func(error) bool
+		request     Request
+		valid       bool
+		expectedErr error
 	}{
 		// Test a group with no units in it is not valid.
 		{
@@ -18,8 +18,8 @@ func TestValidateRequest(t *testing.T) {
 					Group: "empty",
 				},
 			},
-			valid:        false,
-			errAssertion: IsNoUnitsInGroup,
+			valid:       false,
+			expectedErr: noUnitsInGroupError,
 		},
 		// Test a group with one well-named unit is valid.
 		{
@@ -33,8 +33,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        true,
-			errAssertion: nil,
+			valid:       true,
+			expectedErr: nil,
 		},
 		// Test a group with two well-named units is valid.
 		{
@@ -51,8 +51,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        true,
-			errAssertion: nil,
+			valid:       true,
+			expectedErr: nil,
 		},
 		// Test a group with a scalable unit is valid.
 		{
@@ -66,8 +66,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        true,
-			errAssertion: nil,
+			valid:       true,
+			expectedErr: nil,
 		},
 		// Test a group with two scalable units is valid.
 		{
@@ -84,8 +84,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        true,
-			errAssertion: nil,
+			valid:       true,
+			expectedErr: nil,
 		},
 		// Test that a group mixing scalable and unscalable units is not valid.
 		{
@@ -102,8 +102,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsMixedSliceInstance,
+			valid:       false,
+			expectedErr: mixedSliceInstanceError,
 		},
 		// Test that units must be prefixed with their group name.
 		{
@@ -117,8 +117,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsBadUnitPrefix,
+			valid:       false,
+			expectedErr: badUnitPrefixError,
 		},
 		// Test that group names cannot contain @ symbols.
 		{
@@ -132,8 +132,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsAtInGroupNameError,
+			valid:       false,
+			expectedErr: atInGroupNameError,
 		},
 		// Test that unit names cannot contain multiple @ symbols.
 		{
@@ -147,8 +147,8 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsMultipleAtInUnitName,
+			valid:       false,
+			expectedErr: multipleAtInUnitNameError,
 		},
 		// Test that a group cannot have multiple units with the same name.
 		{
@@ -171,21 +171,27 @@ func TestValidateRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsUnitsSameName,
+			valid:       false,
+			expectedErr: unitsSameNameError,
 		},
 	}
 
 	for index, test := range tests {
 		valid, err := ValidateRequest(test.request)
+
+		var validationErr *ValidationError
+		if err != nil {
+			validationErr = err.(*ValidationError)
+		}
+
 		if test.valid != valid {
 			t.Errorf("%v: Request validity should be: '%v', was '%v'", index, test.valid, valid)
 		}
 		if test.valid && err != nil {
-			t.Errorf("%v: Request should be valid, but returned err: '%v'", index, err)
+			t.Errorf("%v: Request should be valid, but returned err: '%v'", index, validationErr)
 		}
-		if !test.valid && !test.errAssertion(err) {
-			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, err)
+		if !test.valid && !validationErr.Contains(test.expectedErr) {
+			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, validationErr)
 		}
 	}
 }
@@ -193,9 +199,9 @@ func TestValidateRequest(t *testing.T) {
 // TestValidateMultipleRequest tests the ValidateMultipleRequest function.
 func TestValidateMultipleRequest(t *testing.T) {
 	var tests = []struct {
-		requests     []Request
-		valid        bool
-		errAssertion func(error) bool
+		requests    []Request
+		valid       bool
+		expectedErr error
 	}{
 		// Test that two differently named groups are valid.
 		{
@@ -211,8 +217,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        true,
-			errAssertion: nil,
+			valid:       true,
+			expectedErr: nil,
 		},
 		// Test that groups which are prefixes of another are invalid.
 		{
@@ -228,8 +234,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsGroupsArePrefix,
+			valid:       false,
+			expectedErr: groupsArePrefixError,
 		},
 		// Test that the group prefix rule applies to the entire group name.
 		{
@@ -245,8 +251,8 @@ func TestValidateMultipleRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        true,
-			errAssertion: nil,
+			valid:       true,
+			expectedErr: nil,
 		},
 		// Test that group names must be unique.
 		{
@@ -262,21 +268,27 @@ func TestValidateMultipleRequest(t *testing.T) {
 					},
 				},
 			},
-			valid:        false,
-			errAssertion: IsGroupsSameName,
+			valid:       false,
+			expectedErr: groupsSameNameError,
 		},
 	}
 
 	for index, test := range tests {
 		valid, err := ValidateMultipleRequest(test.requests)
+
+		var validationErr *ValidationError
+		if err != nil {
+			validationErr = err.(*ValidationError)
+		}
+
 		if test.valid != valid {
 			t.Errorf("%v: Requests validity should be: '%v', was '%v'", index, test.valid, valid)
 		}
 		if test.valid && err != nil {
 			t.Errorf("%v: Requests should be valid, but returned err: '%v'", index, err)
 		}
-		if !test.valid && !test.errAssertion(err) {
-			t.Errorf("%v: Requests should be invalid, but returned incorrect err '%v'", index, err)
+		if !test.valid && !validationErr.Contains(test.expectedErr) {
+			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, validationErr)
 		}
 	}
 }

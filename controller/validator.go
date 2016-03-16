@@ -78,7 +78,6 @@ func ValidateSubmitRequest(request Request) (bool, error) {
 	if len(request.SliceIDs) != 0 {
 		return false, maskAny(invalidSubmitRequestSlicesGivenError)
 	}
-
 	return ValidateRequest(request)
 }
 
@@ -88,12 +87,12 @@ func ValidateRequest(request Request) (bool, error) {
 	var validationError ValidationError
 	// Check there are units in the group.
 	if len(request.Units) == 0 {
-		validationError.causingErrors = append(validationError.causingErrors, noUnitsInGroupError)
+		validationError.Add(noUnitsInGroupError)
 	}
 
 	// Check that there are not any @ symbols in the group name.
 	if strings.Contains(request.Group, "@") {
-		validationError.causingErrors = append(validationError.causingErrors, atInGroupNameError)
+		validationError.Add(atInGroupNameError)
 	}
 
 	unitNames := []string{}
@@ -103,26 +102,26 @@ func ValidateRequest(request Request) (bool, error) {
 
 	// Check that we're not mixing units with @ and units without @.
 	if !StringsHaveOrNot(unitNames, "@.") {
-		validationError.causingErrors = append(validationError.causingErrors, mixedSliceInstanceError)
+		validationError.Add(mixedSliceInstanceError)
 	}
 
 	// Check that all unit names are prefixed by the group name.
 	if !StringsHasPrefix(unitNames, request.Group) {
-		validationError.causingErrors = append(validationError.causingErrors, badUnitPrefixError)
+		validationError.Add(badUnitPrefixError)
 	}
 
 	// Check that @ only occurences at most once per unit name.
 	if StringsCountMoreThan(unitNames, "@", 1) {
-		validationError.causingErrors = append(validationError.causingErrors, multipleAtInUnitNameError)
+		validationError.Add(multipleAtInUnitNameError)
 	}
 
 	// Check that all unit names are unique.
 	if !StringsUnique(unitNames) {
-		validationError.causingErrors = append(validationError.causingErrors, unitsSameNameError)
+		validationError.Add(unitsSameNameError)
 	}
 
-	if len(validationError.causingErrors) != 0 {
-		return false, validationError
+	if len(validationError.CausingErrors) != 0 {
+		return false, &validationError
 	}
 	return true, nil
 }
@@ -140,16 +139,16 @@ func ValidateMultipleRequest(requests []Request) (bool, error) {
 
 	// Check that all group names are unique.
 	if !StringsUnique(groupNames) {
-		validationError.causingErrors = append(validationError.causingErrors, groupsSameNameError)
+		validationError.Add(groupsSameNameError)
 	}
 
 	// Check that group names are not prefixes of each other.
 	if StringsSharePrefix(groupNames) {
-		validationError.causingErrors = append(validationError.causingErrors, groupsArePrefixError)
+		validationError.Add(groupsArePrefixError)
 	}
 
-	if len(validationError.causingErrors) != 0 {
-		return false, validationError
+	if len(validationError.CausingErrors) != 0 {
+		return false, &validationError
 	}
 	return true, nil
 }
