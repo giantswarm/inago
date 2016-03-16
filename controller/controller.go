@@ -208,6 +208,7 @@ func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error)
 			return maskAny(err)
 		}
 
+		c.Config.Logger.Debug(ctx, "action: submitting units")
 		for _, unit := range extended.Units {
 			err := c.Fleet.Submit(ctx, unit.Name, unit.Content)
 			if err != nil {
@@ -215,6 +216,7 @@ func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error)
 			}
 		}
 
+		c.Config.Logger.Debug(ctx, "action: waiting for status of submitted units")
 		closer := make(chan struct{})
 		err = c.WaitForStatus(ctx, req, StatusStopped, closer)
 		if err != nil {
@@ -238,11 +240,13 @@ func (c controller) Start(ctx context.Context, req Request) (*task.Task, error) 
 	c.Config.Logger.Debug(ctx, "controller: handling start")
 
 	action := func(ctx context.Context) error {
+		c.Config.Logger.Debug(ctx, "action: fetching unit status list")
 		unitStatusList, err := c.groupStatusWithValidate(req)
 		if err != nil {
 			return maskAny(err)
 		}
 
+		c.Config.Logger.Debug(ctx, "action: starting units")
 		for _, unitStatus := range unitStatusList {
 			err := c.Fleet.Start(ctx, unitStatus.Name)
 			if err != nil {
@@ -250,6 +254,7 @@ func (c controller) Start(ctx context.Context, req Request) (*task.Task, error) 
 			}
 		}
 
+		c.Config.Logger.Debug(ctx, "action: waiting for status of started units")
 		closer := make(chan struct{})
 		err = c.WaitForStatus(ctx, req, StatusRunning, closer)
 		if err != nil {
@@ -391,6 +396,8 @@ func (c controller) WaitForStatus(ctx context.Context, req Request, desired Stat
 
 	L1:
 		for {
+			c.Config.Logger.Debug(ctx, "controller: fetching group status")
+
 			unitStatusList, err := c.groupStatus(req)
 			if IsUnitNotFound(err) && desired == StatusNotFound {
 				goto C1
@@ -399,13 +406,16 @@ func (c controller) WaitForStatus(ctx context.Context, req Request, desired Stat
 				return
 			}
 
+			c.Config.Logger.Debug(ctx, "controller: checking units have desired state: %v", desired)
 			for _, us := range unitStatusList {
+				c.Config.Logger.Debug(ctx, "controller: unit status: %#v", us)
 				ok, err := unitHasStatus(us, desired)
 				if err != nil {
 					fail <- maskAny(err)
 					return
 				}
 				if !ok {
+					c.Config.Logger.Debug(ctx, "controller: unit %v does not have desired state: %v", us, desired)
 					// Whenever the aggregated status does not match the desired
 					// status, we reset the counter.
 					count = 0
@@ -415,10 +425,12 @@ func (c controller) WaitForStatus(ctx context.Context, req Request, desired Stat
 			}
 
 		C1:
+			c.Config.Logger.Debug(ctx, "controller: group has desired state: %v", desired)
 			count++
 			if count == c.WaitCount {
 				// In case the desired state was seen 3 times in a row, we assume we
 				// finally reached the state we want to have.
+				c.Config.Logger.Debug(ctx, "controller: group has reached count (%v) of desired state: %v", c.WaitCount, desired)
 				break
 			}
 			time.Sleep(c.WaitSleep)
