@@ -114,19 +114,21 @@ func (ts *taskService) Create(ctx context.Context, action Action) (*Task, error)
 	}
 
 	go func(ctx context.Context) {
+		ts.Config.Logger.Debug(ctx, "task: starting task action")
 		err := action(ctx)
 		if err != nil {
 			_, markErr := ts.MarkAsFailedWithError(ctx, taskObject, err)
 			if markErr != nil {
-				ts.Config.Logger.Error(nil, "[E] Task.MarkAsFailed failed: %#v", maskAny(markErr))
+				ts.Config.Logger.Error(ctx, "Task.MarkAsFailed failed: %#v", maskAny(markErr))
 				return
 			}
 			return
 		}
+		ts.Config.Logger.Debug(ctx, "task: finished task action")
 
 		_, err = ts.MarkAsSucceeded(ctx, taskObject)
 		if err != nil {
-			ts.Config.Logger.Error(nil, "[E] Task.MarkAsSucceeded failed: %#v", maskAny(err))
+			ts.Config.Logger.Error(ctx, "Task.MarkAsSucceeded failed: %#v", maskAny(err))
 			return
 		}
 	}(ctx)
@@ -136,7 +138,7 @@ func (ts *taskService) Create(ctx context.Context, action Action) (*Task, error)
 		return nil, maskAny(err)
 	}
 
-	ts.Config.Logger.Debug(ctx, "task: created task: %v", taskObject.ID)
+	ts.Config.Logger.Debug(ctx, "task: created task")
 
 	return taskObject, nil
 }
@@ -150,6 +152,8 @@ func (ts *taskService) FetchState(ctx context.Context, taskID string) (*Task, er
 	if err != nil {
 		return nil, maskAny(err)
 	}
+
+	ts.Config.Logger.Debug(ctx, "task: found task: %#v", taskObject)
 
 	return taskObject, nil
 }
@@ -203,16 +207,21 @@ func (ts *taskService) WaitForFinalStatus(ctx context.Context, taskID string, cl
 	for {
 		select {
 		case <-closer:
+			ts.Config.Logger.Debug(ctx, "task: closer stopped wait for final status")
 			return nil, nil
 		case <-time.After(ts.WaitSleep):
 			taskObject, err := ts.FetchState(ctx, taskID)
 			if err != nil {
+				ts.Config.Logger.Error(ctx, "task: error fetching status: %#v", err)
 				return nil, maskAny(err)
 			}
 
 			if HasFinalStatus(taskObject) {
+				ts.Config.Logger.Debug(ctx, "task: has final status: %#v", taskObject)
 				return taskObject, nil
 			}
+
+			ts.Config.Logger.Debug(ctx, "task: does not have final status: %#v", taskObject)
 		}
 	}
 }
