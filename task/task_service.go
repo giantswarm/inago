@@ -98,10 +98,12 @@ type taskService struct {
 }
 
 func (ts *taskService) Create(ctx context.Context, action Action) (*Task, error) {
+	taskID := uuid.NewV4().String()
+	ctx = context.WithValue(ctx, "task-id", taskID)
 	ts.Config.Logger.Debug(ctx, "task: creating task")
 
 	taskObject := &Task{
-		ID:           uuid.NewV4().String(),
+		ID:           taskID,
 		ActiveStatus: StatusStarted,
 		FinalStatus:  "",
 	}
