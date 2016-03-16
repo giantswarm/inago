@@ -9,6 +9,11 @@ import (
 	"github.com/giantswarm/inago/logging"
 )
 
+const (
+	// ContextTaskID is the key for the current task-id stored in the context.Context when executing tasks.
+	ContextTaskID = "task-id"
+)
+
 // Action represents any work to be done when executing a task.
 type Action func(ctx context.Context) error
 
@@ -98,10 +103,12 @@ type taskService struct {
 }
 
 func (ts *taskService) Create(ctx context.Context, action Action) (*Task, error) {
+	taskID := uuid.NewV4().String()
+	ctx = context.WithValue(ctx, ContextTaskID, taskID)
 	ts.Config.Logger.Debug(ctx, "task: creating task")
 
 	taskObject := &Task{
-		ID:           uuid.NewV4().String(),
+		ID:           taskID,
 		ActiveStatus: StatusStarted,
 		FinalStatus:  "",
 	}

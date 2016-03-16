@@ -12,9 +12,11 @@ func Test_Task_TaskService_Create_Success(t *testing.T) {
 	newTaskService := NewTaskService(DefaultConfig())
 
 	testData := "invalid"
+	seenContextID := ""
 
 	action := func(ctx context.Context) error {
 		testData = "valid"
+		seenContextID = ctx.Value(ContextTaskID).(string)
 		return nil
 	}
 
@@ -34,6 +36,10 @@ func Test_Task_TaskService_Create_Success(t *testing.T) {
 
 	if testData != "valid" {
 		t.Fatalf("test data did NOT have a valid value")
+	}
+
+	if seenContextID != taskObject.ID {
+		t.Fatalf("Expected context to contain task-id '%s', but got '%s'", taskObject.ID, seenContextID)
 	}
 
 	if taskObject.Error != "" {
