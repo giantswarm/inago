@@ -85,15 +85,15 @@ func ValidateSubmitRequest(request Request) (bool, error) {
 // ValidateRequest takes a Request, and returns whether it is valid or not.
 // If the request is not valid, the error provides more details.
 func ValidateRequest(request Request) (bool, error) {
-	var error ValidationError
+	var validationError ValidationError
 	// Check there are units in the group.
 	if len(request.Units) == 0 {
-		error.causingErrors = append(error.causingErrors, noUnitsInGroupError)
+		validationError.causingErrors = append(validationError.causingErrors, noUnitsInGroupError)
 	}
 
 	// Check that there are not any @ symbols in the group name.
 	if strings.Contains(request.Group, "@") {
-		error.causingErrors = append(error.causingErrors, atInGroupNameError)
+		validationError.causingErrors = append(validationError.causingErrors, atInGroupNameError)
 	}
 
 	unitNames := []string{}
@@ -103,26 +103,26 @@ func ValidateRequest(request Request) (bool, error) {
 
 	// Check that we're not mixing units with @ and units without @.
 	if !StringsHaveOrNot(unitNames, "@.") {
-		error.causingErrors = append(error.causingErrors, mixedSliceInstanceError)
+		validationError.causingErrors = append(validationError.causingErrors, mixedSliceInstanceError)
 	}
 
 	// Check that all unit names are prefixed by the group name.
 	if !StringsHasPrefix(unitNames, request.Group) {
-		error.causingErrors = append(error.causingErrors, badUnitPrefixError)
+		validationError.causingErrors = append(validationError.causingErrors, badUnitPrefixError)
 	}
 
 	// Check that @ only occurences at most once per unit name.
 	if StringsCountMoreThan(unitNames, "@", 1) {
-		error.causingErrors = append(error.causingErrors, multipleAtInUnitNameError)
+		validationError.causingErrors = append(validationError.causingErrors, multipleAtInUnitNameError)
 	}
 
 	// Check that all unit names are unique.
 	if !StringsUnique(unitNames) {
-		error.causingErrors = append(error.causingErrors, unitsSameNameError)
+		validationError.causingErrors = append(validationError.causingErrors, unitsSameNameError)
 	}
 
-	if len(error.causingErrors) != 0 {
-		return false, error
+	if len(validationError.causingErrors) != 0 {
+		return false, validationError
 	}
 	return true, nil
 }
@@ -132,7 +132,7 @@ func ValidateRequest(request Request) (bool, error) {
 // If the requests are not valid, the error returned provides more details.
 func ValidateMultipleRequest(requests []Request) (bool, error) {
 	groupNames := []string{}
-	var error ValidationError
+	var validationError ValidationError
 
 	for _, request := range requests {
 		groupNames = append(groupNames, request.Group)
@@ -140,16 +140,16 @@ func ValidateMultipleRequest(requests []Request) (bool, error) {
 
 	// Check that all group names are unique.
 	if !StringsUnique(groupNames) {
-		error.causingErrors = append(error.causingErrors, groupsSameNameError)
+		validationError.causingErrors = append(validationError.causingErrors, groupsSameNameError)
 	}
 
 	// Check that group names are not prefixes of each other.
 	if StringsSharePrefix(groupNames) {
-		error.causingErrors = append(error.causingErrors, groupsArePrefixError)
+		validationError.causingErrors = append(validationError.causingErrors, groupsArePrefixError)
 	}
 
-	if len(error.causingErrors) != 0 {
-		return false, error
+	if len(validationError.causingErrors) != 0 {
+		return false, validationError
 	}
 	return true, nil
 }
