@@ -72,7 +72,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 		if ok {
 			fmt.Printf("Group '%v' is valid.\n", request.Group)
 		} else {
-			fmt.Printf("Group '%v' not valid: %v.\n", request.Group, err)
+			fmt.Printf("Group '%v' not valid: %v", request.Group, err)
 		}
 	}
 

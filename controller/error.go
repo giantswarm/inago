@@ -6,6 +6,22 @@ import (
 	"github.com/juju/errgo"
 )
 
+// ValidationError capsules validation errors into one error struct.
+// It is returned when the validation fails. causingErrors contains all
+// errors that occurenced, while validating the request.
+type ValidationError struct {
+	causingErrors []error
+}
+
+func (e ValidationError) Error() string {
+	// TODO better error message
+	msg := "group or unit invalid:\n"
+	for _, err := range e.causingErrors {
+		msg = msg + fmt.Sprintf("\t%v\n", err)
+	}
+	return msg
+}
+
 var (
 	maskAny = errgo.MaskFunc(errgo.Any)
 )
