@@ -10,13 +10,13 @@ Setup unit files
 Submit units
 
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} submit $GROUP >010.out 2>&1
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >021.out
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP >025.out
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >021.out 2>&1
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP >025.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} start $GROUP >030.out 2>&1
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >041.out
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP > 045.out 
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >041.out 2>&1
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP > 045.out  2>&1
   $ sleep 10
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} stop $GROUP >050.out 2>&1
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >061.out
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP >065.out
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >061.out 2>&1
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP >065.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy $GROUP >070.out 2>&1

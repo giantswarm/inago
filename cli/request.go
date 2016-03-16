@@ -3,6 +3,8 @@ package cli
 import (
 	"path/filepath"
 
+	"github.com/juju/errgo"
+
 	"github.com/giantswarm/inago/controller"
 	"github.com/giantswarm/inago/file-system/spec"
 )
@@ -41,6 +43,10 @@ func extendRequestWithContent(fs filesystemspec.FileSystem, req controller.Reque
 	}
 	for name, content := range unitFiles {
 		req.Units = append(req.Units, controller.Unit{Name: name, Content: content})
+	}
+
+	if len(req.Units) == 0 {
+		return controller.Request{}, errgo.Newf("No unit files found for group '%s'", req.Group)
 	}
 
 	return req, nil

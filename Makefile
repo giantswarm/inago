@@ -101,7 +101,16 @@ int-test: $(BIN) $(INT_TESTS)
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
-	-docker run \
+
+	-FLEET_ENDPOINT=$(FLEET_ENDPOINT) make internal-int-test
+
+	@echo Destroying the integration test machine
+	cd $(VAGRANT_PATH) && vagrant destroy -f
+	@echo Removing test machine user-data
+	rm $(VAGRANT_PATH)/user-data
+
+internal-int-test: $(BIN) $(INT_TESTS)
+	docker run \
 		--rm \
 		-ti \
 		-e FLEET_ENDPOINT=$(FLEET_ENDPOINT) \
@@ -109,7 +118,3 @@ int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
-	@echo Destroying the integration test machine
-	cd $(VAGRANT_PATH) && vagrant destroy -f
-	@echo Removing test machine user-data
-	rm $(VAGRANT_PATH)/user-data

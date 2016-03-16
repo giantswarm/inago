@@ -53,6 +53,16 @@ func NewRequest(config RequestConfig) Request {
 
 var unitExp = regexp.MustCompile("@.")
 
+// IsSlicable checks whether all units of the request are sliceable (contain an @)
+func (r Request) IsSlicable() bool {
+	for _, unit := range r.Units {
+		if !unitExp.MatchString(unit.Name) {
+			return false
+		}
+	}
+	return true
+}
+
 // ExtendSlices extends unit files with respect to the given slice IDs. Having
 // slice IDs "1" and "2" and having unit files "foo@.service" and
 // "bar@.service" results in the following extended unit files.
@@ -128,6 +138,10 @@ func contains(l []string, e string) bool {
 }
 
 func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
+	if !req.IsSlicable() {
+		return req, nil
+	}
+
 	// Lookup existing slice IDs.
 	usl, err := c.groupStatusWithValidate(req)
 	if IsUnitNotFound(err) {
