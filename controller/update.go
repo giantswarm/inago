@@ -10,13 +10,13 @@ import (
 	"github.com/giantswarm/inago/task"
 )
 
-func (c controller) executeTaskAction(f func(req Request) (*task.Task, error), req Request) error {
-	taskObject, err := f(req)
+func (c controller) executeTaskAction(f func(ctx context.Context, req Request) (*task.Task, error), ctx context.Context, req Request) error {
+	taskObject, err := f(ctx, req)
 	if err != nil {
 		return maskAny(err)
 	}
 	closer := make(<-chan struct{})
-	taskObject, err = c.WaitForTask(taskObject.ID, closer)
+	taskObject, err = c.WaitForTask(ctx, taskObject.ID, closer)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -114,12 +114,12 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 	}
 
 	// Submit.
-	if err := c.executeTaskAction(c.Submit, newReq); err != nil {
+	if err := c.executeTaskAction(c.Submit, ctx, newReq); err != nil {
 		return Request{}, maskAny(err)
 	}
 
 	// Start.
-	if err := c.executeTaskAction(c.Start, newReq); err != nil {
+	if err := c.executeTaskAction(c.Start, ctx, newReq); err != nil {
 		return Request{}, maskAny(err)
 	}
 
@@ -150,12 +150,12 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 
 func (c controller) runRemoveWorker(ctx context.Context, req Request) error {
 	// Stop.
-	if err := c.executeTaskAction(c.Stop, req); err != nil {
+	if err := c.executeTaskAction(c.Stop, ctx, req); err != nil {
 		return maskAny(err)
 	}
 
 	// Destroy.
-	if err := c.executeTaskAction(c.Destroy, req); err != nil {
+	if err := c.executeTaskAction(c.Destroy, ctx, req); err != nil {
 		return maskAny(err)
 	}
 	return nil
