@@ -54,7 +54,7 @@ func NewRequest(config RequestConfig) Request {
 var unitExp = regexp.MustCompile("@.")
 
 // IsSlicable checks whether all units of the request are sliceable (contain an @)
-func (r Request) IsSlicable() bool {
+func (r Request) IsSliceable() bool {
 	for _, unit := range r.Units {
 		if !unitExp.MatchString(unit.Name) {
 			return false
@@ -138,7 +138,7 @@ func contains(l []string, e string) bool {
 }
 
 func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
-	if !req.IsSlicable() {
+	if !req.IsSliceable() {
 		return req, nil
 	}
 
