@@ -7,7 +7,7 @@ import (
 )
 
 // ValidationError capsules validation errors into one error struct.
-// It is returned when the validation fails. causingErrors contains all
+// It is returned when the validation fails. CausingErrors contains all
 // errors that occurenced, while validating the request.
 type ValidationError struct {
 	CausingErrors []error
