@@ -5,8 +5,8 @@ Create a group to play around with.
 
 Validate the test group.
   $ inagoctl validate test-group
-  .*\|\scontext.Background: Group 'test-group' is valid. (re)
-  .*\|\scontext.Background: Groups are valid globally. (re)
+  Group 'test-group' is valid.
+  Groups are valid globally.
 
 
 Submit the test group.
