@@ -13,7 +13,7 @@ BIN := $(PROJECT)ctl
 VERSION := $(shell cat VERSION)
 COMMIT := $(shell git rev-parse --short HEAD)
 
-.PHONY: all clean test ci-test deps
+.PHONY: all clean test ci-test deps bin-dist
 
 SOURCE=$(shell find . -name '*.go')
 INT_TESTS=$(shell find $(INT_TESTS_PATH) -name '*.t')
@@ -118,3 +118,21 @@ internal-int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
+		
+bin-dist:
+	# Remove any old tarballs
+	rm -f bin-dist/*.tar.gz
+	
+	# Build for both supported OS,
+	# put binary in OS specific directory
+	for OS in darwin linux; do \
+		rm -f $(BIN); \
+		GOOS=$$OS make $(BIN); \
+		mkdir -p bin-dist/$$OS/; \
+		cp $(BIN) bin-dist/$$OS/; \
+	done
+	
+	cp -f README.md bin-dist/
+	cp -f LICENSE bin-dist/
+	
+	cd bin-dist/ && tar czf $(PROJECT).$(VERSION).tar.gz *
