@@ -14,11 +14,7 @@ type ValidationError struct {
 }
 
 func (e ValidationError) Error() string {
-	msg := "Validation Error found:\n"
-	for _, err := range e.CausingErrors {
-		msg = msg + fmt.Sprintf("\t* %v\n", err)
-	}
-	return msg
+	return fmt.Sprintf("Found %v validation error", len(e.CausingErrors))
 }
 
 // Add adds the given error to the list of validation errors
@@ -27,9 +23,9 @@ func (e *ValidationError) Add(err error) {
 }
 
 // Contains returns true if the given error is present in the ValidationError
-func (e *ValidationError) Contains(err error) bool {
-	for _, ce := range e.CausingErrors {
-		if err == ce {
+func (e *ValidationError) Contains(checker func(error) bool) bool {
+	for _, err := range e.CausingErrors {
+		if checker(err) {
 			return true
 		}
 	}

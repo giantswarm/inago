@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/coreos/fleet/unit"
+	"github.com/juju/errgo"
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/common"
@@ -193,7 +194,7 @@ func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
 func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error) {
 	c.Config.Logger.Debug(ctx, "controller: handling submit")
 	if ok, err := ValidateSubmitRequest(req); !ok {
-		return nil, err
+		return nil, errgo.Cause(err)
 	}
 	action := func(ctx context.Context) error {
 		extended, err := c.ExtendWithRandomSliceIDs(req)

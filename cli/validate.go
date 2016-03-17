@@ -72,7 +72,8 @@ func validateRun(cmd *cobra.Command, args []string) {
 		if ok {
 			fmt.Printf("Group '%v' is valid.\n", request.Group)
 		} else {
-			fmt.Printf("Group '%v' not valid: %v", request.Group, err)
+			validationErr := err.(controller.ValidationError)
+			fmt.Printf("Group '%v' not valid: %v", request.Group, FormatValidationError(validationErr))
 		}
 	}
 
@@ -80,6 +81,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 	if ok {
 		fmt.Println("Groups are valid globally.")
 	} else {
-		fmt.Printf("Groups are not valid globally: %v\n", err)
+		validationErr := err.(controller.ValidationError)
+		fmt.Printf("Groups are not valid globally: %v\n", FormatValidationError(validationErr))
 	}
 }
