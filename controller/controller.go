@@ -197,18 +197,21 @@ func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error)
 		return nil, errgo.Cause(err)
 	}
 	action := func(ctx context.Context) error {
-		extended, err := c.ExtendWithRandomSliceIDs(req)
-		if err != nil {
-			return err
+		var err error
+		if req.DesiredSlices > 0 {
+			req, err = c.ExtendWithRandomSliceIDs(req)
+			if err != nil {
+				return err
+			}
 		}
 
-		extended, err = extended.ExtendSlices()
+		req, err = req.ExtendSlices()
 		if err != nil {
 			return maskAny(err)
 		}
 
 		c.Config.Logger.Debug(ctx, "action: submitting units")
-		for _, unit := range extended.Units {
+		for _, unit := range req.Units {
 			err := c.Fleet.Submit(ctx, unit.Name, unit.Content)
 			if err != nil {
 				return maskAny(err)
@@ -217,7 +220,7 @@ func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error)
 
 		c.Config.Logger.Debug(ctx, "action: waiting for status of submitted units")
 		closer := make(chan struct{})
-		err = c.WaitForStatus(ctx, extended, StatusStopped, closer)
+		err = c.WaitForStatus(ctx, req, StatusStopped, closer)
 		if err != nil {
 			return maskAny(err)
 		}

@@ -75,8 +75,15 @@ func StringsHaveOrNot(s []string, c string) bool {
 // ValidateSubmitRequest validates that the given request contains no SliceIDs.
 // Otherwise it is identical to ValidateRequest().
 func ValidateSubmitRequest(request Request) (bool, error) {
-	if len(request.SliceIDs) != 0 {
-		return false, maskAny(invalidSubmitRequestSlicesGivenError)
+	// A SubmitRequest can either have a DesiredSlices value or specific SliceIDs
+	if request.DesiredSlices == 0 {
+		if len(request.SliceIDs) == 0 {
+			return false, maskAny(invalidSubmitRequestNoSliceIDsGivenError)
+		}
+	} else {
+		if len(request.SliceIDs) != 0 {
+			return false, maskAny(invalidSubmitRequestSlicesGivenError)
+		}
 	}
 	return ValidateRequest(request)
 }

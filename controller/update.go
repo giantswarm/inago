@@ -113,9 +113,11 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 
 func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOptions) (Request, error) {
 	// Create new random IDs.
+	req.DesiredSlices = 1
+	req.SliceIDs = nil
 	newReq, err := c.ExtendWithRandomSliceIDs(req)
 	if err != nil {
-		return Request{}, maskAny(err)
+	       return Request{}, maskAny(err)
 	}
 
 	// Submit.
@@ -130,7 +132,7 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 
 	time.Sleep(time.Duration(opts.ReadySecs) * time.Second)
 
-	return newReq, nil
+	return req, nil
 }
 
 func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOptions) error {
@@ -206,6 +208,10 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 	var addInProgress int64
 	var removeInProgress int64
 
+	if !req.isSliceable() {
+		return maskAnyf(updateNotAllowedError, "cannot update unslicable group")
+	}
+
 	for _, sliceID := range req.SliceIDs {
 		if sliceID == "" {
 			return maskAnyf(updateNotAllowedError, "group misses slice ID")
@@ -222,7 +228,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 		for {
 			// add
-			maxGrowth := opts.MaxGrowth + numTotal - int(addInProgress)
+			maxGrowth := opts.MaxGrowth + numTotal - opts.MinAlive - int(addInProgress)
 			ok, err := c.isGroupAdditionAllowed(req, maxGrowth)
 			if err != nil {
 				return maskAny(err)
