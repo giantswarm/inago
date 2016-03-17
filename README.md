@@ -9,6 +9,8 @@ strategies. That way the user can manage unit files more easily.
 
 ## Getting Inago
 
+Download binaries: https://github.com/giantswarm/inago/releases
+
 Clone the git repository: `git@github.com:giantswarm/inago.git`
 
 ## Running Inago
