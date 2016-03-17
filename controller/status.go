@@ -277,6 +277,8 @@ type Aggregator struct {
 //   ss: systemd sub state
 //
 func (a Aggregator) AggregateStatus(fc, fd, sa, ss string) (Status, error) {
+	aggregatedStatuses := []Status{}
+
 	for _, statusContext := range StatusIndex {
 		if !a.matchState(statusContext.FleetCurrent, fc) {
 			continue
@@ -291,11 +293,20 @@ func (a Aggregator) AggregateStatus(fc, fd, sa, ss string) (Status, error) {
 			continue
 		}
 
-		// All requirements matched, so return the aggregated status.
-		return statusContext.Aggregated, nil
+		aggregatedStatuses = append(aggregatedStatuses, statusContext.Aggregated)
 	}
 
-	return "", maskAnyf(invalidUnitStatusError, "fc: %s, fd: %s, sa: %s, ss: %s", fc, fd, sa, ss)
+	numAggregatedStatuses := len(aggregatedStatuses)
+
+	if numAggregatedStatuses == 0 {
+		return "", maskAnyf(invalidUnitStatusError, "fc: %s, fd: %s, sa: %s, ss: %s", fc, fd, sa, ss)
+	}
+
+	if numAggregatedStatuses > 1 {
+		a.Logger.Warning(nil, "Multiple statuses found for: fc: %s, fd: %s, sa: %s, ss: %s", fc, fd, sa, ss)
+	}
+
+	return aggregatedStatuses[0], nil
 }
 
 func (a Aggregator) unitHasStatus(us fleet.UnitStatus, status Status) (bool, error) {
