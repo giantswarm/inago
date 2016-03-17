@@ -482,8 +482,9 @@ func TestController_Submit_Error(t *testing.T) {
 		RequestConfig: RequestConfig{
 			Group:    "single",
 			SliceIDs: nil,
-			DesiredSlices: 1,
+
 		},
+		DesiredSlices: 1,
 		Units: []Unit{}, // Intentionally left empty!
 	}
 
@@ -525,8 +526,8 @@ func TestController_Submit(t *testing.T) {
 	req := Request{
 		RequestConfig: RequestConfig{
 			Group:         "test",
-			DesiredSlices: 1,
 		},
+		DesiredSlices: 1,
 		Units: []Unit{
 			{
 				Name:    "test-main@.service",
