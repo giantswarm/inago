@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -13,7 +14,7 @@ import (
 
 var (
 	validateCmd = &cobra.Command{
-		Use:   "validate [directory]",
+		Use:   "validate [directory...]",
 		Short: "Validate groups",
 		Long:  "Validate group directories on the local filesystem",
 		Run:   validateRun,
@@ -34,6 +35,17 @@ func validateRun(cmd *cobra.Command, args []string) {
 
 		for _, file := range files {
 			if file.IsDir() && !strings.HasPrefix(file.Name(), ".") {
+				// If the directory is empty, don't validate it
+				subfiles, err := ioutil.ReadDir(file.Name())
+				if err != nil {
+					newLogger.Error(newCtx, "%#v", maskAny(err))
+					os.Exit(1)
+				}
+				if len(subfiles) == 0 {
+					continue
+				}
+				// The directory contains files, add it to the list of groups
+				// that should be validated
 				groups = append(groups, file.Name())
 			}
 		}
@@ -58,16 +70,18 @@ func validateRun(cmd *cobra.Command, args []string) {
 	for _, request := range requests {
 		ok, err := controller.ValidateRequest(request)
 		if ok {
-			newLogger.Info(newCtx, "Group '%v' is valid.", request.Group)
+			fmt.Printf("Group '%v' is valid.\n", request.Group)
 		} else {
-			newLogger.Info(newCtx, "Group '%v' not valid: %v.", request.Group, err)
+			validationErr := err.(controller.ValidationError)
+			fmt.Printf("Group '%v' not valid: %v", request.Group, FormatValidationError(validationErr))
 		}
 	}
 
 	ok, err := controller.ValidateMultipleRequest(requests)
 	if ok {
-		newLogger.Info(newCtx, "Groups are valid globally.")
+		fmt.Println("Groups are valid globally.")
 	} else {
-		newLogger.Info(newCtx, "Groups are not valid globally:", err)
+		validationErr := err.(controller.ValidationError)
+		fmt.Printf("Groups are not valid globally: %v\n", FormatValidationError(validationErr))
 	}
 }

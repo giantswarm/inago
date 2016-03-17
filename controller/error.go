@@ -6,6 +6,32 @@ import (
 	"github.com/juju/errgo"
 )
 
+// ValidationError capsules validation errors into one error struct.
+// It is returned when the validation fails. CausingErrors contains all
+// errors that occurenced, while validating the request.
+type ValidationError struct {
+	CausingErrors []error
+}
+
+func (e ValidationError) Error() string {
+	return fmt.Sprintf("Found %v validation error", len(e.CausingErrors))
+}
+
+// Add adds the given error to the list of validation errors
+func (e *ValidationError) Add(err error) {
+	e.CausingErrors = append(e.CausingErrors, err)
+}
+
+// Contains returns true if the given error is present in the ValidationError
+func (e *ValidationError) Contains(checker func(error) bool) bool {
+	for _, err := range e.CausingErrors {
+		if checker(err) {
+			return true
+		}
+	}
+	return false
+}
+
 var (
 	maskAny = errgo.MaskFunc(errgo.Any)
 )

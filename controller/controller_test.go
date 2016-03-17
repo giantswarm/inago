@@ -488,10 +488,15 @@ func TestController_Submit_Error(t *testing.T) {
 
 	task, err := controller.Submit(context.Background(), req)
 
+	var validationErr *ValidationError
+	if err != nil {
+		validationErr = err.(*ValidationError)
+	}
+
 	// Assert
 	Expect(task).To(BeNil())
-	Expect(err).To(HaveOccurred())
-	Expect(IsNoUnitsInGroup(err)).To(BeTrue())
+	Expect(validationErr).To(HaveOccurred())
+	Expect(validationErr.Contains(IsNoUnitsInGroup)).To(BeTrue())
 	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
 }
 

@@ -78,21 +78,21 @@ func ValidateSubmitRequest(request Request) (bool, error) {
 	if len(request.SliceIDs) != 0 {
 		return false, maskAny(invalidSubmitRequestSlicesGivenError)
 	}
-
 	return ValidateRequest(request)
 }
 
 // ValidateRequest takes a Request, and returns whether it is valid or not.
 // If the request is not valid, the error provides more details.
 func ValidateRequest(request Request) (bool, error) {
+	var validationError ValidationError
 	// Check there are units in the group.
 	if len(request.Units) == 0 {
-		return false, noUnitsInGroupError
+		validationError.Add(noUnitsInGroupError)
 	}
 
 	// Check that there are not any @ symbols in the group name.
 	if strings.Contains(request.Group, "@") {
-		return false, atInGroupNameError
+		validationError.Add(atInGroupNameError)
 	}
 
 	unitNames := []string{}
@@ -102,24 +102,27 @@ func ValidateRequest(request Request) (bool, error) {
 
 	// Check that we're not mixing units with @ and units without @.
 	if !StringsHaveOrNot(unitNames, "@.") {
-		return false, mixedSliceInstanceError
+		validationError.Add(mixedSliceInstanceError)
 	}
 
 	// Check that all unit names are prefixed by the group name.
 	if !StringsHasPrefix(unitNames, request.Group) {
-		return false, badUnitPrefixError
+		validationError.Add(badUnitPrefixError)
 	}
 
 	// Check that @ only occurences at most once per unit name.
 	if StringsCountMoreThan(unitNames, "@", 1) {
-		return false, multipleAtInUnitNameError
+		validationError.Add(multipleAtInUnitNameError)
 	}
 
 	// Check that all unit names are unique.
 	if !StringsUnique(unitNames) {
-		return false, unitsSameNameError
+		validationError.Add(unitsSameNameError)
 	}
 
+	if len(validationError.CausingErrors) != 0 {
+		return false, &validationError
+	}
 	return true, nil
 }
 
@@ -128,6 +131,7 @@ func ValidateRequest(request Request) (bool, error) {
 // If the requests are not valid, the error returned provides more details.
 func ValidateMultipleRequest(requests []Request) (bool, error) {
 	groupNames := []string{}
+	var validationError ValidationError
 
 	for _, request := range requests {
 		groupNames = append(groupNames, request.Group)
@@ -135,13 +139,16 @@ func ValidateMultipleRequest(requests []Request) (bool, error) {
 
 	// Check that all group names are unique.
 	if !StringsUnique(groupNames) {
-		return false, groupsSameNameError
+		validationError.Add(groupsSameNameError)
 	}
 
 	// Check that group names are not prefixes of each other.
 	if StringsSharePrefix(groupNames) {
-		return false, groupsArePrefixError
+		validationError.Add(groupsArePrefixError)
 	}
 
+	if len(validationError.CausingErrors) != 0 {
+		return false, &validationError
+	}
 	return true, nil
 }
