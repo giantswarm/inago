@@ -47,13 +47,18 @@ func (c controller) getNumRunningSlices(req Request) (int, error) {
 			// running.
 			continue
 		}
-		ok, err := unitHasStatus(groupedStatuses[0], StatusRunning)
+
+		aggregator := Aggregator{
+			Logger: c.Config.Logger,
+		}
+		ok, err := aggregator.unitHasStatus(groupedStatuses[0], StatusRunning)
 		if err != nil {
 			return 0, maskAny(err)
 		}
 		if !ok {
 			continue
 		}
+
 		sliceIDs = append(sliceIDs, us.SliceID)
 	}
 

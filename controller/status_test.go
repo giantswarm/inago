@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
 )
 
 func givenSingleUnitStatus(name, sliceID string) fleet.UnitStatus {
@@ -306,7 +307,10 @@ func Test_Status_AggregateStatus(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		output, err := AggregateStatus(testCase.FC, testCase.FD, testCase.SA, testCase.SS)
+		aggregator := Aggregator{
+			Logger: logging.NewLogger(logging.DefaultConfig()),
+		}
+		output, err := aggregator.AggregateStatus(testCase.FC, testCase.FD, testCase.SA, testCase.SS)
 		if testCase.ErrorMatcher != nil {
 			m := testCase.ErrorMatcher(err)
 			if !m {
