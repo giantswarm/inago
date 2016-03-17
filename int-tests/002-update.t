@@ -5,8 +5,8 @@ Create a group to play around with.
 
 Validate the test group.
   $ inagoctl validate update-group
-  .*\|\scontext.Background: Group 'update-group' is valid. (re)
-  .*\|\scontext.Background: Groups are valid globally. (re)
+  Group 'update-group' is valid.
+  Groups are valid globally.
 
 Submit 2 slices of update group.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} submit update-group 2
