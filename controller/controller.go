@@ -86,7 +86,7 @@ type Controller interface {
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
 	// If req.DesiredSlices is positive, new random (non conflicting) SliceIDs will be generated.
-	// Otherwise the givne req.SliceIDs will be used. Only of those options can be used.
+	// Otherwise the given req.SliceIDs will be used. Only of those options can be used.
 	Submit(ctx context.Context, req Request) (*task.Task, error)
 
 	// Start starts a group on the configured fleet cluster. This is done by
