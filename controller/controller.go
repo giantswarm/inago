@@ -409,7 +409,11 @@ func (c controller) WaitForStatus(ctx context.Context, req Request, desired Stat
 			c.Config.Logger.Debug(ctx, "controller: checking units have desired state: %v", desired)
 			for _, us := range unitStatusList {
 				c.Config.Logger.Debug(ctx, "controller: unit status: %#v", us)
-				ok, err := unitHasStatus(us, desired)
+
+				aggregator := Aggregator{
+					Logger: c.Config.Logger,
+				}
+				ok, err := aggregator.unitHasStatus(us, desired)
 				if err != nil {
 					fail <- maskAny(err)
 					return
