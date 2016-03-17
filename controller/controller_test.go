@@ -482,6 +482,7 @@ func TestController_Submit_Error(t *testing.T) {
 		RequestConfig: RequestConfig{
 			Group:    "single",
 			SliceIDs: nil,
+			DesiredSlices: 1,
 		},
 		Units: []Unit{}, // Intentionally left empty!
 	}
