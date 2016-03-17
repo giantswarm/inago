@@ -53,7 +53,7 @@ func NewRequest(config RequestConfig) Request {
 
 var unitExp = regexp.MustCompile("@.")
 
-// isSlicable checks whether all units of the request are sliceable (contain an @)
+// isSliceable checks whether all units of the request are sliceable (contain an @)
 func (r Request) isSliceable() bool {
 	for _, unit := range r.Units {
 		if !unitExp.MatchString(unit.Name) {
