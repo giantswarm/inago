@@ -209,7 +209,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 	var removeInProgress int64
 
 	if !req.isSliceable() {
-		return maskAnyf(updateNotAllowedError, "cannot update unslicable group")
+		return maskAnyf(updateNotAllowedError, "cannot update unsliceable group")
 	}
 
 	for _, sliceID := range req.SliceIDs {
