@@ -38,7 +38,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 				// If the directory is empty, don't validate it
 				subfiles, err := ioutil.ReadDir(file.Name())
 				if err != nil {
-					newLogger.Critical(newCtx, "%#v", maskAny(err))
+					newLogger.Error(newCtx, "%#v", maskAny(err))
 					os.Exit(1)
 				}
 				if len(subfiles) == 0 {
