@@ -201,6 +201,16 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 	var addInProgress int64
 	var removeInProgress int64
 
+	// To keep n units alive during the update,
+	// we need to have just more than that in current units,
+	// and units we're allowed to create during the update.
+	if !(numTotal+opts.MaxGrowth > opts.MinAlive) {
+		return maskAnyf(
+			updateNotAllowedError,
+			"not enough current or growth units to satisfy liveness requirements",
+		)
+	}
+
 	for _, sliceID := range req.SliceIDs {
 		if sliceID == "" {
 			return maskAnyf(updateNotAllowedError, "group misses slice ID")
