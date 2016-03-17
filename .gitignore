@@ -5,3 +5,5 @@ profile.out
 *.t.err
 .vagrant
 user-data
+*.pyc
+
