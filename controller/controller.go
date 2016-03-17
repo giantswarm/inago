@@ -218,7 +218,7 @@ func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error)
 
 		c.Config.Logger.Debug(ctx, "action: waiting for status of submitted units")
 		closer := make(chan struct{})
-		err = c.WaitForStatus(ctx, req, StatusStopped, closer)
+		err = c.WaitForStatus(ctx, extended, StatusStopped, closer)
 		if err != nil {
 			return maskAny(err)
 		}
