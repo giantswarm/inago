@@ -21,10 +21,12 @@ func (e ValidationError) Error() string {
 	return msg
 }
 
+// Add adds the given error to the list of validation errors
 func (e *ValidationError) Add(err error) {
 	e.CausingErrors = append(e.CausingErrors, err)
 }
 
+// Contains returns true if the given error is present in the ValidationError
 func (e *ValidationError) Contains(err error) bool {
 	for _, ce := range e.CausingErrors {
 		if err == ce {
