@@ -5,3 +5,4 @@ profile.out
 *.t.err
 .vagrant
 user-data
+bin-dist/
