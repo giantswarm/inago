@@ -5,8 +5,8 @@ Create a group to play around with.
 
 Validate the test group.
   $ inagoctl validate test-group
-  [0-9\-:.\s]* | INFO     | context.Background: Group 'test-group' is valid. (re)
-  [0-9\-:.\s]* | INFO     | context.Background: Groups are valid globally. (re)
+  Group 'test-group' is valid.
+  Groups are valid globally.
 
 
 Submit the test group.
