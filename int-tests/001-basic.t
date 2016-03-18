@@ -5,8 +5,8 @@ Create a group to play around with.
 
 Validate the test group.
   $ inagoctl validate test-group
-  Group 'test-group' is valid.
-  Groups are valid globally.
+  [0-9\-:.\s]* | INFO     | context.Background: Group 'test-group' is valid. (re)
+  [0-9\-:.\s]* | INFO     | context.Background: Groups are valid globally. (re)
 
 
 Submit the test group.
@@ -19,7 +19,7 @@ Test the status of the test group, after submission.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status test-group
   Group\s*Units\s*FDState\s*FCState\s*SAState\s*IP\s*Machine (re)
   
-  test-group\s*\*\s*loaded\s*loaded\s*inactive\s*[0-9.]*\s*[a-z0-9]* (re)
+  test-group  *      loaded   inactive  -        -   -
   
 
 Start the test group.
@@ -32,7 +32,7 @@ Test the status of the test group, after starting.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status test-group
   Group\s*Units\s*FDState\s*FCState\s*SAState\s*IP\s*Machine (re)
   
-  test-group\s*\*\s*launched\s*launched\s*active\s*[0-9.]*\s*[a-z0-9]* (re)
+  test-group  *      launched  inactive  -        -   -
   
 
 Stop the test group
@@ -45,7 +45,7 @@ Test the status of the test group, after stopping.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status test-group
   Group\s*Units\s*FDState\s*FCState\s*SAState\s*IP\s*Machine (re)
   
-  test-group\s*\*\s*loaded\s*loaded\s*inactive\s*[0-9.]*\s*[a-z0-9]* (re)
+  test-group  *      loaded   inactive  -        -   -
   
 
 Destroy the test group
