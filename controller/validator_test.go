@@ -179,9 +179,9 @@ func TestValidateRequest(t *testing.T) {
 	for index, test := range tests {
 		valid, err := ValidateRequest(test.request)
 
-		var validationErr *ValidationError
+		var validationErr ValidationError
 		if err != nil {
-			validationErr = err.(*ValidationError)
+			validationErr = err.(ValidationError)
 		}
 
 		if test.valid != valid {
@@ -276,9 +276,9 @@ func TestValidateMultipleRequest(t *testing.T) {
 	for index, test := range tests {
 		valid, err := ValidateMultipleRequest(test.requests)
 
-		var validationErr *ValidationError
+		var validationErr ValidationError
 		if err != nil {
-			validationErr = err.(*ValidationError)
+			validationErr = err.(ValidationError)
 		}
 
 		if test.valid != valid {
