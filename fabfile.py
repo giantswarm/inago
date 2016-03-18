@@ -9,6 +9,7 @@ INT_TESTS_DIR = 'int-tests'
 VAGRANT_DIR = 'vagrant'
 
 env.hosts = ['core@ec2-52-58-14-174.eu-central-1.compute.amazonaws.com']
+env.disable_known_hosts = True
 
 def build_binary():
     """ Remove any existing binary, and build a new binary for linux. """
