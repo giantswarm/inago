@@ -5,6 +5,7 @@ import (
 
 	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
 )
 
 // UnitStatusList represents a list of UnitStatus.
@@ -161,21 +162,6 @@ func allStatesEqual(usl []fleet.UnitStatus) bool {
 	return true
 }
 
-func unitHasStatus(us fleet.UnitStatus, status Status) (bool, error) {
-	for _, ms := range us.Machine {
-		aggregated, err := AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
-		if err != nil {
-			return false, maskAny(err)
-		}
-
-		if aggregated != status {
-			return false, nil
-		}
-	}
-
-	return true, nil
-}
-
 // Status represents the current status of a unit.
 type Status string
 
@@ -211,6 +197,13 @@ type StatusContext struct {
 var (
 	// StatusIndex represents the aggregated states of a unit.
 	StatusIndex = []StatusContext{
+		{
+			FleetCurrent:  "inactive",
+			FleetDesired:  "launched",
+			SystemdActive: "active",
+			SystemdSub:    "running",
+			Aggregated:    StatusRunning,
+		},
 		{
 			FleetCurrent:  "inactive",
 			FleetDesired:  "*",
@@ -270,6 +263,11 @@ var (
 	}
 )
 
+// Aggregator provides methods for aggregating status.
+type Aggregator struct {
+	Logger logging.Logger
+}
+
 // AggregateStatus aggregates the given fleet and systemd states to a Status
 // known to Inago based on the StatusIndex.
 //
@@ -278,29 +276,55 @@ var (
 //   sa: systemd active state
 //   ss: systemd sub state
 //
-func AggregateStatus(fc, fd, sa, ss string) (Status, error) {
+func (a Aggregator) AggregateStatus(fc, fd, sa, ss string) (Status, error) {
+	aggregatedStatuses := []Status{}
+
 	for _, statusContext := range StatusIndex {
-		if !matchState(statusContext.FleetCurrent, fc) {
+		if !a.matchState(statusContext.FleetCurrent, fc) {
 			continue
 		}
-		if !matchState(statusContext.FleetDesired, fd) {
+		if !a.matchState(statusContext.FleetDesired, fd) {
 			continue
 		}
-		if !matchState(statusContext.SystemdActive, sa) {
+		if !a.matchState(statusContext.SystemdActive, sa) {
 			continue
 		}
-		if !matchState(statusContext.SystemdSub, ss) {
+		if !a.matchState(statusContext.SystemdSub, ss) {
 			continue
 		}
 
-		// All requirements matched, so return the aggregated status.
-		return statusContext.Aggregated, nil
+		aggregatedStatuses = append(aggregatedStatuses, statusContext.Aggregated)
 	}
 
-	return "", maskAnyf(invalidUnitStatusError, "fc: %s, fd: %s, sa: %s, ss: %s", fc, fd, sa, ss)
+	numAggregatedStatuses := len(aggregatedStatuses)
+
+	if numAggregatedStatuses == 0 {
+		return "", maskAnyf(invalidUnitStatusError, "fc: %s, fd: %s, sa: %s, ss: %s", fc, fd, sa, ss)
+	}
+
+	if numAggregatedStatuses > 1 {
+		a.Logger.Warning(nil, "Multiple statuses found for: fc: %s, fd: %s, sa: %s, ss: %s", fc, fd, sa, ss)
+	}
+
+	return aggregatedStatuses[0], nil
 }
 
-func matchState(indexed, remote string) bool {
+func (a Aggregator) unitHasStatus(us fleet.UnitStatus, status Status) (bool, error) {
+	for _, ms := range us.Machine {
+		aggregated, err := a.AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
+		if err != nil {
+			return false, maskAny(err)
+		}
+
+		if aggregated != status {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (a Aggregator) matchState(indexed, remote string) bool {
 	if indexed == "*" {
 		// When the indexed state is "*", we accept all states.
 		return true

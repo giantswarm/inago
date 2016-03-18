@@ -178,14 +178,20 @@ func TestValidateRequest(t *testing.T) {
 
 	for index, test := range tests {
 		valid, err := ValidateRequest(test.request)
+
+		var validationErr ValidationError
+		if err != nil {
+			validationErr = err.(ValidationError)
+		}
+
 		if test.valid != valid {
 			t.Errorf("%v: Request validity should be: '%v', was '%v'", index, test.valid, valid)
 		}
 		if test.valid && err != nil {
-			t.Errorf("%v: Request should be valid, but returned err: '%v'", index, err)
+			t.Errorf("%v: Request should be valid, but returned err: '%v'", index, validationErr)
 		}
-		if !test.valid && !test.errAssertion(err) {
-			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, err)
+		if !test.valid && !validationErr.Contains(test.errAssertion) {
+			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, validationErr)
 		}
 	}
 }
@@ -269,14 +275,20 @@ func TestValidateMultipleRequest(t *testing.T) {
 
 	for index, test := range tests {
 		valid, err := ValidateMultipleRequest(test.requests)
+
+		var validationErr ValidationError
+		if err != nil {
+			validationErr = err.(ValidationError)
+		}
+
 		if test.valid != valid {
 			t.Errorf("%v: Requests validity should be: '%v', was '%v'", index, test.valid, valid)
 		}
 		if test.valid && err != nil {
 			t.Errorf("%v: Requests should be valid, but returned err: '%v'", index, err)
 		}
-		if !test.valid && !test.errAssertion(err) {
-			t.Errorf("%v: Requests should be invalid, but returned incorrect err '%v'", index, err)
+		if !test.valid && !validationErr.Contains(test.errAssertion) {
+			t.Errorf("%v: Request should be invalid, but returned incorrect err '%v'", index, validationErr)
 		}
 	}
 }

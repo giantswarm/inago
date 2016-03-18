@@ -9,6 +9,8 @@ strategies. That way the user can manage unit files more easily.
 
 ## Getting Inago
 
+Download binaries: https://github.com/giantswarm/inago/releases
+
 Clone the git repository: `git@github.com:giantswarm/inago.git`
 
 ## Running Inago
@@ -55,6 +57,17 @@ vboxnet6: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
 
 On Stephan's machine the docker machine is in the `vboxnet6` network and the coreos VMs
 are in `vboxnet5`, so you would execute `FLEET_ENDPOINT=http://172.17.8.1:49153 make int-test`
+
+## Releasing
+
+We're using Giant Swarm's [builder](https://github.com/giantswarm/builder) for releases.
+You will need to have [GitHub releases support](https://github.com/giantswarm/builder#github-releases) set up.
+
+Releasing is done via:
+```
+builder release major|minor|patch
+```
+This command will perform the necessary steps for release, including uploading a tarball with built binaries to GitHub.
 
 ## Further Steps
 

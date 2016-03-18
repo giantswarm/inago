@@ -6,4 +6,4 @@ profile.out
 .vagrant
 user-data
 *.pyc
-
+bin-dist/
