@@ -31,13 +31,6 @@ def upload_binary_and_tests(build_directory):
     run('chmod +x %s' % join(build_directory, BINARY))
     put(INT_TESTS_DIR, build_directory)
 
-def cleanup_fleet():
-    """ Remove any left over units from fleet. """
-    
-    run("fleetctl destroy $(fleetctl list-units | tail -n +2 | awk '{print $1}') || true")
-    sleep(10)
-    run("fleetctl list-units")
-
 def run_cram_container(build_directory):
     """ Run the cram container. """
     
@@ -59,6 +52,6 @@ def run_int_test():
     """ Run the integration test. """
     
     build_directory = create_build_directory()
+    
     upload_binary_and_tests(build_directory)
-    cleanup_fleet()
     run_cram_container(build_directory)
