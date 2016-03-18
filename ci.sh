@@ -5,6 +5,7 @@ if [ $TEST_SUITE == "unit" ]; then
     make ci-test
     make ci-build
     ./inagoctl
+    bash <(curl -s https://codecov.io/bash)
 elif [ $TEST_SUITE == "integration" ]; then
     pip install --user fabric
     make ci-build
