@@ -7,21 +7,21 @@ go:
 
 notifications:
     email: false
-
+    
 env:
     - TEST_SUITE=unit
     - TEST_SUITE=integration
 
 before_install:
-- wget https://downloads.giantswarm.io/builder/0.11.0/builder
-- chmod +x ./builder
-- export PATH=$PATH:$PWD
-- go get -u github.com/golang/lint/golint
+    - openssl aes-256-cbc -K $encrypted_314659c9f31c_key -iv $encrypted_314659c9f31c_iv -in inago-integration-test.pem.enc -out inago-integration-test.pem -d
+    - wget https://downloads.giantswarm.io/builder/0.11.0/builder
+    - chmod +x ./builder
+    - export PATH=$PATH:$PWD
+    - go get -u github.com/golang/lint/golint
 
 script:
-- echo $TEST_SUITE
-- ./ci.sh
+    - echo $TEST_SUITE
+    - ./ci.sh
 
-# codecov
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+    - bash <(curl -s https://codecov.io/bash)

@@ -9,14 +9,10 @@ elif [ $TEST_SUITE == "integration" ]; then
     # pip install --user fabric
     
     # make ci-build
-    
-    echo $SSH_KEY > ./ssh-key
-    chmod 400 ./ssh-key
-    
-    cat ./ssh-key
-    
+        
     eval "$(ssh-agent -s)"
-    ssh-add ./ssh-key 2>/dev/null
+    chmod 400 ./inago-integration-test.pem
+    ssh-add ./inago-integration-test.pem 2>/dev/null
     
     ssh -vvvv -i ./ssh-key -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no core@ec2-52-58-14-174.eu-central-1.compute.amazonaws.com
     
