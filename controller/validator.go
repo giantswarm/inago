@@ -128,7 +128,7 @@ func ValidateRequest(request Request) (bool, error) {
 	}
 
 	if len(validationError.CausingErrors) != 0 {
-		return false, &validationError
+		return false, validationError
 	}
 	return true, nil
 }
@@ -155,7 +155,7 @@ func ValidateMultipleRequest(requests []Request) (bool, error) {
 	}
 
 	if len(validationError.CausingErrors) != 0 {
-		return false, &validationError
+		return false, validationError
 	}
 	return true, nil
 }

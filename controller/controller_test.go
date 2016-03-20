@@ -480,19 +480,19 @@ func TestController_Submit_Error(t *testing.T) {
 	// Execute
 	req := Request{
 		RequestConfig: RequestConfig{
-			Group:    "single",
-			SliceIDs: nil,
-
+			Group:         "single",
+			SliceIDs:      nil,
+			DesiredSlices: 1,
 		},
 		DesiredSlices: 1,
-		Units: []Unit{}, // Intentionally left empty!
+		Units:         []Unit{}, // Intentionally left empty!
 	}
 
 	task, err := controller.Submit(context.Background(), req)
 
-	var validationErr *ValidationError
+	var validationErr ValidationError
 	if err != nil {
-		validationErr = err.(*ValidationError)
+		validationErr = err.(ValidationError)
 	}
 
 	// Assert
@@ -525,7 +525,7 @@ func TestController_Submit(t *testing.T) {
 	// Execute test
 	req := Request{
 		RequestConfig: RequestConfig{
-			Group:         "test",
+			Group: "test",
 		},
 		DesiredSlices: 1,
 		Units: []Unit{
