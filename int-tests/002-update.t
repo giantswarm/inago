@@ -4,9 +4,6 @@ Create a group to play around with.
   $ printf "[Unit]\nDescription=$GROUP Inago Update Test Unit\n\n[Service]\nExecStart=/bin/bash -c \"while true; do echo Hi; sleep 10; done\"\n" > $GROUP/$GROUP-foo@.service
   $ printf "[Unit]\nDescription=$GROUP Inago Update Test Unit\n\n[Service]\nExecStart=/bin/bash -c \"while true; do echo Hi; sleep 10; done\"\n" > $GROUP/$GROUP-bar@.service
 
-Cleanup cluster first
-
-  $ fleetctl list-unit-files --fields=unit --no-legend | grep ^$GROUP | xargs fleetctl destroy
 Validate the test group.
   $ inagoctl validate $GROUP 
   Group 'update-group' is valid.
