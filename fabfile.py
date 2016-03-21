@@ -21,21 +21,21 @@ def build_binary():
 
 def create_build_directory():
     """ Create a temporary directory for us to run the test in. """
-    
+
     return run('mktemp -d')
 
 def upload_binary_and_tests(build_directory):
     """ Upload the binary and the integration tests. """
-    
+
     put(BINARY, build_directory)
     run('chmod +x %s' % join(build_directory, BINARY))
     put(INT_TESTS_DIR, build_directory)
 
 def run_cram_container(build_directory):
     """ Run the cram container. """
-    
+
     int_tests_path = join(build_directory, INT_TESTS_DIR)
-    
+
     run(
         """docker run --rm -ti \
 -e FLEET_ENDPOINT=unix:///var/run/fleet.sock \
@@ -48,10 +48,14 @@ zeisss/cram-docker -v {int_tests_path}""".format(**{
         })
     )
 
+def cleanup_fleet():
+    run('fleetctl list-unit-files --fields=unit --no-legend | xargs fleetctl destroy')
+
 def run_int_test():
     """ Run the integration test. """
-    
+    cleanup_fleet()
+
     build_directory = create_build_directory()
-    
+
     upload_binary_and_tests(build_directory)
     run_cram_container(build_directory)
