@@ -13,12 +13,6 @@ env.disable_known_hosts = True
 env.colorize_errors = True
 env.command_timeout = 60 * 5
 
-def build_binary():
-    """ Remove any existing binary, and build a new binary for linux. """
-
-    local('rm -f %s' % BINARY)
-    local('GOOS=linux make ci-build')
-
 def create_build_directory():
     """ Create a temporary directory for us to run the test in. """
     
