@@ -45,3 +45,7 @@ Test the status of the updated group.
   002-update-group@[a-z\d]{3}\s*\*\s*launched\s*launched\s*active\s*[0-9.]*\s*[a-z0-9]* (re)
   002-update-group@[a-z\d]{3}\s*\*\s*launched\s*launched\s*active\s*[0-9.]*\s*[a-z0-9]* (re)
   
+
+Kill it:
+
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy $GROUP
