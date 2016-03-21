@@ -20,15 +20,13 @@ notifications:
     email: false
 
 before_install:
-    # Decrypt the gitcookies file we use to avoid ratelimiting while go-getting,
-    # and set up the git http cookiefile.
-    # See: https://github.com/golang/go/issues/12933 and https://docs.travis-ci.com/user/encrypting-files/
-    - openssl aes-256-cbc -K "$encrypted_314659c9f31c_key" -iv "$encrypted_314659c9f31c_iv" -in gitcookies.enc -out ./gitcookies -d
+    # Decrypt gitcookies and ssh key. The tarball contains `gitcookies` and `inago-integration-test.pem`.
+    # We use a tarball here because of: https://github.com/travis-ci/travis.rb/issues/239
+    - openssl aes-256-cbc -K "$encrypted_314659c9f31c_key" -iv "$encrypted_314659c9f31c_iv" -in secrets.tar.enc -out secrets.tar -d
+    - tar xvf secrets.tar
+    
+    # Set up the git http cookiefile.
     - chmod 0600 ./gitcookies && git config --global http.cookiefile ./gitcookies
-
-    # Decrypt the ssh key we use to communicate with the integration test server.
-    # See: https://docs.travis-ci.com/user/encrypting-files/
-    - openssl aes-256-cbc -K "$encrypted_314659c9f31c_key" -iv "$encrypted_314659c9f31c_iv" -in inago-integration-test.pem.enc -out ./inago-integration-test.pem -d
 
     # Grab builder from the cache, or download it if we can't.
     - cp ./builder-cache/builder-$BUILDER_VERSION ./builder || wget https://downloads.giantswarm.io/builder/$BUILDER_VERSION/builder && chmod +x ./builder
