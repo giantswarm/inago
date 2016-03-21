@@ -1,8 +1,8 @@
 [Unit]
 Description=Kubernetes Scheduler
 Documentation=https://github.com/GoogleCloudPlatform/kubernetes
-Requires=kube-apiserver.service
-After=kube-apiserver.service
+Requires=k8s-apiserver.service
+After=k8s-apiserver.service
 
 [Service]
 ExecStartPre=-/usr/bin/mkdir -p /opt/bin
@@ -14,4 +14,4 @@ Restart=always
 RestartSec=10
 
 [X-Fleet]
-MachineOf=kube-apiserver.service
+MachineOf=k8s-apiserver.service
