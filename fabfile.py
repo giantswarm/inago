@@ -13,16 +13,20 @@ env.disable_known_hosts = True
 env.colorize_errors = True
 env.command_timeout = 60 * 5
 
-def build_binary():
-    """ Remove any existing binary, and build a new binary for linux. """
-
-    local('rm -f %s' % BINARY)
-    local('GOOS=linux make ci-build')
-
 def create_build_directory():
     """ Create a temporary directory for us to run the test in. """
     
     return run('mktemp -d')
+    
+def remove_build_directory(build_directory):
+    """ Given a build directory, remove it. """
+    
+    return run('rm -rf %s' % build_directory)
+
+def cleanup_fleet():
+    """ Cleanup fleet. """
+    
+    run('fleetctl list-unit-files --fields=unit --no-legend | xargs fleetctl destroy')
 
 def upload_binary_and_tests(build_directory):
     """ Upload the binary and the integration tests. """
@@ -51,7 +55,11 @@ zeisss/cram-docker -v {int_tests_path}""".format(**{
 def run_int_test():
     """ Run the integration test. """
     
-    build_directory = create_build_directory()
-    
-    upload_binary_and_tests(build_directory)
-    run_cram_container(build_directory)
+    try:
+        build_directory = create_build_directory()
+        
+        cleanup_fleet()
+        upload_binary_and_tests(build_directory)
+        run_cram_container(build_directory)
+    finally:
+        remove_build_directory(build_directory)
