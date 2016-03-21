@@ -24,10 +24,10 @@ before_install:
     # We use a tarball here because of: https://github.com/travis-ci/travis.rb/issues/239
     - openssl aes-256-cbc -K "$encrypted_314659c9f31c_key" -iv "$encrypted_314659c9f31c_iv" -in secrets.tar.enc -out secrets.tar -d
     - tar xvf secrets.tar
-    - test -f ./gitcookies && test -f ./inago-integration-test.pem
+    - test -f ./gitcookies.sh && test -f ./inago-integration-test.pem
     
-    # Set up the git http cookiefile.
-    - chmod 0600 ./gitcookies && git config --global http.cookiefile $(readlink -f ./gitcookies)
+    # Set up the git http cookiefile, to avoid rate-limiting, see: https://github.com/golang/go/issues/12933
+    - ./gitcookies.sh
 
     # Grab builder from the cache, or download it if we can't.
     - cp ./builder-cache/builder-$BUILDER_VERSION ./builder || wget https://downloads.giantswarm.io/builder/$BUILDER_VERSION/builder && chmod +x ./builder

@@ -8,5 +8,6 @@ user-data
 *.pyc
 bin-dist/
 gitcookies
+gitcookies.sh
 inago-integration-test.pem
 secrets.tar
