@@ -10,6 +10,8 @@ import (
 	"github.com/giantswarm/inago/task"
 )
 
+// executeTaskAction executes the given function f to create a new task and block until
+// it finishes. If the task fails, an error is raised.
 func (c controller) executeTaskAction(f func(ctx context.Context, req Request) (*task.Task, error), ctx context.Context, req Request) error {
 	taskObject, err := f(ctx, req)
 	if err != nil {
@@ -101,7 +103,7 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 		return maskAny(err)
 	}
 	if n != len(newReq.SliceIDs) {
-		return maskAnyf(updateFailedError, "slice not running: %v", newReq.SliceIDs)
+		return maskAnyf(updateFailedError, "addFirst: slice not running: %d != %v", n, newReq.SliceIDs)
 	}
 	err = c.runRemoveWorker(ctx, req)
 	if err != nil {
@@ -117,7 +119,7 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 	req.SliceIDs = nil
 	newReq, err := c.ExtendWithRandomSliceIDs(req)
 	if err != nil {
-	       return Request{}, maskAny(err)
+		return Request{}, maskAny(err)
 	}
 
 	// Submit.
@@ -132,7 +134,7 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 
 	time.Sleep(time.Duration(opts.ReadySecs) * time.Second)
 
-	return req, nil
+	return newReq, nil
 }
 
 func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOptions) error {
@@ -140,6 +142,7 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 	if err != nil {
 		return maskAny(err)
 	}
+
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
 		return maskAny(err)
@@ -149,7 +152,7 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 		return maskAny(err)
 	}
 	if n != len(newReq.SliceIDs) {
-		return maskAnyf(updateFailedError, "slice not running: %v", newReq.SliceIDs)
+		return maskAnyf(updateFailedError, "removeFirst: slice not running: %d != %v", n, newReq.SliceIDs)
 	}
 
 	return nil
