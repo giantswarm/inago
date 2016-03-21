@@ -27,7 +27,7 @@ before_install:
     - test -f ./gitcookies && test -f ./inago-integration-test.pem
     
     # Set up the git http cookiefile.
-    - chmod 0600 ./gitcookies && git config --global http.cookiefile ./gitcookies
+    - chmod 0600 ./gitcookies && git config --global http.cookiefile $(readlink -f ./gitcookies)
 
     # Grab builder from the cache, or download it if we can't.
     - cp ./builder-cache/builder-$BUILDER_VERSION ./builder || wget https://downloads.giantswarm.io/builder/$BUILDER_VERSION/builder && chmod +x ./builder

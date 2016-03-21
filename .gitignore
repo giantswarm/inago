@@ -7,3 +7,6 @@ profile.out
 user-data
 *.pyc
 bin-dist/
+gitcookies
+inago-integration-test.pem
+secrets.tar
