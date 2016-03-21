@@ -172,7 +172,14 @@ func IsGroupsSameName(err error) bool {
 
 var invalidSubmitRequestSlicesGivenError = errgo.New("invalid submit request: slice ids given")
 
-// InvalidSubmitRequestSlicesGiven returns true if the given error cause is invalidSubmitRequestSlicesGivenError.
-func InvalidSubmitRequestSlicesGiven(err error) bool {
+// IsInvalidSubmitRequestSlicesGiven returns true if the given error cause is invalidSubmitRequestSlicesGivenError.
+func IsInvalidSubmitRequestSlicesGiven(err error) bool {
 	return errgo.Cause(err) == invalidSubmitRequestSlicesGivenError
+}
+
+var invalidSubmitRequestNoSliceIDsGivenError = errgo.New("invalid submit request: no slice ids or desiredslices given")
+
+// IsInvalidSubmitRequestNoSliceIDsGiven returns true if the given error cause is invalidSubmitRequestNoSliceIDsGivenError.
+func IsInvalidSubmitRequestNoSliceIDsGiven(err error) bool {
+	return errgo.Cause(err) == invalidSubmitRequestNoSliceIDsGivenError
 }

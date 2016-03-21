@@ -25,10 +25,6 @@ type RequestConfig struct {
 	// SliceIDs contains the IDs to create. IDs can be "1", "first", "whatever",
 	// "5", etc..
 	SliceIDs []string
-
-	// DesiredSlices defines the number of random sliceIDs that should be generated
-	// when submitting new groups.
-	DesiredSlices int
 }
 
 // Request represents a controller request. This is used to process some action
@@ -39,6 +35,10 @@ type Request struct {
 	// Units represents a list of unit files that is supposed to be extended
 	// using the provided slice IDs.
 	Units []Unit
+
+	// DesiredSlices defines the number of random sliceIDs that should be generated
+	// when submitting new groups.
+	DesiredSlices int
 }
 
 // NewRequest returns a Request, given a RequestConfig.
@@ -53,8 +53,8 @@ func NewRequest(config RequestConfig) Request {
 
 var unitExp = regexp.MustCompile("@.")
 
-// IsSlicable checks whether all units of the request are sliceable (contain an @)
-func (r Request) IsSliceable() bool {
+// isSliceable checks whether all units of the request are sliceable (contain an @)
+func (r Request) isSliceable() bool {
 	for _, unit := range r.Units {
 		if !unitExp.MatchString(unit.Name) {
 			return false
@@ -138,7 +138,7 @@ func contains(l []string, e string) bool {
 }
 
 func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
-	if !req.IsSliceable() {
+	if !req.isSliceable() {
 		return req, nil
 	}
 
@@ -175,6 +175,7 @@ func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
 		}
 	}
 	req.SliceIDs = newIDs
+	req.DesiredSlices = 0
 
 	return req, nil
 }
