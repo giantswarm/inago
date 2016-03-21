@@ -23,6 +23,11 @@ def remove_build_directory(build_directory):
     
     return run('rm -rf %s' % build_directory)
 
+def cleanup_fleet():
+    """ Cleanup fleet. """
+    
+    run('fleetctl list-unit-files --fields=unit --no-legend | xargs fleetctl destroy')
+
 def upload_binary_and_tests(build_directory):
     """ Upload the binary and the integration tests. """
     
@@ -53,6 +58,7 @@ def run_int_test():
     try:
         build_directory = create_build_directory()
         
+        cleanup_fleet()
         upload_binary_and_tests(build_directory)
         run_cram_container(build_directory)
     finally:
