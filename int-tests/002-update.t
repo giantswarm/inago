@@ -48,4 +48,4 @@ Test the status of the updated group.
 
 Kill it:
 
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy $GROUP
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy $GROUP > /dev/null 2>&1
