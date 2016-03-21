@@ -10,7 +10,7 @@ ExecStartPre=/usr/bin/chmod +x /opt/bin/kubelet
 ExecStart=/bin/sh -c "/opt/bin/kubelet \
   --address=0.0.0.0 \
   --port=10250 \
-  --api_servers=$(/usr/bin/fleetctl list-units -fields=unit,machine --full --no-legend 2>/dev/null | grep ^k8s-apiserver.service | cut -d/ -f2 | paste -d, -s):9090 \
+  --api_servers=$(/usr/bin/fleetctl list-units -fields=unit,machine --full --no-legend 2>/dev/null | grep ^k8s-master-apiserver.service | cut -d/ -f2 | paste -d, -s):9090 \
   --allow_privileged=true \
   --hostname_override=$(ip addr show eth1 | awk 'gsub(/\/24/, \"\") {print $2}') \
   --logtostderr=true \

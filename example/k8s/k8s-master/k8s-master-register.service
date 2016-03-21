@@ -1,8 +1,8 @@
 [Unit]
 Description=Kubernetes Registration Service
 Documentation=https://github.com/kelseyhightower/kube-register
-Requires=k8s-apiserver.service
-After=k8s-apiserver.service
+Requires=k8s-master-apiserver.service
+After=k8s-master-apiserver.service
 Requires=fleet.service
 After=fleet.service
 
@@ -19,4 +19,4 @@ Restart=always
 RestartSec=10
 
 [X-Fleet]
-MachineOf=k8s-apiserver.service
+MachineOf=k8s-master-apiserver.service
