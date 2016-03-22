@@ -1,4 +1,4 @@
-# structure
+# Structure
 Inago requires a certain directory structure and unit file names to make the
 tool actually work. There must be a group folder. See also the description of
 [the term group](terms.md#Group).
@@ -6,6 +6,8 @@ tool actually work. There must be a group folder. See also the description of
 There must be files within the this group folder. The files must start with the
 folder name. That means the unit file names need to be prefixed with the group
 name. See also documentation about [slice expansion](slice_expansion.md).
+Furthermore sliceable and instance units may not be mixed. See also documentation
+about [slice](terms.md#Slice) and [instance](terms.md#Instance).
 
 The file MUST be a systemd unitfile. Optionally there can be fleet statements
 defined. See

@@ -1,4 +1,4 @@
-# submit
+# Submit
 Submitting groups enables deploying multiple slices using one command.
 
 ```
