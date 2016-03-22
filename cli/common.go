@@ -83,6 +83,11 @@ type blockWithFeedbackCtx struct {
 }
 
 func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
+	sliceNoun := "slices"
+	if len(bctx.Request.SliceIDs) == 1 {
+		sliceNoun = "slice"
+	}
+
 	if !bctx.NoBlock {
 		taskObject, err := newController.WaitForTask(ctx, bctx.TaskID, bctx.Closer)
 		if err != nil {
@@ -101,7 +106,16 @@ func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
 			} else if len(bctx.Request.SliceIDs) == 0 {
 				newLogger.Error(ctx, "Failed to %s all slices of group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error.Error())
 			} else {
-				newLogger.Error(ctx, "Failed to %s %d slices for group '%s': %v. (%s)", bctx.Descriptor, len(bctx.Request.SliceIDs), bctx.Request.Group, bctx.Request.SliceIDs, taskObject.Error.Error())
+				newLogger.Error(
+					ctx,
+					"Failed to %s %d %v for group '%s': %v. (%s)",
+					bctx.Descriptor,
+					len(bctx.Request.SliceIDs),
+					sliceNoun,
+					bctx.Request.Group,
+					bctx.Request.SliceIDs,
+					taskObject.Error,
+				)
 			}
 			os.Exit(1)
 		}
@@ -112,6 +126,14 @@ func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
 	} else if len(bctx.Request.SliceIDs) == 0 {
 		newLogger.Info(ctx, "Succeeded to %s all slices of group '%s'.", bctx.Descriptor, bctx.Request.Group)
 	} else {
-		newLogger.Info(ctx, "Succeeded to %s %d slices for group '%s': %v.", bctx.Descriptor, len(bctx.Request.SliceIDs), bctx.Request.Group, bctx.Request.SliceIDs)
+		newLogger.Info(
+			ctx,
+			"Succeeded to %s %d %v for group '%s': %v.",
+			bctx.Descriptor,
+			len(bctx.Request.SliceIDs),
+			sliceNoun,
+			bctx.Request.Group,
+			bctx.Request.SliceIDs,
+		)
 	}
 }
