@@ -7,6 +7,8 @@ a fleet cluster similar to `fleetctl`. Since `fleetctl` is quite limited, Inago
 aims to abstract units away and provide more sugar on top like update
 strategies. That way the user can manage unit files more easily.
 
+_Note:_ Currently only `.service` files are fully supported. Other unit types like `.timer` are not supported in [RC1](https://github.com/giantswarm/inago/releases).
+
 ## Getting Inago
 
 Download binaries: https://github.com/giantswarm/inago/releases
