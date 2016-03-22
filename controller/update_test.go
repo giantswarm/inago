@@ -32,7 +32,7 @@ func getTestController() (controller, *fleetMock) {
 	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
 	newControllerConfig.WaitSleep = 1 * time.Millisecond
-	newControllerConfig.WaitTimeout = 3 * time.Millisecond
+	newControllerConfig.WaitTimeout = 30 * time.Millisecond
 
 	newController := controller{newControllerConfig}
 
