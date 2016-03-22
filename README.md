@@ -1,6 +1,8 @@
 # Inago
-
-[![Build Status](https://api.travis-ci.org/giantswarm/inago.svg)](https://travis-ci.org/giantswarm/inago) [![codecov.io](https://codecov.io/github/giantswarm/inago/coverage.svg?branch=master)](https://codecov.io/github/giantswarm/inago?branch=master)
+[![GoDoc](https://godoc.org/github.com/giantswarm/inago?status.svg)](http://godoc.org/github.com/giantswarm/inago)
+[![Build Status](https://api.travis-ci.org/giantswarm/inago.svg)](https://travis-ci.org/giantswarm/inago)
+[![Go Report Card](http://goreportcard.com/badge/giantswarm/inago)](http://goreportcard.com/report/giantswarm/inago)
+[![codecov.io](https://codecov.io/github/giantswarm/inago/coverage.svg?branch=master)](https://codecov.io/github/giantswarm/inago?branch=master)
 
 Inago is a deployment tool that manages groups of unit files to deploy them to
 a fleet cluster similar to `fleetctl`. Since `fleetctl` is quite limited, Inago
