@@ -4,21 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/juju/errgo"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
 )
-
-var (
-	testError = errgo.New("test error")
-)
-
-func IsTestError(err error) bool {
-	return errgo.Cause(err) == testError
-}
 
 // Return a controller for testing the updates with.
 func getTestController() (controller, *fleetMock) {
@@ -29,9 +21,15 @@ func getTestController() (controller, *fleetMock) {
 
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
+	newLoggingConfig := logging.DefaultConfig()
+	newLoggingConfig.LogLevel = "DEBUG"
+	newLoggingConfig.Color = true
+	newLogger := logging.NewLogger(newLoggingConfig)
+
 	newControllerConfig := DefaultConfig()
 	newControllerConfig.Fleet = newFleetMock
 	newControllerConfig.TaskService = newTaskService
+	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
 	newControllerConfig.WaitSleep = 1 * time.Millisecond
 	newControllerConfig.WaitTimeout = 3 * time.Millisecond
@@ -68,22 +66,6 @@ func TestExecuteTaskAction(t *testing.T) {
 			req:        Request{},
 			errMatcher: nil,
 		},
-		// Test a task that returns an error.
-		{
-			function: func(ctx context.Context, req Request) (*task.Task, error) {
-				taskObject, _ := testController.TaskService.Create(
-					ctx,
-					func(ctx context.Context) error {
-						return testError
-					},
-				)
-
-				return taskObject, nil
-			},
-			ctx:        context.Background(),
-			req:        Request{},
-			errMatcher: IsTestError,
-		},
 	}
 
 	for i, test := range tests {
@@ -98,8 +80,8 @@ func TestExecuteTaskAction(t *testing.T) {
 			t.Fail()
 		}
 
-		if err != nil && test.errMatcher != nil && test.errMatcher(err) {
-			t.Logf("%v: method returned error '%v', which does not match error matcher '%v'", i, err, test.errMatcher)
+		if err != nil && test.errMatcher != nil && !test.errMatcher(err) {
+			t.Logf("%v: method returned unexpected error '%v'", i, err)
 			t.Fail()
 		}
 	}
@@ -174,13 +156,101 @@ func TestGetNumRunningSlices(t *testing.T) {
 			t.Fail()
 		}
 
-		if err != nil && test.errMatcher != nil && test.errMatcher(err) {
+		if err != nil && test.errMatcher != nil && !test.errMatcher(err) {
 			t.Logf("%v: method returned error '%v', which did not match expected error", i, err)
 			t.Fail()
 		}
 
 		if numSlices != test.numSlices {
 			t.Logf("%v: returned number of slices '%v' did not match expected: '%v'", i, numSlices, test.numSlices)
+			t.Fail()
+		}
+	}
+}
+
+// TestIsGroupRemovalAllowed tests the isGroupRemovalAllowed method.
+func TestIsGroupRemovalAllowed(t *testing.T) {
+	var tests = []struct {
+		fleetMockSetUp      func(*fleetMock)
+		req                 Request
+		minAlive            int
+		groupRemovalAllowed bool
+		errMatcher          func(err error) bool
+	}{
+		{
+			fleetMockSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{},
+					nil,
+				)
+			},
+			req:                 Request{},
+			minAlive:            0,
+			groupRemovalAllowed: false,
+			errMatcher:          nil,
+		},
+	}
+
+	for i, test := range tests {
+		testController, fleetMock := getTestController()
+
+		if test.fleetMockSetUp != nil {
+			test.fleetMockSetUp(fleetMock)
+		}
+
+		groupRemovalAllowed, err := testController.isGroupRemovalAllowed(test.req, test.minAlive)
+
+		if err != nil && test.errMatcher == nil {
+			t.Logf("%v: method returned unexpected error '%v'", i, err)
+			t.Fail()
+		}
+
+		if err != nil && test.errMatcher != nil && !test.errMatcher(err) {
+			t.Logf("%v: method returned error '%v', which did not match expected error", i, err)
+			t.Fail()
+		}
+
+		if groupRemovalAllowed != test.groupRemovalAllowed {
+			t.Logf("%v: returned bool '%v' did not match expected: '%v'", i, groupRemovalAllowed, test.groupRemovalAllowed)
+			t.Fail()
+		}
+	}
+}
+
+// TestUpdateWithStrategy tests the UpdateWithStrategy method.
+func TestUpdateWithStrategy(t *testing.T) {
+	tests := []struct {
+		fleetMockSetUp func(*fleetMock)
+		ctx            context.Context
+		req            Request
+		opts           UpdateOptions
+		errMatcher     func(error) bool
+	}{
+		{
+			fleetMockSetUp: nil,
+			ctx:            context.Background(),
+			req:            Request{},
+			opts:           UpdateOptions{},
+			errMatcher:     IsWaitTimeoutReached,
+		},
+	}
+
+	for i, test := range tests {
+		testController, fleetMock := getTestController()
+
+		if test.fleetMockSetUp != nil {
+			test.fleetMockSetUp(fleetMock)
+		}
+
+		err := testController.UpdateWithStrategy(test.ctx, test.req, test.opts)
+
+		if err != nil && test.errMatcher == nil {
+			t.Logf("%v: method returned unexpected error '%v'", i, err)
+			t.Fail()
+		}
+
+		if err != nil && test.errMatcher != nil && !test.errMatcher(err) {
+			t.Logf("%v: method returned error '%v', which did not match expected error", i, err)
 			t.Fail()
 		}
 	}
