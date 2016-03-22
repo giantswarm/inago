@@ -854,3 +854,36 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 	err := c.WaitForStatus(context.Background(), req, desired, closer)
 	Expect(IsWaitTimeoutReached(err)).To(BeTrue()) // Because WaitForStatus is 0 nothing should happen but directly return the error
 }
+
+// TestController_Update tests the Update method of the controller.
+func TestController_Update(t *testing.T) {
+	RegisterTestingT(t)
+
+	controller, fleetMock := givenController()
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+		[]fleet.UnitStatus{
+			{
+				Name: "test-main@1.service",
+			},
+		},
+		nil,
+	)
+
+	request := Request{
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"1"},
+		},
+	}
+	updateOptions := UpdateOptions{
+		MaxGrowth: 1,
+		MinAlive:  1,
+		ReadySecs: 1,
+	}
+
+	taskObject, err := controller.Update(context.Background(), request, updateOptions)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
+	Expect(err).To(BeNil())
+}
