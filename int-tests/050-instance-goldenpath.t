@@ -15,7 +15,11 @@ Submit units
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} start $GROUP >030.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >041.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP > 045.out  2>&1
+  $ egrep --quiet '\s+active\s+' 045.out 
   $ sleep 10
+
+All up, now shut down again and cleanup
+
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} stop $GROUP >050.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >061.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP >065.out 2>&1
