@@ -114,6 +114,13 @@ func IsUpdateNotAllowed(err error) bool {
 	return errgo.Cause(err) == updateNotAllowedError
 }
 
+var unitsAlreadyUpToDate = errgo.Newf("units already up to date")
+
+// IsUnitsAlreadyUpToDate asserts unitsAlreadyUpToDate.
+func IsUnitsAlreadyUpToDate(err error) bool {
+	return errgo.Cause(err) == unitsAlreadyUpToDate
+}
+
 var noUnitsInGroupError = errgo.New("no units in group")
 
 // IsNoUnitsInGroup returns true if the given error cause is noUnitsInGroupError.

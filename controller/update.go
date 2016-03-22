@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"sync/atomic"
 	"time"
 
@@ -23,7 +22,7 @@ func (c controller) executeTaskAction(f func(ctx context.Context, req Request) (
 		return maskAny(err)
 	}
 	if task.HasFailedStatus(taskObject) {
-		return maskAny(fmt.Errorf(taskObject.Error))
+		return maskAny(taskObject.Error)
 	}
 	return nil
 }

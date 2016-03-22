@@ -24,7 +24,7 @@ type Task struct {
 
 	// Error represents the message of an error occured during task execution, if
 	// any.
-	Error string
+	Error error
 
 	// FinalStatus represents any status that is final. A task having this status
 	// will not change its status anymore.
@@ -162,7 +162,7 @@ func (ts *taskService) MarkAsFailedWithError(ctx context.Context, taskObject *Ta
 	ts.Config.Logger.Debug(ctx, "task: marking as failed for task: %v", taskObject.ID)
 
 	taskObject.ActiveStatus = StatusStopped
-	taskObject.Error = err.Error()
+	taskObject.Error = err
 	taskObject.FinalStatus = StatusFailed
 
 	err = ts.PersistState(ctx, taskObject)

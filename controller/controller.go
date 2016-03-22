@@ -358,7 +358,7 @@ func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions)
 
 		if !ok {
 			// Group does not need to be updated. Do nothing.
-			return maskAnyf(updateNotAllowedError, "units already up to date")
+			return maskAny(unitsAlreadyUpToDate)
 		}
 
 		err = c.UpdateWithStrategy(ctx, req, opts)
