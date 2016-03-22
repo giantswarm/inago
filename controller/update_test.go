@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/juju/errgo"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
 
+	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/task"
 )
 
@@ -98,6 +100,68 @@ func TestExecuteTaskAction(t *testing.T) {
 
 		if err != nil && test.errMatcher != nil && test.errMatcher(err) {
 			t.Logf("%v: method returned error '%v', which does not match error matcher '%v'", i, err, test.errMatcher)
+			t.Fail()
+		}
+	}
+}
+
+// TestGetNumRunningSlices tests the getNumRunningSlices method.
+func TestGetNumRunningSlices(t *testing.T) {
+	var tests = []struct {
+		fleetMockSetUp func(*fleetMock)
+		req            Request
+		numSlices      int
+		errMatcher     func(err error) bool
+	}{
+		{
+			fleetMockSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{},
+					nil,
+				)
+			},
+			req:        Request{},
+			numSlices:  0,
+			errMatcher: nil,
+		},
+		{
+			fleetMockSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "some group",
+				},
+			},
+			numSlices:  0,
+			errMatcher: IsUnitNotFound,
+		},
+	}
+
+	for i, test := range tests {
+		testController, fleetMock := getTestController()
+
+		if test.fleetMockSetUp != nil {
+			test.fleetMockSetUp(fleetMock)
+		}
+
+		numSlices, err := testController.getNumRunningSlices(test.req)
+
+		if err != nil && test.errMatcher == nil {
+			t.Logf("%v: method returned unexpected error '%v'", i, err)
+			t.Fail()
+		}
+
+		if err != nil && test.errMatcher != nil && test.errMatcher(err) {
+			t.Logf("%v: method returned error '%v', which did not match expected error", i, err)
+			t.Fail()
+		}
+
+		if numSlices != test.numSlices {
+			t.Logf("%v: returned number of slices '%v' did not match expected: '%v'", i, numSlices, test.numSlices)
 			t.Fail()
 		}
 	}
