@@ -139,6 +139,25 @@ func TestGetNumRunningSlices(t *testing.T) {
 			numSlices:  0,
 			errMatcher: IsUnitNotFound,
 		},
+		{
+			fleetMockSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						fleet.UnitStatus{
+							Name: "kubernetes-api-server",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "kubernetes",
+				},
+			},
+			numSlices:  1,
+			errMatcher: nil,
+		},
 	}
 
 	for i, test := range tests {
