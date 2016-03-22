@@ -91,7 +91,7 @@ func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
 		}
 
 		if controller.IsUnitsAlreadyUpToDate(taskObject.Error) {
-			newLogger.Info(newCtx, taskObject.Error.Error())
+			newLogger.Info(ctx, "Not updating group '%s': (%s)", bctx.Request.Group, taskObject.Error.Error())
 			return
 		}
 
