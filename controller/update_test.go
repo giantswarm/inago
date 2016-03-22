@@ -4,10 +4,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/juju/errgo"
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/task"
 )
+
+var (
+	testError = errgo.New("test error")
+)
+
+func IsTestError(err error) bool {
+	return errgo.Cause(err) == testError
+}
 
 // Return a controller for testing the updates with.
 func getTestController() (controller, *fleetMock) {
@@ -35,12 +44,12 @@ func TestExecuteTaskAction(t *testing.T) {
 	testController, _ := getTestController()
 
 	var tests = []struct {
-		function func(context.Context, Request) (*task.Task, error)
-		ctx      context.Context
-		req      Request
-		err      error
+		function   func(context.Context, Request) (*task.Task, error)
+		ctx        context.Context
+		req        Request
+		errMatcher func(err error) bool
 	}{
-		// Test a function that does nothing.
+		// Test a task that does nothing.
 		{
 			function: func(ctx context.Context, req Request) (*task.Task, error) {
 				taskObject, _ := testController.TaskService.Create(
@@ -53,9 +62,25 @@ func TestExecuteTaskAction(t *testing.T) {
 
 				return taskObject, nil
 			},
-			ctx: context.Background(),
-			req: Request{},
-			err: nil,
+			ctx:        context.Background(),
+			req:        Request{},
+			errMatcher: nil,
+		},
+		// Test a task that returns an error.
+		{
+			function: func(ctx context.Context, req Request) (*task.Task, error) {
+				taskObject, _ := testController.TaskService.Create(
+					ctx,
+					func(ctx context.Context) error {
+						return testError
+					},
+				)
+
+				return taskObject, nil
+			},
+			ctx:        context.Background(),
+			req:        Request{},
+			errMatcher: IsTestError,
 		},
 	}
 
@@ -66,8 +91,13 @@ func TestExecuteTaskAction(t *testing.T) {
 			test.req,
 		)
 
-		if err != test.err {
-			t.Logf("%v: method returned error '%v', which does not match test error '%v'", i, err, test.err)
+		if err != nil && test.errMatcher == nil {
+			t.Logf("%v: method return error '%v', when it should not return any errors", i, err)
+			t.Fail()
+		}
+
+		if err != nil && test.errMatcher != nil && test.errMatcher(err) {
+			t.Logf("%v: method returned error '%v', which does not match error matcher '%v'", i, err, test.errMatcher)
 			t.Fail()
 		}
 	}
