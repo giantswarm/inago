@@ -18,7 +18,10 @@ COMMIT := $(shell git rev-parse --short HEAD)
 SOURCE=$(shell find . -name '*.go')
 INT_TESTS=$(shell find $(INT_TESTS_PATH) -name '*.t')
 
-BUILD_COMMAND=go build -a -o $(BIN)
+BUILD_COMMAND=go build\
+ 				-a -ldflags \
+				"-X github.com/giantswarm/inago/cli.projectVersion=$(VERSION) -X github.com/giantswarm/inago/cli.projectBuild=$(COMMIT)" \
+				-o $(BIN)
 TEST_COMMAND=./go.test.sh
 
 all: $(BIN)
