@@ -13,7 +13,7 @@ BIN := $(PROJECT)ctl
 VERSION := $(shell cat VERSION)
 COMMIT := $(shell git rev-parse --short HEAD)
 
-.PHONY: all clean test ci-test deps bin-dist
+.PHONY: all clean test ci-test deps bin-dist install
 
 SOURCE=$(shell find . -name '*.go')
 INT_TESTS=$(shell find $(INT_TESTS_PATH) -name '*.t')
@@ -136,3 +136,6 @@ bin-dist:
 	cp -f LICENSE bin-dist/
 	
 	cd bin-dist/ && tar czf $(PROJECT).$(VERSION).tar.gz *
+
+install: $(BIN)
+	cp $(BIN) /usr/local/bin/
