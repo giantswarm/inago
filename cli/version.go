@@ -18,5 +18,5 @@ var (
 )
 
 func versionRun(cmd *cobra.Command, args []string) {
-	fmt.Printf("Inagoctl %s\n", projectVersion)
+	fmt.Printf("inagoctl %s\n", projectVersion)
 }
