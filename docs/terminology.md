@@ -45,7 +45,7 @@ into it, creates a new group as Ingao is able to understand it.
 ## Slice
 A slice is a scalable group instance. The kubernetes equivalent would be a
 replica. Slices are a scaled version of a group. So you can scale up your group
-using slice expansion. See also [What is slice expansion?](slice_expansion.md).
+using slice expansion.
 
 ## Instance
 A group instance is a group which can **not** be scaled. Unit files which
