@@ -108,7 +108,7 @@ func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
 			} else {
 				newLogger.Error(
 					ctx,
-					"Failed to %s %d %v for group '%s'. %v. (%s)",
+					"Failed to %s %d %v for group '%s': %v. (%s)",
 					bctx.Descriptor,
 					len(bctx.Request.SliceIDs),
 					sliceNoun,
@@ -128,7 +128,7 @@ func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
 	} else {
 		newLogger.Info(
 			ctx,
-			"Succeeded to %s %d %v for group '%s'. %v.",
+			"Succeeded to %s %d %v for group '%s': %v.",
 			bctx.Descriptor,
 			len(bctx.Request.SliceIDs),
 			sliceNoun,
