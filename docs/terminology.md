@@ -1,4 +1,6 @@
-# What are the terms we use and what do they mean?
+# Terminology
+
+The following explains what we mean by and how we use certain terms in this documentation.
 
 ### Group
 A group is a collection of unit files tied together. This can be seen as
