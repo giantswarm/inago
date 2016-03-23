@@ -1,6 +1,8 @@
-# What are the terms we use and what do they mean?
+# Terminology
 
-### Group
+The following explains what we mean by and how we use certain terms in this documentation
+
+## Group
 A group is a collection of unit files tied together. This can be seen as
 equivalent to kubernetes pods. Units within an Inago group are scheduled
 together on the same host by convention.
@@ -15,7 +17,8 @@ which contain an `@` sign are considered sliceable. If the unit files does **not
 contain an `@` sign the unit is recognized an instance unit.
 
 Examples:
-#### Sliceable group
+
+### Sliceable group
 
 ```nohighlight
 └── mygroup
@@ -23,7 +26,7 @@ Examples:
     └── mygroup-foo@.service
 ```
 
-#### Instance group
+### Instance group
 
 ```nohighlight
 └── timer
@@ -39,12 +42,12 @@ A group is named after the directory its unit files live in. Having two units
 leads to the Inago group `mygroup`. So creating a directory and putting units
 into it, creates a new group as Ingao is able to understand it.
 
-### Slice
+## Slice
 A slice is a scalable group instance. The kubernetes equivalent would be a
 replica. Slices are a scaled version of a group. So you can scale up your group
 using slice expansion. See also [What is slice expansion?](slice_expansion.md).
 
-### Instance
+## Instance
 A group instance is a group, which can **not** be scaled. Unit files which
 don't contain an `@` sign are considered unscalable.
 Example: `prefix-unit-name.service`

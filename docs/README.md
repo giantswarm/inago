@@ -1,11 +1,12 @@
-# docs
+# Inago Documentation
+
 Here we document important concepts and functionality Inago supports.
 
-### table of contents
+## Table of Contents
 
-- [What is the goal of Inago?](goal.md)
-- [What unit file structure is required?](structure.md)
-- [What are the terms we use and what do they mean?](terms.md)
-- [How does submit work?](submit.md)
-- [How to update a group?](update.md)
-- [Deploy kubernetes on coreos with inago](k8s.md)
+- [Getting started](getting_started.md)
+- [Updating groups](update.md)
+- [Unit file structure](structure.md)
+- [Terminology](terminology.md)
+- [Deploy Kubernetes on CoreOS with Inago](k8s.md)
+- [Setting up integration tests](integration-server-setup.md)
