@@ -12,9 +12,17 @@ strategies. That way the user can manage unit files more easily.
 _Note:_ Currently only `.service` files are fully supported. Other unit types like `.timer` are not supported in [RC1](https://github.com/giantswarm/inago/releases).
 
 ## Getting Inago
+#### Brew
+Install inagoctl via brew.
+```
+$ brew tap giantswarm/giantswarm
+$ brew install inagoctl
+```
 
-Download binaries: https://github.com/giantswarm/inago/releases
+#### Binaries
+Download binaries for Linux and Mac OSX: https://github.com/giantswarm/inago/releases
 
+#### Source
 Clone the git repository: `git@github.com:giantswarm/inago.git`
 
 ## Running Inago
