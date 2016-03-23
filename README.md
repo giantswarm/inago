@@ -25,43 +25,6 @@ Simply run the binary like `fleetctl`. See help usage for more information.
 inagoctl -h
 ```
 
-## Running integration tests
-
-Runnning `make int-test` will execute the integration test suite in a docker container.
-The tests need to run against fleet, so we manage a vagrant box. Starting and destroying
-this test machine is done via the make target `int-test`.
-
-### Integration Test Machine Configuration
-
-Since the integration tests run in your docker machine (not the fleet machine), we need to
-provide it with an IP. We use port fowarding on your host for this.
-Set the `FLEET_ENDPOINT` environment variable to `http://ip:491563`, with the IP listed
-under the vboxnet interface of your docker-machine.
-
-```
-$ ifconfig
-[..snip..]
-vboxnet0: flags=8842<BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:00
-vboxnet1: flags=8842<BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:01
-vboxnet2: flags=8842<BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:02
-vboxnet3: flags=8842<BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:03
-vboxnet4: flags=8842<BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:04
-vboxnet5: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:05
-	inet 172.17.8.1 netmask 0xffffff00 broadcast 172.17.8.255
-vboxnet6: flags=8843<UP,BROADCAST,RUNNING,SIMPLEX,MULTICAST> mtu 1500
-	ether 0a:00:27:00:00:06
-	inet 192.168.59.3 netmask 0xffffff00 broadcast 192.168.59.255
-```
-
-On Stephan's machine the docker machine is in the `vboxnet6` network and the coreos VMs
-are in `vboxnet5`, so you would execute `FLEET_ENDPOINT=http://172.17.8.1:49153 make int-test`
-
 ## Releasing
 
 We're using Giant Swarm's [builder](https://github.com/giantswarm/builder) for releases.
