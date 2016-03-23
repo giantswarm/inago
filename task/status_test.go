@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -13,7 +14,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStarted,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  StatusFailed,
 				ID:           "",
 			},
@@ -23,7 +24,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStopped,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  StatusFailed,
 				ID:           "",
 			},
@@ -34,7 +35,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStarted,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  StatusSucceeded,
 				ID:           "",
 			},
@@ -43,7 +44,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStopped,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  StatusSucceeded,
 				ID:           "",
 			},
@@ -52,7 +53,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStarted,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  "",
 				ID:           "",
 			},
@@ -61,7 +62,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStopped,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  "",
 				ID:           "",
 			},
@@ -70,7 +71,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStarted,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  "",
 				ID:           "",
 			},
@@ -79,7 +80,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStopped,
-				Error:        "",
+				Error:        nil,
 				FinalStatus:  "",
 				ID:           "",
 			},
@@ -89,7 +90,7 @@ func Test_Task_Status_HasFinalStatus(t *testing.T) {
 		{
 			Input: &Task{
 				ActiveStatus: StatusStopped,
-				Error:        "test error",
+				Error:        fmt.Errorf("test error"),
 				FinalStatus:  "",
 				ID:           "test-id",
 			},

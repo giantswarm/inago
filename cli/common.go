@@ -95,11 +95,16 @@ func maybeBlockWithFeedback(ctx context.Context, bctx blockWithFeedbackCtx) {
 			os.Exit(1)
 		}
 
+		if controller.IsUnitsAlreadyUpToDate(taskObject.Error) {
+			newLogger.Info(ctx, "Not updating group '%s'. (%s)", bctx.Request.Group, taskObject.Error.Error())
+			return
+		}
+
 		if task.HasFailedStatus(taskObject) {
 			if bctx.Request.SliceIDs == nil {
-				newLogger.Error(ctx, "Failed to %s group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error)
+				newLogger.Error(ctx, "Failed to %s group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error.Error())
 			} else if len(bctx.Request.SliceIDs) == 0 {
-				newLogger.Error(ctx, "Failed to %s all slices of group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error)
+				newLogger.Error(ctx, "Failed to %s all slices of group '%s'. (%s)", bctx.Descriptor, bctx.Request.Group, taskObject.Error.Error())
 			} else {
 				newLogger.Error(
 					ctx,

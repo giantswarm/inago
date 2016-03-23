@@ -42,7 +42,7 @@ func Test_Task_TaskService_Create_Success(t *testing.T) {
 		t.Fatalf("Expected context to contain task-id '%s', but got '%s'", taskObject.ID, seenContextID)
 	}
 
-	if taskObject.Error != "" {
+	if taskObject.Error != nil {
 		t.Fatalf("received task object did have a error")
 	}
 }
@@ -70,7 +70,7 @@ func Test_Task_TastService_Create_Error(t *testing.T) {
 		t.Fatalf("received task object did NOT have a final status")
 	}
 
-	if taskObject.Error != "test error" {
+	if taskObject.Error.Error() != "test error" {
 		t.Fatalf("received task object did NOT have a proper error")
 	}
 }
