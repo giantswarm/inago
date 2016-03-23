@@ -13,7 +13,7 @@ treated like a single unit. All actions one can apply to a unit using
 `fleetctl`, can also be applied towards a group using `inagoctl`.
 
 There are two types of groups: slice groups and instance groups. Unit files,
-which contain an `@` sign are considered sliceable. If the unit files does **not**
+which contain an `@` sign are considered sliceable. If the unit file does **not**
 contain an `@` sign the unit is recognized an instance unit.
 
 Examples:
@@ -34,7 +34,7 @@ Examples:
     └── timer-example.timer
 ```
 
-For more examples take a look at the example in the
+For more examples take a look at the examples in the
 [example folder](https://github.com/giantswarm/inago/tree/master/example).
 
 A group is named after the directory its unit files live in. Having two units
@@ -48,6 +48,6 @@ replica. Slices are a scaled version of a group. So you can scale up your group
 using slice expansion. See also [What is slice expansion?](slice_expansion.md).
 
 ## Instance
-A group instance is a group, which can **not** be scaled. Unit files which
+A group instance is a group which can **not** be scaled. Unit files which
 don't contain an `@` sign are considered unscalable.
 Example: `prefix-unit-name.service`

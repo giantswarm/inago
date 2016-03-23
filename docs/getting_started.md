@@ -67,7 +67,7 @@ inagoctl destroy myapp
 
 ### Status
 
-Using the `status` command you can enquire the current status of your group and compare desired and actual states of each slice. By default the substates of the units of each group slice are aggregated as long as they are consistent accross the slice.
+Using the `status` command you can view the current status of your group and compare desired and actual states of each slice. By default the substates of the units of each group slice are aggregated as long as they are consistent accross the slice.
 
 ```shell
 $ inagoctl status myapp
