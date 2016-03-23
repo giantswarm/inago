@@ -57,7 +57,6 @@ $(BIN): $(SOURCE) VERSION .gobuild
 	@echo Building inside Docker container for $(GOOS)/$(GOARCH)
 	docker run \
 	    --rm \
-	    -ti \
 	    -v $(shell pwd):/usr/code \
 	    -e GOPATH=/usr/code/.gobuild \
 	    -e GOOS=$(GOOS) \
@@ -70,7 +69,6 @@ test: $(SOURCE) VERSION .gobuild
 	@echo Testing inside Docker container for $(GOOS)/$(GOARCH)
 	docker run \
 	    --rm \
-	    -ti \
 	    -v $(shell pwd):/usr/code \
 	    -e GOPATH=/usr/code/.gobuild \
 	    -e GOOS=$(GOOS) \
@@ -115,7 +113,6 @@ int-test: $(BIN) $(INT_TESTS)
 internal-int-test: $(BIN) $(INT_TESTS)
 	docker run \
 		--rm \
-		-ti \
 		-e FLEET_ENDPOINT=$(FLEET_ENDPOINT) \
 		-v $(CURDIR)/$(BIN):/usr/local/bin/$(BIN) \
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
