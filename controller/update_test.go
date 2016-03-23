@@ -95,6 +95,8 @@ func TestGetNumRunningSlices(t *testing.T) {
 		numSlices      int
 		errMatcher     func(err error) bool
 	}{
+		// Test that zero slices are returned if no unit statuses are returned by fleet,
+		// and we don't ask for a group.
 		{
 			fleetMockSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -106,6 +108,8 @@ func TestGetNumRunningSlices(t *testing.T) {
 			numSlices:  0,
 			errMatcher: nil,
 		},
+		// Test that IsUnitNotFound is returned if we give a group name,
+		// but no unit statuses are returned by fleet.
 		{
 			fleetMockSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -121,6 +125,8 @@ func TestGetNumRunningSlices(t *testing.T) {
 			numSlices:  0,
 			errMatcher: IsUnitNotFound,
 		},
+		// Test that 1 slice is found if we give a group name,
+		// and one unit status is returned by fleet.
 		{
 			fleetMockSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -177,6 +183,8 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 		groupRemovalAllowed bool
 		errMatcher          func(err error) bool
 	}{
+		// Test group removal is not allowed if we ask to keep 0 alive,
+		// and fleet has no units in it.
 		{
 			fleetMockSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -226,6 +234,8 @@ func TestUpdateWithStrategy(t *testing.T) {
 		opts           UpdateOptions
 		errMatcher     func(error) bool
 	}{
+		// Test that IsWaitTimeoutReached is returned if we attempt to
+		// update given nil arguments.
 		{
 			fleetMockSetUp: nil,
 			ctx:            context.Background(),
