@@ -4,11 +4,11 @@ The following explains what we mean by and how we use certain terms in this docu
 
 ## Group
 A group is a collection of unit files tied together. This can be seen as
-equivalent to kubernetes pods. Units within an Inago group are scheduled
+equivalent to Kubernetes pods. Units within an Inago group are scheduled
 together on the same host by convention.
 
 Since a group represents many units, Inago aims to abstract units away, so
-the user can manage a group more easily. Having this given, a group can be
+the user can manage a group more easily. Given this, a group can be
 treated like a single unit. All actions one can apply to a unit using
 `fleetctl`, can also be applied towards a group using `inagoctl`.
 
@@ -29,9 +29,9 @@ Examples:
 ### Instance group
 
 ```nohighlight
-└── timer
-    ├── timer-example.service
-    └── timer-example.timer
+└── myothergroup
+    ├── myothergroup-bar.service
+    └── myothergroup-foo.service
 ```
 
 For more examples take a look at the examples in the
