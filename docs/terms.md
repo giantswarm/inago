@@ -45,6 +45,6 @@ replica. Slices are a scaled version of a group. So you can scale up your group
 using slice expansion. See also [What is slice expansion?](slice_expansion.md).
 
 ### Instance
-A group instance is a group, which can **not** be scaled. Unit files are which
+A group instance is a group, which can **not** be scaled. Unit files which
 don't contain an `@` sign are considered unscalable.
 Example: `prefix-unit-name.service`
