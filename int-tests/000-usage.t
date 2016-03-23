@@ -13,6 +13,7 @@
     destroy     Destroy a group
     update      Update a group
     validate    Validate groups
+    version     Print version
   
   Flags:
         --fleet-endpoint string   endpoint used to connect to fleet (default "unix:///var/run/fleet.sock")
