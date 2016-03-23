@@ -3,14 +3,16 @@
 ## What is the goal of Inago?
 
 Inago is a deployment tool that manages groups of unit files to deploy them to
-a fleet cluster similar to `fleetctl`. Since `fleetctl` is quite limited, Inago
-aims to abstract units away and provide more sugar on top like update
-strategies. That way the user can manage unit files more easily.
+a fleet cluster similar to `fleetctl`. Inago
+aims to abstract units away so you can handle groups containing large numbers
+of unit files.
+Additionally, it provides more sugar on top like rolling updates with different
+strategies.
 
 ## Prerequisites
 
 Inago requires a certain directory structure and unit file names to make the
-tool actually work. There must be a group folder with unit files in it. For details see the [Unit File Structure](structure.md) chapter.
+tool work. There must be a group folder with unit files in it. For details see the [Unit File Structure](structure.md) chapter.
 
 ## Working with Inago
 
@@ -20,7 +22,7 @@ The basic commands you can use with Inago are `submit`, `start`, `stop`, `destro
 
 Submitting groups enables deploying multiple slices using one command.
 
-```
+```nohighlight
 inagoctl submit myapp 3
 ```
 
@@ -28,7 +30,7 @@ This assumes there is a directory `myapp` and that the unit files in that direct
 directory `myapp`. So lets imagine there are two unit files within
 `myapp`.
 
-```
+```nohighlight
 myapp_some_unit_name@.service
 myapp_some_other_unit_name@.service
 ```
@@ -55,7 +57,7 @@ myapp_some_other_unit_name@h38.service
 
 Once you have submitted a group like explained above, you can then use Inago to start, stop, or destroy that group with a single command each.
 
-```
+```nohighlight
 inagoctl start myapp
 
 inagoctl stop myapp
@@ -67,7 +69,7 @@ inagoctl destroy myapp
 
 Using the `status` command you can enquire the current status of your group and compare desired and actual states of each slice. By default the substates of the units of each group slice are aggregated as long as they are consistent accross the slice.
 
-```
+```shell
 $ inagoctl status myapp
 Slice     Unit      DState    State     IP            Active
 myapp@s8k    *     active    active    10.0.0.100    running
@@ -77,7 +79,7 @@ myapp@h38    *     inactive  inactive  10.0.0.102    stopped
 
 In case of inconsistency `status` will give you a detailed view of the inconsistent slice:
 
-```
+```shell
 $ inagoctl status myapp
 Slice     Unit                          DState    State     IP            Active
 myapp@s8k    *                             active    active    10.0.0.100    running
