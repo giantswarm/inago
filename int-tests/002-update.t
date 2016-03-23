@@ -28,7 +28,7 @@ Test the status of the update group, after starting
   
 Update update-group without changing the unit file first.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update --max-growth 0 --min-alive 3 $GROUP
-  .*\|\scontext.Background: Not updating group '002-update-group': \(units already up to date\) (re)
+  .*\|\scontext.Background: Not updating group '002-update-group'. \(units already up to date\) (re)
 
 Changing content of update-group-bar unit file.
   $ echo "[Unit]\nDescription=Inago Update Test Unit CHANGED\n\n[Service]\nExecStart=/bin/bash -c \"while true; do echo Hi; sleep 10; done\"" > $GROUP/$GROUP-bar@.service
