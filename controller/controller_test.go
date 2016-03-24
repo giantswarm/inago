@@ -859,31 +859,42 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 func TestController_Update(t *testing.T) {
 	RegisterTestingT(t)
 
-	controller, fleetMock := givenController()
-	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
-		[]fleet.UnitStatus{
-			{
-				Name: "test-main@1.service",
+	tests := []struct {
+		fleetSetUp             func(*fleetMock)
+		req                    Request
+		opts                   UpdateOptions
+		taskErrAssertion       func(error)
+		controllerErrAssertion func(error)
+	}{
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{},
+					nil,
+				)
+			},
+			req:  Request{},
+			opts: UpdateOptions{},
+			taskErrAssertion: func(err error) {
+				Expect(err).To(BeNil())
+			},
+			controllerErrAssertion: func(err error) {
+				Expect(err).To(BeNil())
 			},
 		},
-		nil,
-	)
-
-	request := Request{
-		RequestConfig: RequestConfig{
-			Group:    "test",
-			SliceIDs: []string{"1"},
-		},
-	}
-	updateOptions := UpdateOptions{
-		MaxGrowth: 1,
-		MinAlive:  1,
-		ReadySecs: 1,
 	}
 
-	taskObject, err := controller.Update(context.Background(), request, updateOptions)
-	Expect(err).To(BeNil())
+	for _, test := range tests {
+		controller, fleetMock := givenController()
 
-	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
-	Expect(err).To(BeNil())
+		if test.fleetSetUp != nil {
+			test.fleetSetUp(fleetMock)
+		}
+
+		taskObject, err := controller.Update(context.Background(), test.req, test.opts)
+		test.taskErrAssertion(err)
+
+		_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
+		test.controllerErrAssertion(err)
+	}
 }
