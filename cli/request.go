@@ -61,7 +61,6 @@ func parseGroupCLIargs(args []string) (string, []string, error) {
 		split := strings.Split(arg, "@")
 		// validate that groups are not mixed
 		if split[0] != group {
-			// TODO better error message
 			return "", nil, maskAny(invalidArgumentsError)
 		}
 		// only append slice ID if one was provided
