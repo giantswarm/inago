@@ -159,18 +159,18 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 		SliceIDs []string
 	}
 	testCases := []struct {
-		Input    []string
-		Expected Expected
-		Errorf   func(error) bool
+		Input      []string
+		Expected   Expected
+		CheckError func(error) bool
 	}{
-		// Tests that on sliceIDs are returned when non where provided
+		// Tests that no sliceIDs are returned when non where provided
 		{
 			Input: []string{"mygroup"},
 			Expected: Expected{
 				Group:    "mygroup",
 				SliceIDs: []string{},
 			},
-			Errorf: nil,
+			CheckError: nil,
 		},
 		// Tests that group and slice are split correctly
 		{
@@ -179,7 +179,7 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 				Group:    "mygroup",
 				SliceIDs: []string{"1"},
 			},
-			Errorf: nil,
+			CheckError: nil,
 		},
 		// Tests that multiple group sliceIDs are split correctly
 		{
@@ -188,26 +188,32 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 				Group:    "mygroup",
 				SliceIDs: []string{"1", "2"},
 			},
-			Errorf: nil,
+			CheckError: nil,
 		},
 		// Tests that mixed groups return an invalidArgumentsError
 		{
-			Input:    []string{"mygroup@1", "othergroup"},
-			Expected: Expected{},
-			Errorf:   IsInvalidArgumentsError,
+			Input:      []string{"mygroup@1", "othergroup"},
+			Expected:   Expected{},
+			CheckError: IsInvalidArgumentsError,
+		},
+		// Tests that mixed groups with sliceIDs return an invalidArgumentsError
+		{
+			Input:      []string{"mygroup@1", "othergroup@2"},
+			Expected:   Expected{},
+			CheckError: IsInvalidArgumentsError,
 		},
 		// Tests that using two different groups fails
 		{
-			Input:    []string{"mygroup", "othergroup"},
-			Expected: Expected{},
-			Errorf:   IsInvalidArgumentsError,
+			Input:      []string{"mygroup", "othergroup"},
+			Expected:   Expected{},
+			CheckError: IsInvalidArgumentsError,
 		},
 	}
 
 	for _, test := range testCases {
-		group, sliceIDs, err := parseGroupCLIargs(test.Input)
+		group, sliceIDs, err := parseGroupCLIArgs(test.Input)
 		if err != nil {
-			if !test.Errorf(err) {
+			if !test.CheckError(err) {
 				t.Fatalf("got unexpected Error '%v'", err)
 			}
 		}

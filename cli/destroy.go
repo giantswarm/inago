@@ -27,7 +27,7 @@ func destroyRun(cmd *cobra.Command, args []string) {
 
 	var err error
 	newRequestConfig := controller.DefaultRequestConfig()
-	newRequestConfig.Group, newRequestConfig.SliceIDs, err = parseGroupCLIargs(args)
+	newRequestConfig.Group, newRequestConfig.SliceIDs, err = parseGroupCLIArgs(args)
 	if err != nil {
 		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)

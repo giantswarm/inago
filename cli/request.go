@@ -53,7 +53,10 @@ func extendRequestWithContent(fs filesystemspec.FileSystem, req controller.Reque
 	return req, nil
 }
 
-func parseGroupCLIargs(args []string) (string, []string, error) {
+// parseGroupCLIArgs parses the given group arguments into a group and the
+// given sliceIDs.
+// "mygroup@123", "mygroup@456" => "mygroup", ["123", "456"]
+func parseGroupCLIArgs(args []string) (string, []string, error) {
 	group := strings.Split(args[0], "@")[0]
 	sliceIDs := []string{}
 
