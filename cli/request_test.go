@@ -153,15 +153,14 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 	}
 }
 
-func Test_Request_ParseGroupCLIargs(t *testing.T) {
+func Test_Request_ParseGroupCLIargs_Success(t *testing.T) {
 	type Expected struct {
 		Group    string
 		SliceIDs []string
 	}
 	testCases := []struct {
-		Input      []string
-		Expected   Expected
-		CheckError func(error) bool
+		Input    []string
+		Expected Expected
 	}{
 		// Tests that no sliceIDs are returned when non where provided
 		{
@@ -170,7 +169,6 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 				Group:    "mygroup",
 				SliceIDs: []string{},
 			},
-			CheckError: nil,
 		},
 		// Tests that group and slice are split correctly
 		{
@@ -179,7 +177,6 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 				Group:    "mygroup",
 				SliceIDs: []string{"1"},
 			},
-			CheckError: nil,
 		},
 		// Tests that multiple group sliceIDs are split correctly
 		{
@@ -188,34 +185,13 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 				Group:    "mygroup",
 				SliceIDs: []string{"1", "2"},
 			},
-			CheckError: nil,
-		},
-		// Tests that mixed groups return an invalidArgumentsError
-		{
-			Input:      []string{"mygroup@1", "othergroup"},
-			Expected:   Expected{},
-			CheckError: IsInvalidArgumentsError,
-		},
-		// Tests that mixed groups with sliceIDs return an invalidArgumentsError
-		{
-			Input:      []string{"mygroup@1", "othergroup@2"},
-			Expected:   Expected{},
-			CheckError: IsInvalidArgumentsError,
-		},
-		// Tests that using two different groups fails
-		{
-			Input:      []string{"mygroup", "othergroup"},
-			Expected:   Expected{},
-			CheckError: IsInvalidArgumentsError,
 		},
 	}
 
 	for _, test := range testCases {
 		group, sliceIDs, err := parseGroupCLIArgs(test.Input)
 		if err != nil {
-			if !test.CheckError(err) {
-				t.Fatalf("got unexpected Error '%v'", err)
-			}
+			t.Fatalf("got unexpected error: %v", err)
 		}
 
 		if group != test.Expected.Group {
@@ -223,6 +199,30 @@ func Test_Request_ParseGroupCLIargs(t *testing.T) {
 		}
 		if !reflect.DeepEqual(sliceIDs, test.Expected.SliceIDs) {
 			t.Fatalf("got sliceIDs %v, expected sliceIDs to be %v.", sliceIDs, test.Expected.SliceIDs)
+		}
+	}
+}
+
+func Test_Request_ParseGroupCLIargs_Error(t *testing.T) {
+	testCases := []struct {
+		Input      []string
+		CheckError func(error) bool
+	}{ // Tests that mixed groups with sliceIDs return an invalidArgumentsError
+		{
+			Input:      []string{"mygroup@1", "othergroup@2"},
+			CheckError: IsInvalidArgumentsError,
+		},
+		// Tests that using two different groups fails
+		{
+			Input:      []string{"mygroup", "othergroup"},
+			CheckError: IsInvalidArgumentsError,
+		},
+	}
+
+	for _, test := range testCases {
+		_, _, err := parseGroupCLIArgs(test.Input)
+		if !test.CheckError(err) {
+			t.Fatalf("got unexpected Error '%v'", err)
 		}
 	}
 }
