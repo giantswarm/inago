@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/fleet"
+	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
 )
 
@@ -461,9 +462,15 @@ func givenControllerWithConfig(fmc fleetMockConfig) (Controller, *fleetMock) {
 	newTaskServiceConfig.WaitSleep = 10 * time.Millisecond
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
+	newLoggerConfig := logging.DefaultConfig()
+	newLoggerConfig.LogLevel = "DEBUG"
+	newLoggerConfig.Color = true
+	newLogger := logging.NewLogger(newLoggerConfig)
+
 	newControllerConfig := DefaultConfig()
 	newControllerConfig.Fleet = newFleetMock
 	newControllerConfig.TaskService = newTaskService
+	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
 	newControllerConfig.WaitSleep = 10 * time.Millisecond
 	newControllerConfig.WaitTimeout = 30 * time.Millisecond
@@ -866,6 +873,7 @@ func TestController_Update(t *testing.T) {
 		taskErrAssertion       func(error)
 		controllerErrAssertion func(error)
 	}{
+		// Test that everything empty returns no errors.
 		{
 			fleetSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -876,6 +884,99 @@ func TestController_Update(t *testing.T) {
 			req:  Request{},
 			opts: UpdateOptions{},
 			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that a maxgrowth and minalive of 1, with no running units, returns no errors.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{},
+					nil,
+				)
+			},
+			req: Request{},
+			opts: UpdateOptions{
+				MaxGrowth: 1,
+				MinAlive:  1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that no growth, and a minalive of 1, with no units, returns an error.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{},
+					nil,
+				)
+			},
+			req: Request{},
+			opts: UpdateOptions{
+				MaxGrowth: 0,
+				MinAlive:  1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that no growth, a minalive of 1, with one unit, does return an error.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "jabberwocky-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "jabberwocky",
+				},
+			},
+			opts: UpdateOptions{
+				MaxGrowth: 0,
+				MinAlive:  1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that no growth, a minalive of 1, with two units, does not return an error.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "antelope-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+						{
+							Name:    "antelope-unit@2.service",
+							Current: string(StatusRunning),
+							SliceID: "2",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "antelope",
+				},
+			},
+			opts: UpdateOptions{
+				MaxGrowth: 0,
+				MinAlive:  1,
+			},
+			taskErrAssertion: func(err error) {
 				Expect(err).To(BeNil())
 			},
 			controllerErrAssertion: func(err error) {
@@ -884,17 +985,22 @@ func TestController_Update(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		controller, fleetMock := givenController()
-
 		if test.fleetSetUp != nil {
 			test.fleetSetUp(fleetMock)
 		}
 
 		taskObject, err := controller.Update(context.Background(), test.req, test.opts)
-		test.taskErrAssertion(err)
+		if test.taskErrAssertion != nil {
+			test.taskErrAssertion(err)
+		}
 
-		_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
-		test.controllerErrAssertion(err)
+		if taskObject != nil {
+			_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
+			if test.controllerErrAssertion != nil {
+				test.controllerErrAssertion(err)
+			}
+		}
 	}
 }

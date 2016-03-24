@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
+	"golang.org/x/net/context"
+
 	"github.com/giantswarm/inago/fleet"
 )
 
@@ -137,13 +139,13 @@ func contains(l []string, e string) bool {
 	return false
 }
 
-func (c controller) ExtendWithRandomSliceIDs(req Request) (Request, error) {
+func (c controller) ExtendWithRandomSliceIDs(ctx context.Context, req Request) (Request, error) {
 	if !req.isSliceable() {
 		return req, nil
 	}
 
 	// Lookup existing slice IDs.
-	usl, err := c.groupStatusWithValidate(req)
+	usl, err := c.groupStatusWithValidate(ctx, req)
 	if IsUnitNotFound(err) {
 		// This happens when no unit is found, e.g. on submit. In this case we
 		// simply go ahead, because we have no existing IDs to ignore.
