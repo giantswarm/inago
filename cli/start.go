@@ -10,7 +10,7 @@ import (
 
 var (
 	startCmd = &cobra.Command{
-		Use:   "start <group|slice...>",
+		Use:   "start <group[@slice]...>",
 		Short: "Start a group",
 		Long:  "Start the specified group, or slices",
 		Run:   startRun,
@@ -20,23 +20,26 @@ var (
 func startRun(cmd *cobra.Command, args []string) {
 	newLogger.Debug(newCtx, "cli: starting start")
 
-	group := ""
-	switch len(args) {
-	case 1:
-		group = args[0]
-	default:
+	if len(args) == 0 {
 		cmd.Help()
 		os.Exit(1)
 	}
 
+	var err error
 	newRequestConfig := controller.DefaultRequestConfig()
-	newRequestConfig.Group = group
-	req := controller.NewRequest(newRequestConfig)
-
-	req, err := newController.ExtendWithExistingSliceIDs(req)
+	newRequestConfig.Group, newRequestConfig.SliceIDs, err = parseGroupCLIArgs(args)
 	if err != nil {
 		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
+	}
+	req := controller.NewRequest(newRequestConfig)
+
+	if len(newRequestConfig.SliceIDs) == 0 {
+		req, err = newController.ExtendWithExistingSliceIDs(req)
+		if err != nil {
+			newLogger.Error(newCtx, "%#v", maskAny(err))
+			os.Exit(1)
+		}
 	}
 
 	taskObject, err := newController.Start(newCtx, req)
