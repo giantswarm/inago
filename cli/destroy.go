@@ -10,7 +10,7 @@ import (
 
 var (
 	destroyCmd = &cobra.Command{
-		Use:   "destroy <group|slice...>",
+		Use:   "destroy <group[@slice]...>",
 		Short: "Destroy a group",
 		Long:  "Destroy the specified group, or slices",
 		Run:   destroyRun,
@@ -20,23 +20,28 @@ var (
 func destroyRun(cmd *cobra.Command, args []string) {
 	newLogger.Debug(newCtx, "cli: starting destroy")
 
-	group := ""
-	switch len(args) {
-	case 1:
-		group = args[0]
-	default:
+	if len(args) == 0 {
 		cmd.Help()
 		os.Exit(1)
 	}
 
+	var err error
 	newRequestConfig := controller.DefaultRequestConfig()
-	newRequestConfig.Group = group
-	req := controller.NewRequest(newRequestConfig)
-
-	req, err := newController.ExtendWithExistingSliceIDs(req)
+	newRequestConfig.Group, newRequestConfig.SliceIDs, err = parseGroupCLIargs(args)
 	if err != nil {
 		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
+	}
+	req := controller.NewRequest(newRequestConfig)
+
+	// in case no slice id was provided, we extend the request with all
+	// slice ids seen in fleet
+	if len(newRequestConfig.SliceIDs) == 0 {
+		req, err = newController.ExtendWithExistingSliceIDs(req)
+		if err != nil {
+			newLogger.Error(newCtx, "%#v", maskAny(err))
+			os.Exit(1)
+		}
 	}
 
 	taskObject, err := newController.Destroy(newCtx, req)
