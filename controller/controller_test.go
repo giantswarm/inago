@@ -873,7 +873,7 @@ func TestController_Update(t *testing.T) {
 		taskErrAssertion       func(error)
 		controllerErrAssertion func(error)
 	}{
-		// Test that everything empty returns no errors.
+		// Test that everything empty returns an error.
 		{
 			fleetSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -887,7 +887,91 @@ func TestController_Update(t *testing.T) {
 				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
 			},
 		},
-		// Test that a maxgrowth and minalive of 1, with no running units, returns no errors.
+		// Test that MinAlive < 0 returns an error
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "lion-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "lion",
+				},
+			},
+			opts: UpdateOptions{
+				MinAlive:  -1,
+				MaxGrowth: 1,
+				ReadySecs: 1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that MaxGrowth < 0 returns an error
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "giraffe-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "giraffe",
+				},
+			},
+			opts: UpdateOptions{
+				MinAlive:  1,
+				MaxGrowth: -1,
+				ReadySecs: 1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that ReadySecs < 0 returns an error
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "beaver-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "beaver",
+				},
+			},
+			opts: UpdateOptions{
+				MinAlive:  1,
+				MaxGrowth: 1,
+				ReadySecs: -1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that a maxgrowth and minalive of 1, with no running units, returns an error.
 		{
 			fleetSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
@@ -899,6 +983,7 @@ func TestController_Update(t *testing.T) {
 			opts: UpdateOptions{
 				MaxGrowth: 1,
 				MinAlive:  1,
+				ReadySecs: 1,
 			},
 			taskErrAssertion: func(err error) {
 				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
@@ -916,6 +1001,7 @@ func TestController_Update(t *testing.T) {
 			opts: UpdateOptions{
 				MaxGrowth: 0,
 				MinAlive:  1,
+				ReadySecs: 1,
 			},
 			taskErrAssertion: func(err error) {
 				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
@@ -941,11 +1027,71 @@ func TestController_Update(t *testing.T) {
 				},
 			},
 			opts: UpdateOptions{
-				MaxGrowth: 0,
 				MinAlive:  1,
+				MaxGrowth: 0,
+				ReadySecs: 1,
 			},
 			taskErrAssertion: func(err error) {
 				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that growth of 8, a minalive of 3, with one running unit, does return an error.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "jabberwocky-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "jabberwocky",
+				},
+			},
+			opts: UpdateOptions{
+				MinAlive:  3,
+				MaxGrowth: 8,
+				ReadySecs: 1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+			},
+		},
+		// Test that a growth of 1, alive of 1, with one units, does not return an error.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "zebra-unit@1.service",
+							Current: string(StatusRunning),
+							SliceID: "1",
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "zebra",
+				},
+			},
+			opts: UpdateOptions{
+				MinAlive:  1,
+				MaxGrowth: 1,
+				ReadySecs: 1,
+			},
+			taskErrAssertion: func(err error) {
+				Expect(err).To(BeNil())
+			},
+			controllerErrAssertion: func(err error) {
+				Expect(err).To(BeNil())
 			},
 		},
 		// Test that no growth, a minalive of 1, with two units, does not return an error.
@@ -973,8 +1119,9 @@ func TestController_Update(t *testing.T) {
 				},
 			},
 			opts: UpdateOptions{
-				MaxGrowth: 0,
 				MinAlive:  1,
+				MaxGrowth: 0,
+				ReadySecs: 1,
 			},
 			taskErrAssertion: func(err error) {
 				Expect(err).To(BeNil())
@@ -985,7 +1132,7 @@ func TestController_Update(t *testing.T) {
 		},
 	}
 
-	for i, test := range tests {
+	for _, test := range tests {
 		controller, fleetMock := givenController()
 		if test.fleetSetUp != nil {
 			test.fleetSetUp(fleetMock)

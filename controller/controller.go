@@ -363,12 +363,40 @@ func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions)
 		return nil, maskAny(err)
 	}
 	c.Config.Logger.Debug(
-		ctx, "controller: running: %v, growth: %v, alive: %v",
-		numRunning, opts.MaxGrowth, opts.MinAlive,
+		ctx, "controller: running: %v, growth: %v, alive: %v, ready: %v",
+		numRunning, opts.MaxGrowth, opts.MinAlive, opts.ReadySecs,
 	)
-	if numRunning+opts.MaxGrowth <= opts.MinAlive {
-		c.Config.Logger.Error(ctx, "controller: cannot satisfy update options")
-		return nil, maskAnyf(updateNotAllowedError, "cannot satisfy update options")
+	updateAllowedRules := []struct {
+		// The human readable error message for this rule
+		message string
+		// broken is true when the update should not be allowed
+		broken bool
+	}{
+		{
+			message: "maximum units to create during update must be positive, or zero",
+			broken:  opts.MaxGrowth < 0,
+		},
+		{
+			message: "minimum alive units must be positive, or zero",
+			broken:  opts.MinAlive < 0,
+		},
+		{
+			message: "time between creating groups must be positive, or zero",
+			broken:  opts.ReadySecs < 0,
+		},
+		{
+			message: "cannot have minimum alive units greater than current number of units",
+			broken:  opts.MinAlive > numRunning,
+		},
+		{
+			message: "to keep all current units alive, max growth must be greater than 0",
+			broken:  opts.MinAlive == numRunning && opts.MaxGrowth < 1,
+		},
+	}
+	for _, rule := range updateAllowedRules {
+		if rule.broken {
+			return nil, maskAnyf(updateNotAllowedError, rule.message)
+		}
 	}
 
 	action := func(ctx context.Context) error {
@@ -503,7 +531,6 @@ func (c controller) groupStatus(ctx context.Context, req Request) ([]fleet.UnitS
 	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesGroupSlices(req))
 	if fleet.IsUnitNotFound(err) {
 		// This happens when no unit is found.
-		c.Config.Logger.Warning(ctx, "controller: no units found")
 		return nil, maskAny(unitNotFoundError)
 	} else if err != nil {
 		return nil, maskAny(err)
