@@ -153,7 +153,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 	}
 }
 
-func Test_Request_ParseGroupCLIargs_Success(t *testing.T) {
+func Test_Request_ParseGroupCLIArgs_Success(t *testing.T) {
 	type Expected struct {
 		Group    string
 		SliceIDs []string
@@ -203,7 +203,7 @@ func Test_Request_ParseGroupCLIargs_Success(t *testing.T) {
 	}
 }
 
-func Test_Request_ParseGroupCLIargs_Error(t *testing.T) {
+func Test_Request_ParseGroupCLIArgs_Error(t *testing.T) {
 	testCases := []struct {
 		Input      []string
 		CheckError func(error) bool
