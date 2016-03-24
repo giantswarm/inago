@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/juju/errgo"
@@ -148,6 +149,80 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			if !found {
 				t.Fatalf("case %d: expected %s to be in output, not found", i+1, outputUnit.Name)
 			}
+		}
+	}
+}
+
+func Test_Request_ParseGroupCLIArgs_Success(t *testing.T) {
+	type Expected struct {
+		Group    string
+		SliceIDs []string
+	}
+	testCases := []struct {
+		Input    []string
+		Expected Expected
+	}{
+		// Tests that no sliceIDs are returned when non where provided
+		{
+			Input: []string{"mygroup"},
+			Expected: Expected{
+				Group:    "mygroup",
+				SliceIDs: []string{},
+			},
+		},
+		// Tests that group and slice are split correctly
+		{
+			Input: []string{"mygroup@1"},
+			Expected: Expected{
+				Group:    "mygroup",
+				SliceIDs: []string{"1"},
+			},
+		},
+		// Tests that multiple group sliceIDs are split correctly
+		{
+			Input: []string{"mygroup@1", "mygroup@2"},
+			Expected: Expected{
+				Group:    "mygroup",
+				SliceIDs: []string{"1", "2"},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		group, sliceIDs, err := parseGroupCLIArgs(test.Input)
+		if err != nil {
+			t.Fatalf("got unexpected error: %v", err)
+		}
+
+		if group != test.Expected.Group {
+			t.Fatalf("got group %v, expected group to be %v.", group, test.Expected.Group)
+		}
+		if !reflect.DeepEqual(sliceIDs, test.Expected.SliceIDs) {
+			t.Fatalf("got sliceIDs %v, expected sliceIDs to be %v.", sliceIDs, test.Expected.SliceIDs)
+		}
+	}
+}
+
+func Test_Request_ParseGroupCLIArgs_Error(t *testing.T) {
+	testCases := []struct {
+		Input      []string
+		CheckError func(error) bool
+	}{ // Tests that mixed groups with sliceIDs return an invalidArgumentsError
+		{
+			Input:      []string{"mygroup@1", "othergroup@2"},
+			CheckError: IsInvalidArgumentsError,
+		},
+		// Tests that using two different groups fails
+		{
+			Input:      []string{"mygroup", "othergroup"},
+			CheckError: IsInvalidArgumentsError,
+		},
+	}
+
+	for _, test := range testCases {
+		_, _, err := parseGroupCLIArgs(test.Input)
+		if !test.CheckError(err) {
+			t.Fatalf("got unexpected Error '%v'", err)
 		}
 	}
 }

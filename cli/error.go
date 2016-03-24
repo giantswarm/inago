@@ -14,6 +14,12 @@ var (
 
 var invalidArgumentsError = errgo.Newf("invalid arguments")
 
+// IsInvalidArgumentsError checks whether the given command line
+// arguments are valid
+func IsInvalidArgumentsError(err error) bool {
+	return errgo.Cause(err) == invalidArgumentsError
+}
+
 // FormatValidationError returns the CausingErrors formatted:
 // Validation Error found:
 //		* unit slice not found

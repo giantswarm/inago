@@ -2,6 +2,7 @@ package cli
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/juju/errgo"
 
@@ -50,4 +51,26 @@ func extendRequestWithContent(fs filesystemspec.FileSystem, req controller.Reque
 	}
 
 	return req, nil
+}
+
+// parseGroupCLIArgs parses the given group arguments into a group and the
+// given sliceIDs.
+// "mygroup@123", "mygroup@456" => "mygroup", ["123", "456"]
+func parseGroupCLIArgs(args []string) (string, []string, error) {
+	group := strings.Split(args[0], "@")[0]
+	sliceIDs := []string{}
+
+	for _, arg := range args {
+		split := strings.Split(arg, "@")
+		// validate that groups are not mixed
+		if split[0] != group {
+			return "", nil, maskAny(invalidArgumentsError)
+		}
+		// only append slice ID if one was provided
+		if len(split) > 1 {
+			sliceIDs = append(sliceIDs, split[1])
+		}
+	}
+
+	return group, sliceIDs, nil
 }
