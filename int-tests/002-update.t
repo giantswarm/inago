@@ -27,7 +27,7 @@ Test the status of the update group, after starting
   002-update-group@[a-z\d]{3}\s*\*\s*launched\s*launched\s*active\s*[0-9.]*\s*[a-z0-9]* (re)
   
 Update update-group without changing the unit file first.
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update --max-growth 0 --min-alive 3 $GROUP
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update --max-growth 1 --min-alive 1 $GROUP
   .*\|\scontext.Background: Not updating group '002-update-group'. \(units already up to date\) (re)
 
 Changing content of update-group-bar unit file.
