@@ -862,16 +862,14 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 	Expect(IsWaitTimeoutReached(err)).To(BeTrue()) // Because WaitForStatus is 0 nothing should happen but directly return the error
 }
 
-// TestController_Update tests the Update method of the controller.
-func TestController_Update(t *testing.T) {
+// TestController_UpdateValidation tests the validation of the Update method of the controller.
+func TestController_UpdateValidation(t *testing.T) {
 	RegisterTestingT(t)
 
 	tests := []struct {
-		fleetSetUp             func(*fleetMock)
-		req                    Request
-		opts                   UpdateOptions
-		taskErrAssertion       func(error)
-		controllerErrAssertion func(error)
+		fleetSetUp func(*fleetMock)
+		req        Request
+		opts       UpdateOptions
 	}{
 		// Test that everything empty returns an error.
 		{
@@ -883,9 +881,6 @@ func TestController_Update(t *testing.T) {
 			},
 			req:  Request{},
 			opts: UpdateOptions{},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
-			},
 		},
 		// Test that MinAlive < 0 returns an error
 		{
@@ -910,9 +905,6 @@ func TestController_Update(t *testing.T) {
 				MinAlive:  -1,
 				MaxGrowth: 1,
 				ReadySecs: 1,
-			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
 			},
 		},
 		// Test that MaxGrowth < 0 returns an error
@@ -939,9 +931,6 @@ func TestController_Update(t *testing.T) {
 				MaxGrowth: -1,
 				ReadySecs: 1,
 			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
-			},
 		},
 		// Test that ReadySecs < 0 returns an error
 		{
@@ -967,9 +956,6 @@ func TestController_Update(t *testing.T) {
 				MaxGrowth: 1,
 				ReadySecs: -1,
 			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
-			},
 		},
 		// Test that a maxgrowth and minalive of 1, with no running units, returns an error.
 		{
@@ -985,9 +971,6 @@ func TestController_Update(t *testing.T) {
 				MinAlive:  1,
 				ReadySecs: 1,
 			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
-			},
 		},
 		// Test that no growth, and a minalive of 1, with no units, returns an error.
 		{
@@ -1002,9 +985,6 @@ func TestController_Update(t *testing.T) {
 				MaxGrowth: 0,
 				MinAlive:  1,
 				ReadySecs: 1,
-			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
 			},
 		},
 		// Test that no growth, a minalive of 1, with one unit, does return an error.
@@ -1031,9 +1011,6 @@ func TestController_Update(t *testing.T) {
 				MaxGrowth: 0,
 				ReadySecs: 1,
 			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
-			},
 		},
 		// Test that growth of 8, a minalive of 3, with one running unit, does return an error.
 		{
@@ -1059,10 +1036,29 @@ func TestController_Update(t *testing.T) {
 				MaxGrowth: 8,
 				ReadySecs: 1,
 			},
-			taskErrAssertion: func(err error) {
-				Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
-			},
 		},
+	}
+
+	for _, test := range tests {
+		controller, fleetMock := givenController()
+		if test.fleetSetUp != nil {
+			test.fleetSetUp(fleetMock)
+		}
+
+		_, err := controller.Update(context.Background(), test.req, test.opts)
+		Expect(errgo.Cause(err)).To(Equal(updateNotAllowedError))
+	}
+}
+
+// TestController_Update tests the Update method of the controller.
+func TestController_Update(t *testing.T) {
+	RegisterTestingT(t)
+
+	tests := []struct {
+		fleetSetUp func(*fleetMock)
+		req        Request
+		opts       UpdateOptions
+	}{
 		// Test that a growth of 1, alive of 1, with one units, does not return an error.
 		{
 			fleetSetUp: func(f *fleetMock) {
@@ -1086,12 +1082,6 @@ func TestController_Update(t *testing.T) {
 				MinAlive:  1,
 				MaxGrowth: 1,
 				ReadySecs: 1,
-			},
-			taskErrAssertion: func(err error) {
-				Expect(err).To(BeNil())
-			},
-			controllerErrAssertion: func(err error) {
-				Expect(err).To(BeNil())
 			},
 		},
 		// Test that no growth, a minalive of 1, with two units, does not return an error.
@@ -1123,12 +1113,6 @@ func TestController_Update(t *testing.T) {
 				MaxGrowth: 0,
 				ReadySecs: 1,
 			},
-			taskErrAssertion: func(err error) {
-				Expect(err).To(BeNil())
-			},
-			controllerErrAssertion: func(err error) {
-				Expect(err).To(BeNil())
-			},
 		},
 	}
 
@@ -1139,15 +1123,9 @@ func TestController_Update(t *testing.T) {
 		}
 
 		taskObject, err := controller.Update(context.Background(), test.req, test.opts)
-		if test.taskErrAssertion != nil {
-			test.taskErrAssertion(err)
-		}
+		Expect(err).To(BeNil())
 
-		if taskObject != nil {
-			_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
-			if test.controllerErrAssertion != nil {
-				test.controllerErrAssertion(err)
-			}
-		}
+		_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
+		Expect(err).To(BeNil())
 	}
 }
