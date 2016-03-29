@@ -512,25 +512,25 @@ func TestController_Submit(t *testing.T) {
 		// "test-main@xxx.service", "content"
 		return strings.HasPrefix(unitname, "test-main@") &&
 			strings.HasSuffix(unitname, ".service")
-	}), "content").Run(func (args mock.Arguments) {
+	}), "content").Run(func(args mock.Arguments) {
 		// For every submitted unit, we generate a UnitStatus and store it in `statusReturns`
 		// for later use.
 		unitname := args[0].(string)
 		statusReturns = append(statusReturns, fleet.UnitStatus{
 			// NOTE: A bunch of fields are missing here (SliceIDs, UnitHash) - they are not needed for now
-			Name: unitname,
+			Name:    unitname,
 			Current: "loaded",
 			Desired: "loaded",
 			Machine: []fleet.MachineStatus{{
 				SystemdActive: "inactive",
-				SystemdSub: "dead",
+				SystemdSub:    "dead",
 			}},
 		})
 	}).Return(nil).Once()
 
 	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).
 		Run(func(args mock.Arguments) {
-			matcher := args[0].(func (string) bool)
+			matcher := args[0].(func(string) bool)
 
 			// We expect the controller to be interested in ALL units it has previously submitted
 			for _, unitStatus := range statusReturns {
@@ -545,6 +545,68 @@ func TestController_Submit(t *testing.T) {
 			Group: "test",
 		},
 		DesiredSlices: 1,
+		Units: []Unit{
+			{
+				Name:    "test-main@.service",
+				Content: "content",
+			},
+		},
+	}
+	taskObject, err := controller.Submit(context.Background(), req)
+	Expect(err).To(BeNil())
+
+	_, err = controller.WaitForTask(context.Background(), taskObject.ID, nil)
+	Expect(err).To(BeNil())
+
+	// Assert
+	mock.AssertExpectationsForObjects(t, fleetMock.Mock)
+}
+
+func TestController_Submit_withSliceID(t *testing.T) {
+	RegisterTestingT(t)
+
+	// Mocks
+	controller, fleetMock := givenController()
+
+	var statusReturns []fleet.UnitStatus
+	fleetMock.On("Submit", mock.MatchedBy(func(unitname string) bool {
+		// "test-main@xxx.service", "content"
+		return strings.HasPrefix(unitname, "test-main@") &&
+			strings.HasSuffix(unitname, ".service")
+	}), "content").Run(func(args mock.Arguments) {
+		// For every submitted unit, we generate a UnitStatus and store it in `statusReturns`
+		// for later use.
+		unitname := args[0].(string)
+		statusReturns = append(statusReturns, fleet.UnitStatus{
+			// NOTE: A bunch of fields are missing here (SliceIDs, UnitHash) - they are not needed for now
+			Name:    unitname,
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{{
+				SystemdActive: "inactive",
+				SystemdSub:    "dead",
+			}},
+		})
+	}).Return(nil).Twice()
+
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).
+		Run(func(args mock.Arguments) {
+			matcher := args[0].(func(string) bool)
+
+			// We expect the controller to be interested in ALL units it has previously submitted
+			for _, unitStatus := range statusReturns {
+				Expect(matcher(unitStatus.Name)).To(BeTrue())
+			}
+		}).
+		Return(statusReturns, nil)
+
+	// Execute test
+	req := Request{
+		RequestConfig: RequestConfig{
+			Group:    "test",
+			SliceIDs: []string{"123", "456"},
+		},
+		DesiredSlices: 0,
 		Units: []Unit{
 			{
 				Name:    "test-main@.service",
