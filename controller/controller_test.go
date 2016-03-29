@@ -507,19 +507,37 @@ func TestController_Submit(t *testing.T) {
 	// Mocks
 	controller, fleetMock := givenController()
 
+	var statusReturns []fleet.UnitStatus
 	fleetMock.On("Submit", mock.MatchedBy(func(unitname string) bool {
 		// "test-main@xxx.service", "content"
 		return strings.HasPrefix(unitname, "test-main@") &&
 			strings.HasSuffix(unitname, ".service")
-	}), "content").Return(nil).Once()
-	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
-		[]fleet.UnitStatus{
-			{
-				Name: "test-main@1.service",
-			},
-		},
-		nil,
-	)
+	}), "content").Run(func (args mock.Arguments) {
+		// For every submitted unit, we generate a UnitStatus and store it in `statusReturns`
+		// for later use.
+		unitname := args[0].(string)
+		statusReturns = append(statusReturns, fleet.UnitStatus{
+			// NOTE: A bunch of fields are missing here (SliceIDs, UnitHash) - they are not needed for now
+			Name: unitname,
+			Current: "loaded",
+			Desired: "loaded",
+			Machine: []fleet.MachineStatus{{
+				SystemdActive: "inactive",
+				SystemdSub: "dead",
+			}},
+		})
+	}).Return(nil).Once()
+
+	fleetMock.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).
+		Run(func(args mock.Arguments) {
+			matcher := args[0].(func (string) bool)
+
+			// We expect the controller to be interested in ALL units it has previously submitted
+			for _, unitStatus := range statusReturns {
+				Expect(matcher(unitStatus.Name)).To(BeTrue())
+			}
+		}).
+		Return(statusReturns, nil)
 
 	// Execute test
 	req := Request{
