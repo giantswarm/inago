@@ -155,7 +155,7 @@ func TestGetNumRunningSlices(t *testing.T) {
 			test.fleetMockSetUp(fleetMock)
 		}
 
-		numSlices, err := testController.getNumRunningSlices(test.req)
+		numSlices, err := testController.getNumRunningSlices(context.Background(), test.req)
 
 		if err != nil && test.errMatcher == nil {
 			t.Logf("%v: method returned unexpected error '%v'", i, err)
@@ -206,7 +206,7 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 			test.fleetMockSetUp(fleetMock)
 		}
 
-		groupRemovalAllowed, err := testController.isGroupRemovalAllowed(test.req, test.minAlive)
+		groupRemovalAllowed, err := testController.isGroupRemovalAllowed(context.Background(), test.req, test.minAlive)
 
 		if err != nil && test.errMatcher == nil {
 			t.Logf("%v: method returned unexpected error '%v'", i, err)

@@ -81,7 +81,7 @@ type Controller interface {
 	// found, Inago assumes the whole group slice to be "dirty" and returns true
 	// having the group slices removed from the given req that are up to date,
 	// otherwise false, leaving the req as it is.
-	GroupNeedsUpdate(req Request) (Request, bool, error)
+	GroupNeedsUpdate(ctx context.Context, req Request) (Request, bool, error)
 
 	// Submit schedules a group on the configured fleet cluster. This is done by
 	// setting the state of the units in the group to loaded.
@@ -149,19 +149,24 @@ type Unit struct {
 	Content string
 }
 
-func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
+func (c controller) GroupNeedsUpdate(ctx context.Context, req Request) (Request, bool, error) {
+	c.Config.Logger.Debug(ctx, "controller: checking if group '%v' needs update", req.Group)
+
 	// This becomes the new filtered list with all dirty slice IDs that needs to
 	// be updated.
 	var newSliceIDs []string
 
-	usl, err := c.groupStatus(req)
+	c.Config.Logger.Debug(ctx, "controller: checking group status")
+	usl, err := c.groupStatus(ctx, req)
 	if err != nil {
 		return Request{}, false, maskAny(err)
 	}
+	c.Config.Logger.Debug(ctx, "controller: checking unit hash info")
 	uhis, err := groupUnitHashInfos(usl)
 	if err != nil {
 		return Request{}, false, maskAny(err)
 	}
+	c.Config.Logger.Debug(ctx, "controller: checking slice IDs")
 	for _, u := range req.Units {
 		unitFile, err := unit.NewUnitFile(u.Content)
 		if err != nil {
@@ -184,11 +189,14 @@ func (c controller) GroupNeedsUpdate(req Request) (Request, bool, error) {
 			newSliceIDs = append(newSliceIDs, uhi.SliceID)
 		}
 	}
+	c.Config.Logger.Debug(ctx, "controller: finished checking slice IDs")
 
 	if newSliceIDs == nil {
 		return req, false, nil
 	}
 	req.SliceIDs = newSliceIDs
+
+	c.Config.Logger.Debug(ctx, "controller: new slice IDs: %v", newSliceIDs)
 
 	return req, true, nil
 }
@@ -201,7 +209,7 @@ func (c controller) Submit(ctx context.Context, req Request) (*task.Task, error)
 	action := func(ctx context.Context) error {
 		var err error
 		if req.DesiredSlices > 0 {
-			req, err = c.ExtendWithRandomSliceIDs(req)
+			req, err = c.ExtendWithRandomSliceIDs(ctx, req)
 			if err != nil {
 				return err
 			}
@@ -244,7 +252,7 @@ func (c controller) Start(ctx context.Context, req Request) (*task.Task, error) 
 
 	action := func(ctx context.Context) error {
 		c.Config.Logger.Debug(ctx, "action: fetching unit status list")
-		unitStatusList, err := c.groupStatusWithValidate(req)
+		unitStatusList, err := c.groupStatusWithValidate(ctx, req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -281,7 +289,7 @@ func (c controller) Stop(ctx context.Context, req Request) (*task.Task, error) {
 	c.Config.Logger.Debug(ctx, "controller: handling stop")
 
 	action := func(ctx context.Context) error {
-		unitStatusList, err := c.groupStatusWithValidate(req)
+		unitStatusList, err := c.groupStatusWithValidate(ctx, req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -316,7 +324,7 @@ func (c controller) Destroy(ctx context.Context, req Request) (*task.Task, error
 	c.Config.Logger.Debug(ctx, "controller: handling destroy")
 
 	action := func(ctx context.Context) error {
-		unitStatusList, err := c.groupStatusWithValidate(req)
+		unitStatusList, err := c.groupStatusWithValidate(ctx, req)
 		if err != nil {
 			return maskAny(err)
 		}
@@ -348,21 +356,64 @@ func (c controller) Destroy(ctx context.Context, req Request) (*task.Task, error
 }
 
 func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions) (*task.Task, error) {
-	c.Config.Logger.Debug(ctx, "controller: handling update")
+	c.Config.Logger.Debug(ctx, "controller: handling update for group: %v", req.Group)
+
+	numRunning, err := c.getNumRunningSlices(ctx, req)
+	if err != nil {
+		return nil, maskAny(err)
+	}
+	c.Config.Logger.Debug(
+		ctx, "controller: running: %v, growth: %v, alive: %v, ready: %v",
+		numRunning, opts.MaxGrowth, opts.MinAlive, opts.ReadySecs,
+	)
+	updateAllowedRules := []struct {
+		// The human readable error message for this rule
+		message string
+		// broken is true when the update should not be allowed
+		broken bool
+	}{
+		{
+			message: "maximum units to create during update must be positive, or zero",
+			broken:  opts.MaxGrowth < 0,
+		},
+		{
+			message: "minimum alive units must be positive, or zero",
+			broken:  opts.MinAlive < 0,
+		},
+		{
+			message: "time between creating groups must be positive, or zero",
+			broken:  opts.ReadySecs < 0,
+		},
+		{
+			message: "cannot have minimum alive units greater than current number of units",
+			broken:  opts.MinAlive > numRunning,
+		},
+		{
+			message: "to keep all current units alive, max growth must be greater than 0",
+			broken:  opts.MinAlive == numRunning && opts.MaxGrowth < 1,
+		},
+	}
+	for _, rule := range updateAllowedRules {
+		if rule.broken {
+			return nil, maskAnyf(updateNotAllowedError, rule.message)
+		}
+	}
 
 	action := func(ctx context.Context) error {
-		req, ok, err := c.GroupNeedsUpdate(req)
+		req, ok, err := c.GroupNeedsUpdate(ctx, req)
 		if err != nil {
 			return maskAny(err)
 		}
 
 		if !ok {
 			// Group does not need to be updated. Do nothing.
+			c.Config.Logger.Debug(ctx, "controller: unit does not need updating")
 			return maskAny(unitsAlreadyUpToDate)
 		}
 
 		err = c.UpdateWithStrategy(ctx, req, opts)
 		if err != nil {
+			c.Config.Logger.Error(ctx, "controller: error encountered updating: %v", err)
 			return maskAny(err)
 		}
 
@@ -373,8 +424,11 @@ func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions)
 
 	taskObject, err := c.TaskService.Create(ctx, action)
 	if err != nil {
+		c.Config.Logger.Error(ctx, "controller: Could not create update task: %v", err)
 		return nil, maskAny(err)
 	}
+
+	c.Config.Logger.Debug(ctx, "controller: created task object: %#v", taskObject)
 
 	return taskObject, nil
 }
@@ -382,7 +436,7 @@ func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions)
 func (c controller) GetStatus(ctx context.Context, req Request) ([]fleet.UnitStatus, error) {
 	c.Config.Logger.Debug(ctx, "controller: handling getting status")
 
-	status, err := c.groupStatusWithValidate(req)
+	status, err := c.groupStatusWithValidate(ctx, req)
 	return status, maskAny(err)
 }
 
@@ -401,7 +455,7 @@ func (c controller) WaitForStatus(ctx context.Context, req Request, desired Stat
 		for {
 			c.Config.Logger.Debug(ctx, "controller: fetching group status")
 
-			unitStatusList, err := c.groupStatus(req)
+			unitStatusList, err := c.groupStatus(ctx, req)
 			if IsUnitNotFound(err) && desired == StatusNotFound {
 				goto C1
 			} else if err != nil {
@@ -462,13 +516,18 @@ func (c controller) WaitForTask(ctx context.Context, taskID string, closer <-cha
 	c.Config.Logger.Debug(ctx, "controller: handling waiting for task")
 
 	taskObject, err := c.TaskService.WaitForFinalStatus(ctx, taskID, closer)
+	if err != nil {
+		c.Config.Logger.Error(ctx, "controller: error occurred waiting for task: %#v", err)
+	}
 	return taskObject, maskAny(err)
 }
 
 // groupStatus fetches the group status using information provided
 // by req. Note that this methods throws a unitNotFoundError in case no unit
 // can be found.
-func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
+func (c controller) groupStatus(ctx context.Context, req Request) ([]fleet.UnitStatus, error) {
+	c.Config.Logger.Debug(ctx, "controller: fetching group status from fleet")
+
 	unitStatusList, err := c.Fleet.GetStatusWithMatcher(matchesGroupSlices(req))
 	if fleet.IsUnitNotFound(err) {
 		// This happens when no unit is found.
@@ -476,6 +535,8 @@ func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 	} else if err != nil {
 		return nil, maskAny(err)
 	}
+
+	c.Config.Logger.Debug(ctx, "controller: received unit status list: %#v", unitStatusList)
 
 	// TODO retry operations
 
@@ -486,8 +547,8 @@ func (c controller) groupStatus(req Request) ([]fleet.UnitStatus, error) {
 // by req. Note that this methods throws a unitNotFoundError in case no unit
 // can be found, and a unitSliceNotFoundError in case at least one unit cannot
 // be found.
-func (c controller) groupStatusWithValidate(req Request) ([]fleet.UnitStatus, error) {
-	unitStatusList, err := c.groupStatus(req)
+func (c controller) groupStatusWithValidate(ctx context.Context, req Request) ([]fleet.UnitStatus, error) {
+	unitStatusList, err := c.groupStatus(ctx, req)
 	if err != nil {
 		return nil, maskAny(err)
 	}

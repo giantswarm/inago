@@ -27,8 +27,10 @@ func (c controller) executeTaskAction(f func(ctx context.Context, req Request) (
 	return nil
 }
 
-func (c controller) getNumRunningSlices(req Request) (int, error) {
-	groupStatus, err := c.groupStatus(req)
+func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, error) {
+	c.Config.Logger.Debug(ctx, "controller: getting number of running slices")
+
+	groupStatus, err := c.groupStatus(ctx, req)
 	if IsUnitNotFound(err) {
 		return 0, nil
 	} else if err != nil {
@@ -39,6 +41,8 @@ func (c controller) getNumRunningSlices(req Request) (int, error) {
 	if err != nil {
 		return 0, maskAny(err)
 	}
+
+	c.Config.Logger.Debug(ctx, "controller: grouped list: %#v", grouped)
 
 	var sliceIDs []string
 	for _, us := range grouped {
@@ -63,11 +67,13 @@ func (c controller) getNumRunningSlices(req Request) (int, error) {
 		sliceIDs = append(sliceIDs, us.SliceID)
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: found %v running slices", len(sliceIDs))
+
 	return len(sliceIDs), nil
 }
 
-func (c controller) isGroupRemovalAllowed(req Request, minAlive int) (bool, error) {
-	numRunning, err := c.getNumRunningSlices(req)
+func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int) (bool, error) {
+	numRunning, err := c.getNumRunningSlices(ctx, req)
 	if err != nil {
 		return false, maskAny(err)
 	}
@@ -79,8 +85,8 @@ func (c controller) isGroupRemovalAllowed(req Request, minAlive int) (bool, erro
 	return false, nil
 }
 
-func (c controller) isGroupAdditionAllowed(req Request, maxGrowth int) (bool, error) {
-	numRunning, err := c.getNumRunningSlices(req)
+func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, maxGrowth int) (bool, error) {
+	numRunning, err := c.getNumRunningSlices(ctx, req)
 	if err != nil {
 		return false, maskAny(err)
 	}
@@ -97,7 +103,7 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 	if err != nil {
 		return maskAny(err)
 	}
-	n, err := c.getNumRunningSlices(newReq)
+	n, err := c.getNumRunningSlices(ctx, newReq)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -116,7 +122,7 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 	// Create new random IDs.
 	req.DesiredSlices = 1
 	req.SliceIDs = nil
-	newReq, err := c.ExtendWithRandomSliceIDs(req)
+	newReq, err := c.ExtendWithRandomSliceIDs(ctx, req)
 	if err != nil {
 		return Request{}, maskAny(err)
 	}
@@ -146,7 +152,7 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 	if err != nil {
 		return maskAny(err)
 	}
-	n, err := c.getNumRunningSlices(newReq)
+	n, err := c.getNumRunningSlices(ctx, newReq)
 	if err != nil {
 		return maskAny(err)
 	}
@@ -204,6 +210,8 @@ type UpdateOptions struct {
 }
 
 func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts UpdateOptions) error {
+	c.Config.Logger.Debug(ctx, "controller: running update for group '%v'", req.Group)
+
 	fail := make(chan error, 1)
 	numTotal := len(req.SliceIDs)
 	done := make(chan struct{}, numTotal)
@@ -231,7 +239,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 		for {
 			// add
 			maxGrowth := opts.MaxGrowth + numTotal - opts.MinAlive - int(addInProgress)
-			ok, err := c.isGroupAdditionAllowed(req, maxGrowth)
+			ok, err := c.isGroupAdditionAllowed(ctx, req, maxGrowth)
 			if err != nil {
 				return maskAny(err)
 			}
@@ -252,7 +260,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 			// remove
 			minAlive := opts.MinAlive + int(removeInProgress)
-			ok, err = c.isGroupRemovalAllowed(req, minAlive)
+			ok, err = c.isGroupRemovalAllowed(ctx, req, minAlive)
 			if err != nil {
 				return maskAny(err)
 			}
