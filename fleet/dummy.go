@@ -26,20 +26,16 @@ func DefaultDummyConfig() DummyConfig {
 }
 
 // NewDummyFleet returns a DummyFleet, given a DummyConfig.
-func NewDummyFleet(DummyConfig) (*DummyFleet, error) {
+func NewDummyFleet(DummyConfig) *DummyFleet {
 	return &DummyFleet{
 		Config: DefaultDummyConfig(),
 		Units:  make(map[string]UnitStatus),
-	}, nil
+	}
 }
 
 // Submit creates a UnitStatus, and stores it.
 func (f *DummyFleet) Submit(ctx context.Context, name, content string) error {
 	f.Config.Logger.Debug(ctx, "dummy fleet: submit %v %v", name, content)
-
-	if f.Units == nil {
-		f.Units = make(map[string]UnitStatus)
-	}
 
 	f.Units[name] = UnitStatus{
 		Current: unitStateLoaded,

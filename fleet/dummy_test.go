@@ -13,7 +13,7 @@ const (
 
 // TestDummyFleet__Submit tests the DummyFleet Submit method.
 func TestDummyFleet__Submit(t *testing.T) {
-	dummyFleet, _ := NewDummyFleet(DefaultDummyConfig())
+	dummyFleet := NewDummyFleet(DefaultDummyConfig())
 
 	if err := dummyFleet.Submit(context.Background(), UnitName, UnitContent); err != nil {
 		t.Fatal("Error submitting the test unit:", err)
@@ -43,7 +43,7 @@ func TestDummyFleet__Submit(t *testing.T) {
 
 // TestDummyFleet__Start tests the DummyFleet Start method.
 func TestDummyFleet__Start(t *testing.T) {
-	dummyFleet, _ := NewDummyFleet(DefaultDummyConfig())
+	dummyFleet := NewDummyFleet(DefaultDummyConfig())
 
 	if err := dummyFleet.Start(context.Background(), UnitName); !IsUnitNotFound(err) {
 		t.Fatal("Unit not found err not returned")
@@ -70,7 +70,7 @@ func TestDummyFleet__Start(t *testing.T) {
 
 // TestDummyFleet__Stop tests the DummyFleet Stop method.
 func TestDummyFleet__Stop(t *testing.T) {
-	dummyFleet, _ := NewDummyFleet(DefaultDummyConfig())
+	dummyFleet := NewDummyFleet(DefaultDummyConfig())
 
 	if err := dummyFleet.Stop(context.Background(), UnitName); !IsUnitNotFound(err) {
 		t.Fatal("Unit not found err not returned")
@@ -98,7 +98,7 @@ func TestDummyFleet__Stop(t *testing.T) {
 
 // TestDummyFleet__Destroy tests the DummyFleet Destroy method.
 func TestDummyFleet__Destroy(t *testing.T) {
-	dummyFleet, _ := NewDummyFleet(DefaultDummyConfig())
+	dummyFleet := NewDummyFleet(DefaultDummyConfig())
 
 	if err := dummyFleet.Destroy(context.Background(), UnitName); !IsUnitNotFound(err) {
 		t.Fatal("Unit not found err not returned")
@@ -119,7 +119,7 @@ func TestDummyFleet__Destroy(t *testing.T) {
 
 // TestDummyFleet__GetStatusWithMatcher tests the DummyFleet GetStatusWithMatcher method.
 func TestDummyFleet__GetStatusWithMatcher(t *testing.T) {
-	dummyFleet, _ := NewDummyFleet(DefaultDummyConfig())
+	dummyFleet := NewDummyFleet(DefaultDummyConfig())
 
 	if _, err := dummyFleet.GetStatusWithMatcher(
 		func(s string) bool { return true },

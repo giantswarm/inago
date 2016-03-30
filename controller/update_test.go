@@ -25,10 +25,9 @@ func getTestController() (controller, *fleet.DummyFleet) {
 	newLoggingConfig.Color = true
 	newLogger := logging.NewLogger(newLoggingConfig)
 
-	dummyFleetConfig := fleet.DummyConfig{
-		Logger: newLogger,
-	}
-	dummyFleet := &fleet.DummyFleet{Config: dummyFleetConfig}
+	dummyFleetConfig := fleet.DefaultDummyConfig()
+	dummyFleetConfig.Logger = newLogger
+	dummyFleet := fleet.NewDummyFleet(dummyFleetConfig)
 
 	newControllerConfig := DefaultConfig()
 	newControllerConfig.Fleet = dummyFleet
