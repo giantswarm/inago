@@ -35,7 +35,7 @@ func getTestController() (controller, *fleet.DummyFleet) {
 	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
 	newControllerConfig.WaitSleep = 1 * time.Millisecond
-	newControllerConfig.WaitTimeout = 30 * time.Second
+	newControllerConfig.WaitTimeout = 5 * time.Second
 
 	newController := controller{newControllerConfig}
 
@@ -264,6 +264,65 @@ func TestUpdateWithStrategy(t *testing.T) {
 				}
 				if unitStatus.Desired != "launched" {
 					t.Fatal("Unit has incorrect desired status")
+				}
+			},
+		},
+		// Test a reasonable update of a group with two group slices.
+		{
+			fleetSetUp: func(f fleet.Fleet) {
+				unitNameTemplate := "sparrow-unit@%v.service"
+
+				for i := 0; i < 2; i++ {
+					unitName := fmt.Sprintf(unitNameTemplate, i)
+
+					f.Submit(context.Background(), unitName, "some content")
+					f.Start(context.Background(), unitName)
+				}
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group:    "sparrow",
+					SliceIDs: []string{"0", "1"},
+				},
+				Units: []Unit{
+					Unit{
+						Name:    "sparrow-unit@.service",
+						Content: "some updated content",
+					},
+				},
+			},
+			opts: UpdateOptions{
+				MaxGrowth: 0,
+				MinAlive:  1,
+			},
+			assertion: func(t *testing.T, f *fleet.DummyFleet, e error) {
+				if e != nil {
+					t.Fatal("Error returned by update:", e)
+				}
+
+				unitStatusList, err := f.GetStatusWithMatcher(
+					func(s string) bool {
+						return strings.HasPrefix(s, "sparrow-unit@") && strings.HasSuffix(s, ".service")
+					},
+				)
+				if err != nil {
+					t.Fatal("Error returned getting statuses: ", err)
+				}
+
+				if len(unitStatusList) != 2 {
+					t.Fatal("Incorrect number of units:", len(unitStatusList))
+				}
+
+				for _, unitStatus := range unitStatusList {
+					if unitStatus.Current != "launched" {
+						t.Fatal("Incorrect current status:", unitStatus.Current)
+					}
+					if unitStatus.Desired != "launched" {
+						t.Fatal("Incorrect desired status:", unitStatus.Desired)
+					}
+					if unitStatus.Name == "sparrow-unit@1.service" || unitStatus.Name == "sparrow-unit@2.service" {
+						t.Fatal("Previous unit name in use:", unitStatus.Name)
+					}
 				}
 			},
 		},
