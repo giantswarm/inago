@@ -73,28 +73,36 @@ func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, 
 }
 
 func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int) (bool, error) {
+	c.Config.Logger.Debug(ctx, "controller: checking group removal allowed, req: %v", req)
+
 	numRunning, err := c.getNumRunningSlices(ctx, req)
 	if err != nil {
 		return false, maskAny(err)
 	}
 
 	if numRunning > minAlive {
+		c.Config.Logger.Debug(ctx, "controller: group removal allowed")
 		return true, nil
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: group removal not allowed")
 	return false, nil
 }
 
 func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, maxGrowth int) (bool, error) {
+	c.Config.Logger.Debug(ctx, "controller: checking group addition allowed, req: %v", req)
+
 	numRunning, err := c.getNumRunningSlices(ctx, req)
 	if err != nil {
 		return false, maskAny(err)
 	}
 
 	if numRunning < maxGrowth {
+		c.Config.Logger.Debug(ctx, "controller: group addition allowed")
 		return true, nil
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: group addition not allowed")
 	return false, nil
 }
 
@@ -218,10 +226,12 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 	var addInProgress int64
 	var removeInProgress int64
 
+	c.Config.Logger.Debug(ctx, "controller: checking if request is sliceable")
 	if !req.isSliceable() {
 		return maskAnyf(updateNotAllowedError, "cannot update unsliceable group")
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: checking for slice ids in request")
 	for _, sliceID := range req.SliceIDs {
 		if sliceID == "" {
 			return maskAnyf(updateNotAllowedError, "group misses slice ID")
@@ -236,7 +246,13 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 		newReq := req
 		newReq.SliceIDs = []string{sliceID}
 
+		// Track the number of times we attempted to make a change, and failed.
+		numFailedChangeAttempts := 0
+
 		for {
+			changeAttemptMade := false
+
+			c.Config.Logger.Debug(ctx, "controller: adding slice: %v", sliceID)
 			// add
 			maxGrowth := opts.MaxGrowth + numTotal - opts.MinAlive - int(addInProgress)
 			ok, err := c.isGroupAdditionAllowed(ctx, req, maxGrowth)
@@ -255,9 +271,11 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 					done <- struct{}{}
 				}()
 
+				changeAttemptMade = true
 				break
 			}
 
+			c.Config.Logger.Debug(ctx, "controller: removing slice: %v", sliceID)
 			// remove
 			minAlive := opts.MinAlive + int(removeInProgress)
 			ok, err = c.isGroupRemovalAllowed(ctx, req, minAlive)
@@ -276,7 +294,17 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 					done <- struct{}{}
 				}()
 
+				changeAttemptMade = true
 				break
+			}
+
+			if !changeAttemptMade {
+				c.Config.Logger.Warning(ctx, "controller: failed to make any changes")
+				numFailedChangeAttempts++
+			}
+			// If we've failed too many times, just give up completely :(
+			if numFailedChangeAttempts > c.Config.MaxFailedChangeAttempts {
+				return maskAnyf(updateFailedError, "reached max failed change attempts limit")
 			}
 
 			time.Sleep(c.WaitSleep)
