@@ -1,6 +1,8 @@
 package fleet
 
 import (
+	"sync"
+
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/logging"
@@ -16,6 +18,7 @@ type DummyConfig struct {
 type DummyFleet struct {
 	Config DummyConfig
 	Units  map[string]UnitStatus
+	Mutex  sync.Mutex
 }
 
 // DefaultDummyConfig returns a best-effort configuration for the DummyFleet struct.
@@ -37,6 +40,9 @@ func NewDummyFleet(DummyConfig) *DummyFleet {
 func (f *DummyFleet) Submit(ctx context.Context, name, content string) error {
 	f.Config.Logger.Debug(ctx, "dummy fleet: submit %v %v", name, content)
 
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+
 	f.Units[name] = UnitStatus{
 		Current: unitStateLoaded,
 		Desired: unitStateLoaded,
@@ -50,6 +56,9 @@ func (f *DummyFleet) Submit(ctx context.Context, name, content string) error {
 // to unitStateLaunched.
 func (f *DummyFleet) Start(ctx context.Context, name string) error {
 	f.Config.Logger.Debug(ctx, "dummy fleet: start %v", name)
+
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
 
 	if _, ok := f.Units[name]; !ok {
 		return maskAny(unitNotFoundError)
@@ -70,6 +79,9 @@ func (f *DummyFleet) Start(ctx context.Context, name string) error {
 func (f *DummyFleet) Stop(ctx context.Context, name string) error {
 	f.Config.Logger.Debug(ctx, "dummy fleet: stop %v", name)
 
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+
 	if _, ok := f.Units[name]; !ok {
 		return maskAny(unitNotFoundError)
 	}
@@ -88,6 +100,9 @@ func (f *DummyFleet) Stop(ctx context.Context, name string) error {
 func (f *DummyFleet) Destroy(ctx context.Context, name string) error {
 	f.Config.Logger.Debug(ctx, "dummy fleet: destroy %v", name)
 
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+
 	if _, ok := f.Units[name]; !ok {
 		return maskAny(unitNotFoundError)
 	}
@@ -101,6 +116,9 @@ func (f *DummyFleet) Destroy(ctx context.Context, name string) error {
 func (f *DummyFleet) GetStatus(ctx context.Context, name string) (UnitStatus, error) {
 	f.Config.Logger.Debug(ctx, "dummy fleet: get status %v", name)
 
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+
 	unitStatus, ok := f.Units[name]
 	if !ok {
 		return UnitStatus{}, maskAny(unitNotFoundError)
@@ -112,6 +130,9 @@ func (f *DummyFleet) GetStatus(ctx context.Context, name string) (UnitStatus, er
 // GetStatusWithMatcher returns all UnitStatus that match.
 func (f *DummyFleet) GetStatusWithMatcher(m func(string) bool) ([]UnitStatus, error) {
 	f.Config.Logger.Debug(context.Background(), "dummy fleet: get status with matcher")
+
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
 
 	if len(f.Units) == 0 {
 		return []UnitStatus{}, maskAny(unitNotFoundError)
