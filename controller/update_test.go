@@ -1,10 +1,11 @@
 package controller
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/fleet"
@@ -13,11 +14,9 @@ import (
 )
 
 // Return a controller for testing the updates with.
-func getTestController() (controller, *fleetMock) {
-	newFleetMock := newFleetMock(defaultFleetMockConfig())
-
+func getTestController() (controller, *fleet.DummyFleet) {
 	newTaskServiceConfig := task.DefaultConfig()
-	newTaskServiceConfig.WaitSleep = 1 * time.Millisecond
+	newTaskServiceConfig.WaitSleep = 100 * time.Millisecond
 
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
@@ -26,17 +25,21 @@ func getTestController() (controller, *fleetMock) {
 	newLoggingConfig.Color = true
 	newLogger := logging.NewLogger(newLoggingConfig)
 
+	dummyFleetConfig := fleet.DefaultDummyConfig()
+	dummyFleetConfig.Logger = newLogger
+	dummyFleet := fleet.NewDummyFleet(dummyFleetConfig)
+
 	newControllerConfig := DefaultConfig()
-	newControllerConfig.Fleet = newFleetMock
+	newControllerConfig.Fleet = dummyFleet
 	newControllerConfig.TaskService = newTaskService
 	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
 	newControllerConfig.WaitSleep = 1 * time.Millisecond
-	newControllerConfig.WaitTimeout = 30 * time.Millisecond
+	newControllerConfig.WaitTimeout = 30 * time.Second
 
 	newController := controller{newControllerConfig}
 
-	return newController, newFleetMock
+	return newController, dummyFleet
 }
 
 // TestExecuteTaskAction tests the executeTaskAction method.
@@ -90,20 +93,14 @@ func TestExecuteTaskAction(t *testing.T) {
 // TestGetNumRunningSlices tests the getNumRunningSlices method.
 func TestGetNumRunningSlices(t *testing.T) {
 	var tests = []struct {
-		fleetMockSetUp func(*fleetMock)
-		req            Request
-		numSlices      int
-		errMatcher     func(err error) bool
+		fleetSetUp func(f fleet.Fleet)
+		req        Request
+		numSlices  int
+		errMatcher func(err error) bool
 	}{
 		// Test that zero slices are returned if no unit statuses are returned by fleet,
 		// and we don't ask for a group.
 		{
-			fleetMockSetUp: func(f *fleetMock) {
-				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
-					[]fleet.UnitStatus{},
-					nil,
-				)
-			},
 			req:        Request{},
 			numSlices:  0,
 			errMatcher: nil,
@@ -111,12 +108,6 @@ func TestGetNumRunningSlices(t *testing.T) {
 		// Test that IsUnitNotFound is returned if we give a group name,
 		// but no unit statuses are returned by fleet.
 		{
-			fleetMockSetUp: func(f *fleetMock) {
-				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
-					[]fleet.UnitStatus{},
-					nil,
-				)
-			},
 			req: Request{
 				RequestConfig: RequestConfig{
 					Group: "some group",
@@ -128,14 +119,11 @@ func TestGetNumRunningSlices(t *testing.T) {
 		// Test that 1 slice is found if we give a group name,
 		// and one unit status is returned by fleet.
 		{
-			fleetMockSetUp: func(f *fleetMock) {
-				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
-					[]fleet.UnitStatus{
-						fleet.UnitStatus{
-							Name: "kubernetes-api-server",
-						},
-					},
-					nil,
+			fleetSetUp: func(f fleet.Fleet) {
+				f.Submit(
+					context.Background(),
+					"kubernetes-unit@1.service",
+					"some content",
 				)
 			},
 			req: Request{
@@ -149,10 +137,10 @@ func TestGetNumRunningSlices(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		testController, fleetMock := getTestController()
+		testController, dummyFleet := getTestController()
 
-		if test.fleetMockSetUp != nil {
-			test.fleetMockSetUp(fleetMock)
+		if test.fleetSetUp != nil {
+			test.fleetSetUp(dummyFleet)
 		}
 
 		numSlices, err := testController.getNumRunningSlices(context.Background(), test.req)
@@ -177,7 +165,7 @@ func TestGetNumRunningSlices(t *testing.T) {
 // TestIsGroupRemovalAllowed tests the isGroupRemovalAllowed method.
 func TestIsGroupRemovalAllowed(t *testing.T) {
 	var tests = []struct {
-		fleetMockSetUp      func(*fleetMock)
+		fleetSetUp          func(f fleet.Fleet)
 		req                 Request
 		minAlive            int
 		groupRemovalAllowed bool
@@ -186,12 +174,6 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 		// Test group removal is not allowed if we ask to keep 0 alive,
 		// and fleet has no units in it.
 		{
-			fleetMockSetUp: func(f *fleetMock) {
-				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
-					[]fleet.UnitStatus{},
-					nil,
-				)
-			},
 			req:                 Request{},
 			minAlive:            0,
 			groupRemovalAllowed: false,
@@ -200,10 +182,10 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		testController, fleetMock := getTestController()
+		testController, dummyFleet := getTestController()
 
-		if test.fleetMockSetUp != nil {
-			test.fleetMockSetUp(fleetMock)
+		if test.fleetSetUp != nil {
+			test.fleetSetUp(dummyFleet)
 		}
 
 		groupRemovalAllowed, err := testController.isGroupRemovalAllowed(context.Background(), test.req, test.minAlive)
@@ -228,40 +210,72 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 // TestUpdateWithStrategy tests the UpdateWithStrategy method.
 func TestUpdateWithStrategy(t *testing.T) {
 	tests := []struct {
-		fleetMockSetUp func(*fleetMock)
-		ctx            context.Context
-		req            Request
-		opts           UpdateOptions
-		errMatcher     func(error) bool
+		fleetSetUp func(fleet.Fleet)
+		req        Request
+		opts       UpdateOptions
+		assertion  func(*testing.T, *fleet.DummyFleet, error)
 	}{
-		// Test that IsWaitTimeoutReached is returned if we attempt to
-		// update given nil arguments.
+		// Test a minimal update.
 		{
-			fleetMockSetUp: nil,
-			ctx:            context.Background(),
-			req:            Request{},
-			opts:           UpdateOptions{},
-			errMatcher:     IsWaitTimeoutReached,
+			fleetSetUp: func(f fleet.Fleet) {
+				unitName := "bluebird-unit@1.service"
+
+				f.Submit(context.Background(), unitName, "some content")
+				f.Start(context.Background(), unitName)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group:    "bluebird",
+					SliceIDs: []string{"1"},
+				},
+				Units: []Unit{
+					Unit{
+						Name:    "bluebird-unit@.service",
+						Content: "some updated content",
+					},
+				},
+			},
+			opts: UpdateOptions{
+				MaxGrowth: 1,
+				MinAlive:  0,
+			},
+			assertion: func(t *testing.T, f *fleet.DummyFleet, e error) {
+				if e != nil {
+					t.Fatal("Error returned by update:", e)
+				}
+
+				unitStatusList, err := f.GetStatusWithMatcher(
+					func(s string) bool {
+						return strings.HasPrefix(s, "bluebird-unit@") && strings.HasSuffix(s, ".service")
+					},
+				)
+				if err != nil {
+					t.Fatal("Error returned getting statuses: ", err)
+				}
+				if len(unitStatusList) != 1 {
+					t.Fatal("Incorrect number of units:", len(f.Units))
+				}
+				unitStatus := unitStatusList[0]
+				if unitStatus.Name == "bluebird-unit@1.service" {
+					t.Fatal("Unit has same name as original")
+				}
+				if unitStatus.Current != "launched" {
+					t.Fatal("Unit has incorrect current status")
+				}
+				if unitStatus.Desired != "launched" {
+					t.Fatal("Unit has incorrect desired status")
+				}
+			},
 		},
 	}
 
 	for i, test := range tests {
-		testController, fleetMock := getTestController()
+		fmt.Println("Running test", i)
 
-		if test.fleetMockSetUp != nil {
-			test.fleetMockSetUp(fleetMock)
-		}
+		testController, dummyFleet := getTestController()
 
-		err := testController.UpdateWithStrategy(test.ctx, test.req, test.opts)
-
-		if err != nil && test.errMatcher == nil {
-			t.Logf("%v: method returned unexpected error '%v'", i, err)
-			t.Fail()
-		}
-
-		if err != nil && test.errMatcher != nil && !test.errMatcher(err) {
-			t.Logf("%v: method returned error '%v', which did not match expected error", i, err)
-			t.Fail()
-		}
+		test.fleetSetUp(dummyFleet)
+		err := testController.UpdateWithStrategy(context.Background(), test.req, test.opts)
+		test.assertion(t, dummyFleet, err)
 	}
 }
