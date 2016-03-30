@@ -255,8 +255,15 @@ func TestUpdateWithStrategy(t *testing.T) {
 				if len(unitStatusList) != 1 {
 					t.Fatal("Incorrect number of units:", len(f.Units))
 				}
-				if unitStatusList[0].Name == "bluebird-unit@1.service" {
+				unitStatus := unitStatusList[0]
+				if unitStatus.Name == "bluebird-unit@1.service" {
 					t.Fatal("Unit has same name as original")
+				}
+				if unitStatus.Current != "launched" {
+					t.Fatal("Unit has incorrect current status")
+				}
+				if unitStatus.Desired != "launched" {
+					t.Fatal("Unit has incorrect desired status")
 				}
 			},
 		},
