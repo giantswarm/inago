@@ -11,6 +11,7 @@
     start       Start a group
     stop        Stop a group
     destroy     Destroy a group
+    up          Bring a group up
     update      Update a group
     validate    Validate groups
     version     Print version

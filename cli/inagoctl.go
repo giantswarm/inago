@@ -87,6 +87,7 @@ func init() {
 	MainCmd.AddCommand(startCmd)
 	MainCmd.AddCommand(stopCmd)
 	MainCmd.AddCommand(destroyCmd)
+	MainCmd.AddCommand(upCmd)
 	MainCmd.AddCommand(updateCmd)
 	MainCmd.AddCommand(validateCmd)
 	MainCmd.AddCommand(versionCmd)
