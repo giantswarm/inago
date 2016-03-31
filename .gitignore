@@ -7,6 +7,7 @@ profile.out
 user-data
 *.pyc
 bin-dist/
+build/
 gitcookies
 gitcookies.sh
 inago-integration-test.pem

@@ -118,24 +118,21 @@ internal-int-test: $(BIN) $(INT_TESTS)
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \
 		-v $(INT_TESTS_PATH)
-		
-bin-dist:
-	# Remove any old tarballs
-	rm -f bin-dist/*.tar.gz
+
+bin-dist: $(SOURCE) VERSION .gobuild
+	# Remove any old bin-dist or build directories
+	rm -rf bin-dist build
 	
-	# Build for both supported OS,
-	# put binary in OS specific directory
+	# Build for all supported OSs
 	for OS in darwin linux; do \
 		rm -f $(BIN); \
 		GOOS=$$OS make $(BIN); \
-		mkdir -p bin-dist/$$OS/; \
-		cp $(BIN) bin-dist/$$OS/; \
+		mkdir -p build/$$OS bin-dist; \
+		cp README.md build/$$OS/; \
+		cp LICENSE build/$$OS/; \
+		cp $(BIN) build/$$OS/; \
+		tar czf bin-dist/$(BIN).$(VERSION).$$OS.tar.gz -C build/$$OS .; \
 	done
-	
-	cp -f README.md bin-dist/
-	cp -f LICENSE bin-dist/
-	
-	cd bin-dist/ && tar czf $(PROJECT).$(VERSION).tar.gz *
 
 install: $(BIN)
 	cp $(BIN) /usr/local/bin/
