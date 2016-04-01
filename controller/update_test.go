@@ -34,7 +34,7 @@ func getTestController() (controller, *fleet.DummyFleet) {
 	newControllerConfig.TaskService = newTaskService
 	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
-	newControllerConfig.WaitSleep = 1 * time.Millisecond
+	newControllerConfig.WaitSleep = 300 * time.Millisecond
 	newControllerConfig.WaitTimeout = 5 * time.Second
 
 	newController := controller{newControllerConfig}
@@ -124,6 +124,10 @@ func TestGetNumRunningSlices(t *testing.T) {
 					context.Background(),
 					"kubernetes-unit@1.service",
 					"some content",
+				)
+				f.Start(
+					context.Background(),
+					"kubernetes-unit@1.service",
 				)
 			},
 			req: Request{
@@ -272,8 +276,8 @@ func TestUpdateWithStrategy(t *testing.T) {
 			fleetSetUp: func(f fleet.Fleet) {
 				unitNameTemplate := "sparrow-unit@%v.service"
 
-				for i := 0; i < 2; i++ {
-					unitName := fmt.Sprintf(unitNameTemplate, i)
+				for _, id := range []string{"ded", "bef"} {
+					unitName := fmt.Sprintf(unitNameTemplate, id)
 
 					f.Submit(context.Background(), unitName, "some content")
 					f.Start(context.Background(), unitName)
@@ -282,7 +286,7 @@ func TestUpdateWithStrategy(t *testing.T) {
 			req: Request{
 				RequestConfig: RequestConfig{
 					Group:    "sparrow",
-					SliceIDs: []string{"0", "1"},
+					SliceIDs: []string{"ded", "bef"},
 				},
 				Units: []Unit{
 					Unit{

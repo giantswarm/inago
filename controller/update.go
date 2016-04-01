@@ -107,10 +107,15 @@ func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, max
 }
 
 func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOptions) error {
+	c.Config.Logger.Debug(ctx, "controller: running addFirst")
+
+	c.Config.Logger.Debug(ctx, "controller: running add worker")
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
 		return maskAny(err)
 	}
+
+	c.Config.Logger.Debug(ctx, "controller: checking number of running slices")
 	n, err := c.getNumRunningSlices(ctx, newReq)
 	if err != nil {
 		return maskAny(err)
@@ -118,6 +123,8 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 	if n != len(newReq.SliceIDs) {
 		return maskAnyf(updateFailedError, "addFirst: slice not running: %d != %v", n, newReq.SliceIDs)
 	}
+
+	c.Config.Logger.Debug(ctx, "controller: running remove worker")
 	err = c.runRemoveWorker(ctx, req)
 	if err != nil {
 		return maskAny(err)
@@ -151,15 +158,21 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 }
 
 func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOptions) error {
+	c.Config.Logger.Debug(ctx, "controller: running removeFirst")
+
+	c.Config.Logger.Debug(ctx, "controller: running remove worker")
 	err := c.runRemoveWorker(ctx, req)
 	if err != nil {
 		return maskAny(err)
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: running add worker")
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
 		return maskAny(err)
 	}
+
+	c.Config.Logger.Debug(ctx, "controller: checking number of running slices")
 	n, err := c.getNumRunningSlices(ctx, newReq)
 	if err != nil {
 		return maskAny(err)
@@ -172,11 +185,13 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 }
 
 func (c controller) runRemoveWorker(ctx context.Context, req Request) error {
+	c.Config.Logger.Debug(ctx, "controller: executing stop action, req: %v", req)
 	// Stop.
 	if err := c.executeTaskAction(c.Stop, ctx, req); err != nil {
 		return maskAny(err)
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: executing destroy action, req: %v", req)
 	// Destroy.
 	if err := c.executeTaskAction(c.Destroy, ctx, req); err != nil {
 		return maskAny(err)
@@ -252,7 +267,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 		for {
 			changeAttemptMade := false
 
-			c.Config.Logger.Debug(ctx, "controller: adding slice: %v", sliceID)
+			c.Config.Logger.Debug(ctx, "controller: attempting to add slice: %v", sliceID)
 			// add
 			maxGrowth := opts.MaxGrowth + numTotal - opts.MinAlive - int(addInProgress)
 			ok, err := c.isGroupAdditionAllowed(ctx, req, maxGrowth)
@@ -260,22 +275,22 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				return maskAny(err)
 			}
 			if ok {
-				go func() {
-					atomic.AddInt64(&addInProgress, 1)
-					err := c.addFirst(ctx, newReq, opts)
-					if err != nil {
-						fail <- maskAny(err)
-						return
-					}
-					atomic.AddInt64(&addInProgress, -1)
-					done <- struct{}{}
-				}()
+
+				ctx = context.WithValue(ctx, "add slice", sliceID)
+				c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", sliceID)
+				atomic.AddInt64(&addInProgress, 1)
+				if err := c.addFirst(ctx, newReq, opts); err != nil {
+					fail <- maskAny(err)
+					return maskAny(err)
+				}
+				atomic.AddInt64(&addInProgress, -1)
+				done <- struct{}{}
 
 				changeAttemptMade = true
 				break
 			}
 
-			c.Config.Logger.Debug(ctx, "controller: removing slice: %v", sliceID)
+			c.Config.Logger.Debug(ctx, "controller: attempting to remove slice: %v", sliceID)
 			// remove
 			minAlive := opts.MinAlive + int(removeInProgress)
 			ok, err = c.isGroupRemovalAllowed(ctx, req, minAlive)
@@ -283,21 +298,22 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				return maskAny(err)
 			}
 			if ok {
-				go func() {
-					atomic.AddInt64(&removeInProgress, 1)
-					err := c.removeFirst(ctx, newReq, opts)
-					if err != nil {
-						fail <- maskAny(err)
-						return
-					}
-					atomic.AddInt64(&removeInProgress, -1)
-					done <- struct{}{}
-				}()
+
+				ctx = context.WithValue(ctx, "remove slice", sliceID)
+				c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", sliceID)
+				atomic.AddInt64(&removeInProgress, 1)
+				if err := c.removeFirst(ctx, newReq, opts); err != nil {
+					fail <- maskAny(err)
+					return maskAny(err)
+				}
+				atomic.AddInt64(&removeInProgress, -1)
+				done <- struct{}{}
 
 				changeAttemptMade = true
 				break
 			}
 
+			c.Config.Logger.Debug(ctx, "controller: finished attempts to make changes")
 			if !changeAttemptMade {
 				c.Config.Logger.Warning(ctx, "controller: failed to make any changes")
 				numFailedChangeAttempts++
