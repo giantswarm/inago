@@ -11,7 +11,7 @@ VAGRANT_DIR = 'vagrant'
 env.hosts = ['core@ec2-52-58-89-242.eu-central-1.compute.amazonaws.com']
 env.disable_known_hosts = True
 env.colorize_errors = True
-env.command_timeout = 60 * 5
+env.command_timeout = 60 * 10
 
 def create_build_directory():
     """ Create a temporary directory for us to run the test in. """
