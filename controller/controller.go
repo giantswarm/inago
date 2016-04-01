@@ -68,7 +68,7 @@ func DefaultConfig() Config {
 		WaitCount:               3,
 		WaitSleep:               1 * time.Second,
 		WaitTimeout:             5 * time.Minute,
-		MaxFailedChangeAttempts: 25,
+		MaxFailedChangeAttempts: 1,
 		Logger:                  logging.NewLogger(logging.DefaultConfig()),
 	}
 
