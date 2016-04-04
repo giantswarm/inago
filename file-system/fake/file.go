@@ -64,7 +64,7 @@ func newFileInfo(name string, content []byte) os.FileInfo {
 	return newFileInfo
 }
 
-// fileInfo describes a wrapped file isn'tance and is returned by file.Stat
+// fileInfo describes a wrapped file instance and is returned by file.Stat
 type fileInfo struct {
 	File file
 }
