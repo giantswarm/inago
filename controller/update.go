@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -261,7 +262,9 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 	fail := make(chan error, 1)
 	numTotal := len(req.SliceIDs)
+
 	done := make(chan struct{}, numTotal)
+
 	var addInProgress int64
 	var removeInProgress int64
 
@@ -283,6 +286,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 	// We need to track which slice IDs are currently in use.
 	// This list is updated as slices are added and removed.
+	currentSliceIDsMutex := sync.Mutex{}
 	currentSliceIDs := []string{}
 	for _, id := range req.SliceIDs {
 		currentSliceIDs = append(currentSliceIDs, id)
@@ -292,13 +296,8 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 		newReq := req
 		newReq.SliceIDs = []string{sliceID}
 
-		// Track the number of times we attempted to make a change, and failed.
-		numFailedChangeAttempts := 0
-
 		for {
 			currentSliceReq := req
-
-			changeAttemptMade := false
 
 			c.Config.Logger.Debug(ctx, "controller: attempting to add slice: %v", sliceID)
 			// add
@@ -310,22 +309,25 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				return maskAny(err)
 			}
 			if ok {
-				ctx = context.WithValue(ctx, "add slice", sliceID)
-				c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", sliceID)
-				atomic.AddInt64(&addInProgress, 1)
+				go func() {
+					ctx = context.WithValue(ctx, "add slice", sliceID)
+					c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", sliceID)
+					atomic.AddInt64(&addInProgress, 1)
 
-				newSliceIDs, err := c.addFirst(ctx, newReq, opts)
-				if err != nil {
-					fail <- maskAny(err)
-					return maskAny(err)
-				}
+					newSliceIDs, err := c.addFirst(ctx, newReq, opts)
+					if err != nil {
+						fail <- maskAny(err)
+						return
+					}
 
-				currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDsMutex.Lock()
+					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDsMutex.Unlock()
 
-				atomic.AddInt64(&addInProgress, -1)
-				done <- struct{}{}
+					atomic.AddInt64(&addInProgress, -1)
+					done <- struct{}{}
+				}()
 
-				changeAttemptMade = true
 				break
 			}
 
@@ -339,33 +341,26 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				return maskAny(err)
 			}
 			if ok {
-				ctx = context.WithValue(ctx, "remove slice", sliceID)
-				c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", sliceID)
-				atomic.AddInt64(&removeInProgress, 1)
+				go func() {
+					ctx = context.WithValue(ctx, "remove slice", sliceID)
+					c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", sliceID)
+					atomic.AddInt64(&removeInProgress, 1)
 
-				newSliceIDs, err := c.removeFirst(ctx, newReq, opts)
-				if err != nil {
-					fail <- maskAny(err)
-					return maskAny(err)
-				}
+					newSliceIDs, err := c.removeFirst(ctx, newReq, opts)
+					if err != nil {
+						fail <- maskAny(err)
+						return
+					}
 
-				currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDsMutex.Lock()
+					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDsMutex.Unlock()
 
-				atomic.AddInt64(&removeInProgress, -1)
-				done <- struct{}{}
+					atomic.AddInt64(&removeInProgress, -1)
+					done <- struct{}{}
+				}()
 
-				changeAttemptMade = true
 				break
-			}
-
-			c.Config.Logger.Debug(ctx, "controller: finished attempts to make changes")
-			if !changeAttemptMade {
-				c.Config.Logger.Warning(ctx, "controller: failed to make any changes")
-				numFailedChangeAttempts++
-			}
-			// If we've failed too many times, just give up completely :(
-			if numFailedChangeAttempts >= c.Config.MaxFailedChangeAttempts {
-				return maskAnyf(updateFailedError, "reached max failed change attempts limit")
 			}
 
 			time.Sleep(c.WaitSleep)
@@ -373,6 +368,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 	}
 
 	tc := 0
+
 	for {
 		select {
 		case err := <-fail:

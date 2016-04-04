@@ -42,10 +42,6 @@ type Config struct {
 	// time, the wait ends.
 	WaitTimeout time.Duration
 
-	// MaxFailedChangeAttempts represents the number of failed attempts
-	// an update operation should make before failing completely.
-	MaxFailedChangeAttempts int
-
 	// Logger provides an initialised logger.
 	Logger logging.Logger
 }
@@ -63,13 +59,12 @@ func DefaultConfig() Config {
 	newTaskService := task.NewTaskService(newTaskServiceConfig)
 
 	newConfig := Config{
-		Fleet:                   newFleet,
-		TaskService:             newTaskService,
-		WaitCount:               3,
-		WaitSleep:               1 * time.Second,
-		WaitTimeout:             5 * time.Minute,
-		MaxFailedChangeAttempts: 1,
-		Logger:                  logging.NewLogger(logging.DefaultConfig()),
+		Fleet:       newFleet,
+		TaskService: newTaskService,
+		WaitCount:   3,
+		WaitSleep:   1 * time.Second,
+		WaitTimeout: 5 * time.Minute,
+		Logger:      logging.NewLogger(logging.DefaultConfig()),
 	}
 
 	return newConfig
