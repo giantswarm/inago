@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -207,6 +208,38 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 		if groupRemovalAllowed != test.groupRemovalAllowed {
 			t.Logf("%v: returned bool '%v' did not match expected: '%v'", i, groupRemovalAllowed, test.groupRemovalAllowed)
 			t.Fail()
+		}
+	}
+}
+
+// TestUpdateCurrentSliceIDs tests the updateCurrentSliceIDs method.
+func TestUpdateCurrentSliceIDs(t *testing.T) {
+	tests := []struct {
+		currentSliceIDs  []string
+		modifiedSliceIDs []string
+		newSliceIDs      []string
+		output           []string
+	}{
+		{
+			currentSliceIDs:  []string{"lol", "kek"},
+			modifiedSliceIDs: []string{"lol"},
+			newSliceIDs:      []string{"02b"},
+			output:           []string{"kek", "02b"},
+		},
+	}
+
+	for _, test := range tests {
+		testController, _ := getTestController()
+
+		returnedOutput := testController.updateCurrentSliceIDs(
+			context.Background(),
+			test.currentSliceIDs,
+			test.modifiedSliceIDs,
+			test.newSliceIDs,
+		)
+
+		if !reflect.DeepEqual(test.output, returnedOutput) {
+			t.Fatalf("Test slices not equal: %v != %v", test.output, returnedOutput)
 		}
 	}
 }

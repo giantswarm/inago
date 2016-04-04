@@ -232,6 +232,30 @@ type UpdateOptions struct {
 	ReadySecs int
 }
 
+// updateCurrentSliceIDs updates the list of current slice IDs,
+// removing the slice that was modified, and adding any new slice IDs.
+func (c controller) updateCurrentSliceIDs(ctx context.Context, currentSliceIDs []string, modifiedSliceIDs []string, newSliceIDs []string) []string {
+	c.Config.Logger.Debug(ctx, "current slice IDs: %v", currentSliceIDs)
+	c.Config.Logger.Debug(ctx, "modified slice IDs: %v", modifiedSliceIDs)
+	c.Config.Logger.Debug(ctx, "new slice IDs: %v", newSliceIDs)
+
+	for i, currentSliceID := range currentSliceIDs {
+		for _, modifiedSliceID := range modifiedSliceIDs {
+			if currentSliceID == modifiedSliceID {
+				currentSliceIDs = append(
+					currentSliceIDs[:i],
+					currentSliceIDs[i+1:]...,
+				)
+			}
+		}
+	}
+	currentSliceIDs = append(currentSliceIDs, newSliceIDs...)
+
+	c.Config.Logger.Debug(ctx, "updated slice IDs: %v", currentSliceIDs)
+
+	return currentSliceIDs
+}
+
 func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts UpdateOptions) error {
 	c.Config.Logger.Debug(ctx, "controller: running update for group '%v'", req.Group)
 
@@ -296,24 +320,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 					return maskAny(err)
 				}
 
-				c.Config.Logger.Debug(ctx, "controller: new slice IDs: %v", newSliceIDs)
-				c.Config.Logger.Debug(ctx, "controller: current slice IDs: %v", currentSliceIDs)
-
-				// Remove any slices that were removed,
-				// add any slices that were added.
-				for i, currentSliceID := range currentSliceIDs {
-					for _, newSliceID := range newReq.SliceIDs {
-						if currentSliceID == newSliceID {
-							currentSliceIDs = append(
-								currentSliceIDs[:i],
-								currentSliceIDs[i+1:]...,
-							)
-						}
-					}
-				}
-				currentSliceIDs = append(currentSliceIDs, newSliceIDs...)
-
-				c.Config.Logger.Debug(ctx, "controller: merged slice IDs: %v", currentSliceIDs)
+				currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
 
 				atomic.AddInt64(&addInProgress, -1)
 				done <- struct{}{}
@@ -342,24 +349,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 					return maskAny(err)
 				}
 
-				c.Config.Logger.Debug(ctx, "controller: new slice IDs: %v", newSliceIDs)
-				c.Config.Logger.Debug(ctx, "controller: current slice IDs: %v", currentSliceIDs)
-
-				// Remove any slices that were removed,
-				// add any slices that were added.
-				for i, currentSliceID := range currentSliceIDs {
-					for _, newSliceID := range newReq.SliceIDs {
-						if currentSliceID == newSliceID {
-							currentSliceIDs = append(
-								currentSliceIDs[:i],
-								currentSliceIDs[i+1:]...,
-							)
-						}
-					}
-				}
-				currentSliceIDs = append(currentSliceIDs, newSliceIDs...)
-
-				c.Config.Logger.Debug(ctx, "controller: merged slice IDs: %v", currentSliceIDs)
+				currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
 
 				atomic.AddInt64(&removeInProgress, -1)
 				done <- struct{}{}
