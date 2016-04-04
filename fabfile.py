@@ -4,6 +4,8 @@ from time import sleep
 from fabric.api import env, local, put, run
 from fabric.context_managers import cd
 
+import logging; logging.getLogger('paramiko.transport').addHandler(logging.StreamHandler())
+
 BINARY = 'inagoctl'
 INT_TESTS_DIR = 'int-tests'
 VAGRANT_DIR = 'vagrant'
