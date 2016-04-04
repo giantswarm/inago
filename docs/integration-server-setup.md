@@ -7,7 +7,7 @@ this test machine is done via the make target `int-test`.
 ### Integration Test Machine Configuration
 
 Since the integration tests run in your docker machine (not the fleet machine), we need to
-provide it with an IP. We use port fowarding on your host for this.
+provide it with an IP. We use port forwarding on your host for this.
 Set the `FLEET_ENDPOINT` environment variable to `http://ip:491563`, with the IP listed
 under the vboxnet interface of your docker-machine.
 

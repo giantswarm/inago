@@ -46,7 +46,7 @@ func StringsSharePrefix(s []string) bool {
 }
 
 // StringsCountMoreThan returns true if any of the strings in s
-// contain more than n occurences of c, false otherwise.
+// contain more than n occurrences of c, false otherwise.
 func StringsCountMoreThan(s []string, c string, n int) bool {
 	for _, x := range s {
 		if strings.Count(x, c) > n {
@@ -57,9 +57,9 @@ func StringsCountMoreThan(s []string, c string, n int) bool {
 	return false
 }
 
-// StringsHaveOrNot returns true if all strings in s either have an occurence of c,
-// or do not have any occurence of c.
-// In another way, it returns false if only some strings in s have an occurence of c.
+// StringsHaveOrNot returns true if all strings in s either have an occurrence of c,
+// or do not have any occurrence of c.
+// In another way, it returns false if only some strings in s have an occurrence of c.
 func StringsHaveOrNot(s []string, c string) bool {
 	numStringsWithOccurence := 0
 
@@ -117,7 +117,7 @@ func ValidateRequest(request Request) (bool, error) {
 		validationError.Add(badUnitPrefixError)
 	}
 
-	// Check that @ only occurences at most once per unit name.
+	// Check that @ only occurrences at most once per unit name.
 	if StringsCountMoreThan(unitNames, "@", 1) {
 		validationError.Add(multipleAtInUnitNameError)
 	}
