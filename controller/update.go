@@ -112,22 +112,22 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 	c.Config.Logger.Debug(ctx, "controller: running add worker")
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
-		return []string{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 
 	c.Config.Logger.Debug(ctx, "controller: checking number of running slices")
 	n, err := c.getNumRunningSlices(ctx, newReq)
 	if err != nil {
-		return []string{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 	if n != len(newReq.SliceIDs) {
-		return []string{}, maskAnyf(updateFailedError, "addFirst: slice not running: %d != %v", n, newReq.SliceIDs)
+		return nil, maskAnyf(updateFailedError, "addFirst: slice not running: %d != %v", n, newReq.SliceIDs)
 	}
 
 	c.Config.Logger.Debug(ctx, "controller: running remove worker")
 	err = c.runRemoveWorker(ctx, req)
 	if err != nil {
-		return []string{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 
 	return newReq.SliceIDs, nil
@@ -163,22 +163,22 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 	c.Config.Logger.Debug(ctx, "controller: running remove worker")
 	err := c.runRemoveWorker(ctx, req)
 	if err != nil {
-		return []string{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 
 	c.Config.Logger.Debug(ctx, "controller: running add worker")
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
-		return []string{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 
 	c.Config.Logger.Debug(ctx, "controller: checking number of running slices")
 	n, err := c.getNumRunningSlices(ctx, newReq)
 	if err != nil {
-		return []string{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 	if n != len(newReq.SliceIDs) {
-		return []string{}, maskAnyf(updateFailedError, "removeFirst: slice not running: %d != %v", n, newReq.SliceIDs)
+		return nil, maskAnyf(updateFailedError, "removeFirst: slice not running: %d != %v", n, newReq.SliceIDs)
 	}
 
 	return newReq.SliceIDs, nil
@@ -364,7 +364,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				numFailedChangeAttempts++
 			}
 			// If we've failed too many times, just give up completely :(
-			if numFailedChangeAttempts > c.Config.MaxFailedChangeAttempts {
+			if numFailedChangeAttempts >= c.Config.MaxFailedChangeAttempts {
 				return maskAnyf(updateFailedError, "reached max failed change attempts limit")
 			}
 
