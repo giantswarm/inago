@@ -4,6 +4,7 @@ package cli
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
@@ -21,6 +22,12 @@ var (
 		FleetEndpoint string
 		NoBlock       bool
 		Verbose       bool
+
+		Tunnel                string
+		SSHUsername           string
+		SSHTimeout            time.Duration
+		StrictHostKeyChecking bool
+		KnownHostsFile        string
 	}
 
 	fs             filesystemspec.FileSystem
@@ -56,6 +63,14 @@ var (
 			newFleetConfig := fleet.DefaultConfig()
 			newFleetConfig.Endpoint = *URL
 			newFleetConfig.Logger = newLogger
+			newFleetConfig.Tunnel = fleet.SSHTunnel{
+				Tunnel:                globalFlags.Tunnel,
+				Username:              globalFlags.SSHUsername,
+				Timeout:               globalFlags.SSHTimeout,
+				StrictHostKeyChecking: globalFlags.StrictHostKeyChecking,
+				KnownHostsFile:        globalFlags.KnownHostsFile,
+			}
+
 			newFleet, err = fleet.NewFleet(newFleetConfig)
 			if err != nil {
 				panic(err)
@@ -81,6 +96,12 @@ func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.FleetEndpoint, "fleet-endpoint", "unix:///var/run/fleet.sock", "endpoint used to connect to fleet")
 	MainCmd.PersistentFlags().BoolVar(&globalFlags.NoBlock, "no-block", false, "block on synchronous actions")
 	MainCmd.PersistentFlags().BoolVarP(&globalFlags.Verbose, "verbose", "v", false, "verbose output")
+
+	MainCmd.PersistentFlags().StringVar(&globalFlags.Tunnel, "tunnel", "", "use a tunnel to communicate with fleet")
+	MainCmd.PersistentFlags().StringVar(&globalFlags.SSHUsername, "ssh-username", "core", "username to use when connecting to CoreOS machine")
+	MainCmd.PersistentFlags().DurationVar(&globalFlags.SSHTimeout, "ssh-timeout", time.Duration(10*time.Second), "timeout in seconds when establishing the connection via SSH")
+	MainCmd.PersistentFlags().BoolVar(&globalFlags.StrictHostKeyChecking, "strict-host-key-checking", true, "verify host keys presented by remote machines before initiating SSH connections")
+	MainCmd.PersistentFlags().StringVar(&globalFlags.KnownHostsFile, "known-hosts-file", "~/.fleetctl/known_hosts", "file used to store remote machine fingerprints")
 
 	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)

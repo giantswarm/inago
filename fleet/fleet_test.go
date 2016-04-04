@@ -285,9 +285,9 @@ func Test_Fleet_mapFleetStateToUnitStatusList(t *testing.T) {
 					MachineID:    "",
 					Name:         "name-1",
 					Options: []*schema.UnitOption{
-						{Section:"Unit", Name: "Description", Value: "Test Unit"},
-						{Section:"Service", Name: "ExecStart", Value: "/bin/bash -c 'echo ping'"},
-						{Section:"x-Fleet", Name: "Global", Value: "true"},
+						{Section: "Unit", Name: "Description", Value: "Test Unit"},
+						{Section: "Service", Name: "ExecStart", Value: "/bin/bash -c 'echo ping'"},
+						{Section: "x-Fleet", Name: "Global", Value: "true"},
 					},
 				},
 			},

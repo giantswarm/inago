@@ -4,11 +4,10 @@
 package fleet
 
 import (
-	"strings"
 	"net"
 	"net/http"
 	"net/url"
-
+	"strings"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/machine"
@@ -31,6 +30,7 @@ const (
 type Config struct {
 	Client   *http.Client
 	Endpoint url.URL
+	Tunnel   SSHTunnel
 
 	// Logger provides an initialised logger.
 	Logger logging.Logger
@@ -48,6 +48,7 @@ func DefaultConfig() Config {
 		Client:   &http.Client{},
 		Endpoint: *URL,
 		Logger:   logging.NewLogger(logging.DefaultConfig()),
+		Tunnel:   SSHTunnel{},
 	}
 
 	return newConfig
@@ -131,6 +132,15 @@ type Fleet interface {
 func NewFleet(config Config) (Fleet, error) {
 	var trans http.RoundTripper
 
+	tunneling := config.Tunnel.Tunnel != ""
+	// If a tunnel in provided we need to overwrite the http.Transport.Dial function
+	// to use the tunnel
+	if tunneling {
+		trans = &http.Transport{
+			Dial: config.Tunnel.NewDialFunc(config),
+		}
+	}
+
 	switch config.Endpoint.Scheme {
 	case "unix", "file":
 		if config.Endpoint.Host != "" {
@@ -152,12 +162,16 @@ func NewFleet(config Config) (Fleet, error) {
 		// The Host field is not used for dialing, but will be exposed in debug logs.
 		config.Endpoint.Host = "domain-sock"
 
-		trans = &http.Transport{
-			Dial: func(s, t string) (net.Conn, error) {
-				// http.Client does not natively support dialing a unix domain socket,
-				// so the dial function must be overridden.
-				return net.Dial("unix", sockPath)
-			},
+		// if tunneling is not set we need to provide a dial function that
+		// connects to a unix socket
+		if !tunneling {
+			trans = &http.Transport{
+				Dial: func(s, t string) (net.Conn, error) {
+					// http.Client does not natively support dialing a unix domain socket,
+					// so the dial function must be overridden.
+					return net.Dial("unix", sockPath)
+				},
+			}
 		}
 	case "http", "https":
 		trans = http.DefaultTransport
@@ -365,8 +379,8 @@ func mapFleetStateToUnitStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 func isFleetGlobalUnit(options []*schema.UnitOption) bool {
 	for _, option := range options {
 		if strings.EqualFold(option.Section, "X-Fleet") &&
-		 strings.EqualFold(option.Name, "Global") &&
-		 strings.EqualFold(option.Value, "true") {
+			strings.EqualFold(option.Name, "Global") &&
+			strings.EqualFold(option.Value, "true") {
 			return true
 		}
 	}
