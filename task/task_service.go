@@ -22,7 +22,7 @@ type Task struct {
 	// ActiveStatus represents a status indicating activation or deactivation.
 	ActiveStatus ActiveStatus
 
-	// Error represents the message of an error occured during task execution, if
+	// Error represents the message of an error occurred during task execution, if
 	// any.
 	Error error
 

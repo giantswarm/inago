@@ -4,11 +4,10 @@
 package fleet
 
 import (
-	"strings"
 	"net"
 	"net/http"
 	"net/url"
-
+	"strings"
 
 	"github.com/coreos/fleet/client"
 	"github.com/coreos/fleet/machine"
@@ -365,8 +364,8 @@ func mapFleetStateToUnitStatusList(foundFleetUnits []*schema.Unit, foundFleetUni
 func isFleetGlobalUnit(options []*schema.UnitOption) bool {
 	for _, option := range options {
 		if strings.EqualFold(option.Section, "X-Fleet") &&
-		 strings.EqualFold(option.Name, "Global") &&
-		 strings.EqualFold(option.Value, "true") {
+			strings.EqualFold(option.Name, "Global") &&
+			strings.EqualFold(option.Value, "true") {
 			return true
 		}
 	}

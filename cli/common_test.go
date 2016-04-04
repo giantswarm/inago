@@ -26,7 +26,7 @@ func Test_Common_createStatus(t *testing.T) {
 
 	testCases := []testCase{
 		// 3 slices of 1 group with 2 units
-		testCase{
+		{
 			Comment: "3 slices of 1 group with 2 units",
 			Input: input{
 				Group: "example",
@@ -50,7 +50,7 @@ func Test_Common_createStatus(t *testing.T) {
 			},
 		},
 		// 1 slice of 1 group with 2 units
-		testCase{
+		{
 			Comment: "1 slice of 1 group with 2 units",
 			Input: input{
 				Group: "example",
@@ -68,7 +68,7 @@ func Test_Common_createStatus(t *testing.T) {
 			},
 		},
 		// 3 slices of 1 group with 2 units - verbose
-		testCase{
+		{
 			Comment: "3 slices of 1 group with 2 units - verbose",
 			Input: input{
 				Group: "example",
@@ -95,7 +95,7 @@ func Test_Common_createStatus(t *testing.T) {
 			},
 		},
 		// 1 slice of 2 groups with 2 units - only show example group
-		testCase{
+		{
 			Comment: "1 slice of 2 groups with 2 units - only show example group",
 			Input: input{
 				Group: "example",
@@ -115,7 +115,7 @@ func Test_Common_createStatus(t *testing.T) {
 			},
 		},
 		// One group contains different statuses => expand view
-		testCase{
+		{
 			Comment: "One group contains different statuses => expand view",
 			Input: input{
 				Group: "example",
@@ -138,7 +138,7 @@ func Test_Common_createStatus(t *testing.T) {
 		},
 
 		// A group who is NOT loaded onto a machine
-		testCase{
+		{
 			Comment: "A group with a MachineState should still render (verbose)",
 			Input: input{
 				Group: "example",
@@ -158,7 +158,7 @@ func Test_Common_createStatus(t *testing.T) {
 		},
 
 		// A group who is NOT loaded onto a machine
-		testCase{
+		{
 			Comment: "A group with a MachineState should still render",
 			Input: input{
 				Group: "example",
@@ -193,7 +193,7 @@ func loadedUnitStatus(name, sliceID, machineIP, machineID, currentState, desired
 		Current: currentState,
 		Desired: desiredState,
 		Machine: []fleet.MachineStatus{
-			fleet.MachineStatus{
+			{
 				ID:            machineID,
 				IP:            net.ParseIP(machineIP),
 				SystemdActive: "inactive",

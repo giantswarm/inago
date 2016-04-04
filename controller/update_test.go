@@ -229,7 +229,7 @@ func TestUpdateWithStrategy(t *testing.T) {
 					SliceIDs: []string{"1"},
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name:    "bluebird-unit@.service",
 						Content: "some updated content",
 					},

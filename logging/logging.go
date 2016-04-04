@@ -29,7 +29,7 @@ type Logger interface {
 
 	// Critical should be used infrequently, and is for cases where
 	// human intervention is required to stop catastrophic failure.
-	// e.g: losing all units in a cluster, impending nuclear missle launch.
+	// e.g: losing all units in a cluster, impending nuclear missile launch.
 	Critical(ctx context.Context, f string, v ...interface{})
 }
 
