@@ -28,7 +28,7 @@ func TestValidateRequest(t *testing.T) {
 					Group: "single",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "single-unit.service",
 					},
 				},
@@ -43,10 +43,10 @@ func TestValidateRequest(t *testing.T) {
 					Group: "single",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "single-unit.service",
 					},
-					Unit{
+					{
 						Name: "single-unit2.timer",
 					},
 				},
@@ -61,7 +61,7 @@ func TestValidateRequest(t *testing.T) {
 					Group: "scalable",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "scalable-unit@.service",
 					},
 				},
@@ -76,10 +76,10 @@ func TestValidateRequest(t *testing.T) {
 					Group: "scalable",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "scalable-unit@.service",
 					},
-					Unit{
+					{
 						Name: "scalable-unit2@.timer",
 					},
 				},
@@ -94,10 +94,10 @@ func TestValidateRequest(t *testing.T) {
 					Group: "mix",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "mix-unit1.service",
 					},
-					Unit{
+					{
 						Name: "mix-unit2@.service",
 					},
 				},
@@ -112,7 +112,7 @@ func TestValidateRequest(t *testing.T) {
 					Group: "single",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "bad-prefix.service",
 					},
 				},
@@ -127,7 +127,7 @@ func TestValidateRequest(t *testing.T) {
 					Group: "bad@groupname@",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "bad@groupname@.service",
 					},
 				},
@@ -142,7 +142,7 @@ func TestValidateRequest(t *testing.T) {
 					Group: "group",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "group-un@it@.service",
 					},
 				},
@@ -157,16 +157,16 @@ func TestValidateRequest(t *testing.T) {
 					Group: "group",
 				},
 				Units: []Unit{
-					Unit{
+					{
 						Name: "group-unit1@.service",
 					},
-					Unit{
+					{
 						Name: "group-unit@.service",
 					},
-					Unit{
+					{
 						Name: "group-unit2@.service",
 					},
-					Unit{
+					{
 						Name: "group-unit@.service",
 					},
 				},
@@ -206,12 +206,12 @@ func TestValidateMultipleRequest(t *testing.T) {
 		// Test that two differently named groups are valid.
 		{
 			requests: []Request{
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "a",
 					},
 				},
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "b",
 					},
@@ -223,12 +223,12 @@ func TestValidateMultipleRequest(t *testing.T) {
 		// Test that groups which are prefixes of another are invalid.
 		{
 			requests: []Request{
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "bat",
 					},
 				},
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "batman",
 					},
@@ -240,12 +240,12 @@ func TestValidateMultipleRequest(t *testing.T) {
 		// Test that the group prefix rule applies to the entire group name.
 		{
 			requests: []Request{
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "batwoman",
 					},
 				},
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "batman",
 					},
@@ -257,12 +257,12 @@ func TestValidateMultipleRequest(t *testing.T) {
 		// Test that group names must be unique.
 		{
 			requests: []Request{
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "joker",
 					},
 				},
-				Request{
+				{
 					RequestConfig: RequestConfig{
 						Group: "joker",
 					},

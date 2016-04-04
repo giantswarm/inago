@@ -140,12 +140,12 @@ func Test_UnitStatusList_Group(t *testing.T) {
 		{
 			Error: nil,
 			Input: inputUnitStatusList(
-				map[string][]string{"sliceIDs": []string{"1", "1"}, "states": []string{"1", "1"}},
-				map[string][]string{"sliceIDs": []string{"2", "2"}, "states": []string{"2", "2"}},
+				map[string][]string{"sliceIDs": {"1", "1"}, "states": {"1", "1"}},
+				map[string][]string{"sliceIDs": {"2", "2"}, "states": {"2", "2"}},
 			),
 			Expected: expectedUnitStatusList(
-				map[string][]string{"sliceIDs": []string{"1"}, "states": []string{"1"}, "names": []string{"*"}},
-				map[string][]string{"sliceIDs": []string{"2"}, "states": []string{"2"}, "names": []string{"*"}},
+				map[string][]string{"sliceIDs": {"1"}, "states": {"1"}, "names": {"*"}},
+				map[string][]string{"sliceIDs": {"2"}, "states": {"2"}, "names": {"*"}},
 			),
 		},
 
@@ -153,12 +153,12 @@ func Test_UnitStatusList_Group(t *testing.T) {
 		{
 			Error: nil,
 			Input: inputUnitStatusList(
-				map[string][]string{"sliceIDs": []string{"1", "1"}, "states": []string{"1", "2"}}, // the last state differs
-				map[string][]string{"sliceIDs": []string{"2", "2"}, "states": []string{"2", "2"}},
+				map[string][]string{"sliceIDs": {"1", "1"}, "states": {"1", "2"}}, // the last state differs
+				map[string][]string{"sliceIDs": {"2", "2"}, "states": {"2", "2"}},
 			),
 			Expected: expectedUnitStatusList(
-				map[string][]string{"sliceIDs": []string{"1", "1"}, "states": []string{"1", "2"}, "names": []string{"name-1@1.service", "name-2@1.service"}}, // the states expand
-				map[string][]string{"sliceIDs": []string{"2"}, "states": []string{"2"}, "names": []string{"*"}},
+				map[string][]string{"sliceIDs": {"1", "1"}, "states": {"1", "2"}, "names": {"name-1@1.service", "name-2@1.service"}}, // the states expand
+				map[string][]string{"sliceIDs": {"2"}, "states": {"2"}, "names": {"*"}},
 			),
 		},
 	}
