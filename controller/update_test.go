@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -34,8 +35,8 @@ func getTestController() (controller, *fleet.DummyFleet) {
 	newControllerConfig.TaskService = newTaskService
 	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
-	newControllerConfig.WaitSleep = 1 * time.Millisecond
-	newControllerConfig.WaitTimeout = 30 * time.Second
+	newControllerConfig.WaitSleep = 300 * time.Millisecond
+	newControllerConfig.WaitTimeout = 5 * time.Second
 
 	newController := controller{newControllerConfig}
 
@@ -125,6 +126,10 @@ func TestGetNumRunningSlices(t *testing.T) {
 					"kubernetes-unit@1.service",
 					"some content",
 				)
+				f.Start(
+					context.Background(),
+					"kubernetes-unit@1.service",
+				)
 			},
 			req: Request{
 				RequestConfig: RequestConfig{
@@ -207,6 +212,67 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 	}
 }
 
+// TestUpdateCurrentSliceIDs tests the updateCurrentSliceIDs method.
+func TestUpdateCurrentSliceIDs(t *testing.T) {
+	tests := []struct {
+		currentSliceIDs  []string
+		modifiedSliceIDs []string
+		newSliceIDs      []string
+		output           []string
+	}{
+		// Test the case where everything is empty.
+		{
+			currentSliceIDs:  []string{},
+			modifiedSliceIDs: []string{},
+			newSliceIDs:      []string{},
+			output:           []string{},
+		},
+		// Test the case where no slices are added.
+		{
+			currentSliceIDs:  []string{"jf8", "8fh", "hf9"},
+			modifiedSliceIDs: []string{"8fh"},
+			newSliceIDs:      []string{},
+			output:           []string{"jf8", "hf9"},
+		},
+		// Test the case where no slices are modified.
+		{
+			currentSliceIDs:  []string{"hfh", "9he", "jm2"},
+			modifiedSliceIDs: []string{},
+			newSliceIDs:      []string{"ns2"},
+			output:           []string{"hfh", "9he", "jm2", "ns2"},
+		},
+		// Test the case where no slices are modified or added.
+		{
+			currentSliceIDs:  []string{"hfh", "9he", "jm2"},
+			modifiedSliceIDs: []string{},
+			newSliceIDs:      []string{},
+			output:           []string{"hfh", "9he", "jm2"},
+		},
+		// Test the usual case, of one slice being modified, and one slice being added.
+		{
+			currentSliceIDs:  []string{"lol", "kek"},
+			modifiedSliceIDs: []string{"lol"},
+			newSliceIDs:      []string{"02b"},
+			output:           []string{"kek", "02b"},
+		},
+	}
+
+	for _, test := range tests {
+		testController, _ := getTestController()
+
+		returnedOutput := testController.updateCurrentSliceIDs(
+			context.Background(),
+			test.currentSliceIDs,
+			test.modifiedSliceIDs,
+			test.newSliceIDs,
+		)
+
+		if !reflect.DeepEqual(test.output, returnedOutput) {
+			t.Fatalf("Should return: %v, returned: %v", test.output, returnedOutput)
+		}
+	}
+}
+
 // TestUpdateWithStrategy tests the UpdateWithStrategy method.
 func TestUpdateWithStrategy(t *testing.T) {
 	tests := []struct {
@@ -264,6 +330,124 @@ func TestUpdateWithStrategy(t *testing.T) {
 				}
 				if unitStatus.Desired != "launched" {
 					t.Fatal("Unit has incorrect desired status")
+				}
+			},
+		},
+		// Test an update of a group with two group slices.
+		{
+			fleetSetUp: func(f fleet.Fleet) {
+				unitNameTemplate := "canary-unit@%v.service"
+
+				for _, id := range []string{"lol", "kek"} {
+					unitName := fmt.Sprintf(unitNameTemplate, id)
+
+					f.Submit(context.Background(), unitName, "some content")
+					f.Start(context.Background(), unitName)
+				}
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group:    "canary",
+					SliceIDs: []string{"lol", "kek"},
+				},
+				Units: []Unit{
+					Unit{
+						Name:    "canary-unit@.service",
+						Content: "some updated content",
+					},
+				},
+			},
+			opts: UpdateOptions{
+				MaxGrowth: 1,
+				MinAlive:  1,
+			},
+			assertion: func(t *testing.T, f *fleet.DummyFleet, e error) {
+				if e != nil {
+					t.Fatal("Error returned by update:", e)
+				}
+
+				unitStatusList, err := f.GetStatusWithMatcher(
+					func(s string) bool {
+						return strings.HasPrefix(s, "canary-unit@") && strings.HasSuffix(s, ".service")
+					},
+				)
+				if err != nil {
+					t.Fatal("Error returned getting statuses: ", err)
+				}
+
+				if len(unitStatusList) != 2 {
+					t.Fatal("Incorrect number of units:", len(unitStatusList))
+				}
+
+				for _, unitStatus := range unitStatusList {
+					if unitStatus.Current != "launched" {
+						t.Fatal("Incorrect current status:", unitStatus.Current)
+					}
+					if unitStatus.Desired != "launched" {
+						t.Fatal("Incorrect desired status:", unitStatus.Desired)
+					}
+					if unitStatus.Name == "canary-unit@lol.service" || unitStatus.Name == "canary-unit@kek.service" {
+						t.Fatal("Previous unit name in use:", unitStatus.Name)
+					}
+				}
+			},
+		},
+		// Test a reasonable update of a group with two group slices.
+		{
+			fleetSetUp: func(f fleet.Fleet) {
+				unitNameTemplate := "sparrow-unit@%v.service"
+
+				for _, id := range []string{"ded", "bef"} {
+					unitName := fmt.Sprintf(unitNameTemplate, id)
+
+					f.Submit(context.Background(), unitName, "some content")
+					f.Start(context.Background(), unitName)
+				}
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group:    "sparrow",
+					SliceIDs: []string{"ded", "bef"},
+				},
+				Units: []Unit{
+					Unit{
+						Name:    "sparrow-unit@.service",
+						Content: "some updated content",
+					},
+				},
+			},
+			opts: UpdateOptions{
+				MaxGrowth: 0,
+				MinAlive:  1,
+			},
+			assertion: func(t *testing.T, f *fleet.DummyFleet, e error) {
+				if e != nil {
+					t.Fatal("Error returned by update:", e)
+				}
+
+				unitStatusList, err := f.GetStatusWithMatcher(
+					func(s string) bool {
+						return strings.HasPrefix(s, "sparrow-unit@") && strings.HasSuffix(s, ".service")
+					},
+				)
+				if err != nil {
+					t.Fatal("Error returned getting statuses: ", err)
+				}
+
+				if len(unitStatusList) != 2 {
+					t.Fatal("Incorrect number of units:", len(unitStatusList))
+				}
+
+				for _, unitStatus := range unitStatusList {
+					if unitStatus.Current != "launched" {
+						t.Fatal("Incorrect current status:", unitStatus.Current)
+					}
+					if unitStatus.Desired != "launched" {
+						t.Fatal("Incorrect desired status:", unitStatus.Desired)
+					}
+					if unitStatus.Name == "sparrow-unit@ded.service" || unitStatus.Name == "sparrow-unit@bef.service" {
+						t.Fatal("Previous unit name in use:", unitStatus.Name)
+					}
 				}
 			},
 		},

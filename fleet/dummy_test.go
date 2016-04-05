@@ -30,9 +30,6 @@ func TestDummyFleet__Submit(t *testing.T) {
 	if statusSubmit.Desired != unitStateLoaded {
 		t.Fatal("Incorrect desired unit status after submit:", statusSubmit.Desired)
 	}
-	if len(statusSubmit.Machine) > 0 {
-		t.Fatal("Machine status is incorrectly present")
-	}
 	if statusSubmit.Name != UnitName {
 		t.Fatal("Incorrect unit name after submission:", statusSubmit.Name)
 	}

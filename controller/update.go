@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -73,49 +74,64 @@ func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, 
 }
 
 func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int) (bool, error) {
+	c.Config.Logger.Debug(ctx, "controller: checking group removal allowed, req: %v", req)
+
 	numRunning, err := c.getNumRunningSlices(ctx, req)
 	if err != nil {
 		return false, maskAny(err)
 	}
 
 	if numRunning > minAlive {
+		c.Config.Logger.Debug(ctx, "controller: group removal allowed")
 		return true, nil
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: group removal not allowed")
 	return false, nil
 }
 
 func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, maxGrowth int) (bool, error) {
+	c.Config.Logger.Debug(ctx, "controller: checking group addition allowed, req: %v", req)
+
 	numRunning, err := c.getNumRunningSlices(ctx, req)
 	if err != nil {
 		return false, maskAny(err)
 	}
 
 	if numRunning < maxGrowth {
+		c.Config.Logger.Debug(ctx, "controller: group addition allowed")
 		return true, nil
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: group addition not allowed")
 	return false, nil
 }
 
-func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOptions) error {
+func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOptions) ([]string, error) {
+	c.Config.Logger.Debug(ctx, "controller: running addFirst")
+
+	c.Config.Logger.Debug(ctx, "controller: running add worker")
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
-		return maskAny(err)
-	}
-	n, err := c.getNumRunningSlices(ctx, newReq)
-	if err != nil {
-		return maskAny(err)
-	}
-	if n != len(newReq.SliceIDs) {
-		return maskAnyf(updateFailedError, "addFirst: slice not running: %d != %v", n, newReq.SliceIDs)
-	}
-	err = c.runRemoveWorker(ctx, req)
-	if err != nil {
-		return maskAny(err)
+		return nil, maskAny(err)
 	}
 
-	return nil
+	c.Config.Logger.Debug(ctx, "controller: checking number of running slices")
+	n, err := c.getNumRunningSlices(ctx, newReq)
+	if err != nil {
+		return nil, maskAny(err)
+	}
+	if n != len(newReq.SliceIDs) {
+		return nil, maskAnyf(updateFailedError, "addFirst: slice not running: %d != %v", n, newReq.SliceIDs)
+	}
+
+	c.Config.Logger.Debug(ctx, "controller: running remove worker")
+	err = c.runRemoveWorker(ctx, req)
+	if err != nil {
+		return nil, maskAny(err)
+	}
+
+	return newReq.SliceIDs, nil
 }
 
 func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOptions) (Request, error) {
@@ -142,33 +158,41 @@ func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOp
 	return newReq, nil
 }
 
-func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOptions) error {
+func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOptions) ([]string, error) {
+	c.Config.Logger.Debug(ctx, "controller: running removeFirst")
+
+	c.Config.Logger.Debug(ctx, "controller: running remove worker")
 	err := c.runRemoveWorker(ctx, req)
 	if err != nil {
-		return maskAny(err)
+		return nil, maskAny(err)
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: running add worker")
 	newReq, err := c.runAddWorker(ctx, req, opts)
 	if err != nil {
-		return maskAny(err)
-	}
-	n, err := c.getNumRunningSlices(ctx, newReq)
-	if err != nil {
-		return maskAny(err)
-	}
-	if n != len(newReq.SliceIDs) {
-		return maskAnyf(updateFailedError, "removeFirst: slice not running: %d != %v", n, newReq.SliceIDs)
+		return nil, maskAny(err)
 	}
 
-	return nil
+	c.Config.Logger.Debug(ctx, "controller: checking number of running slices")
+	n, err := c.getNumRunningSlices(ctx, newReq)
+	if err != nil {
+		return nil, maskAny(err)
+	}
+	if n != len(newReq.SliceIDs) {
+		return nil, maskAnyf(updateFailedError, "removeFirst: slice not running: %d != %v", n, newReq.SliceIDs)
+	}
+
+	return newReq.SliceIDs, nil
 }
 
 func (c controller) runRemoveWorker(ctx context.Context, req Request) error {
+	c.Config.Logger.Debug(ctx, "controller: executing stop action, req: %v", req)
 	// Stop.
 	if err := c.executeTaskAction(c.Stop, ctx, req); err != nil {
 		return maskAny(err)
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: executing destroy action, req: %v", req)
 	// Destroy.
 	if err := c.executeTaskAction(c.Destroy, ctx, req); err != nil {
 		return maskAny(err)
@@ -209,19 +233,50 @@ type UpdateOptions struct {
 	ReadySecs int
 }
 
+// updateCurrentSliceIDs updates the list of current slice IDs,
+// removing the slice that was modified, and adding any new slice IDs.
+func (c controller) updateCurrentSliceIDs(ctx context.Context, currentSliceIDs []string, modifiedSliceIDs []string, newSliceIDs []string) []string {
+	c.Config.Logger.Debug(ctx, "current slice IDs: %v", currentSliceIDs)
+	c.Config.Logger.Debug(ctx, "modified slice IDs: %v", modifiedSliceIDs)
+	c.Config.Logger.Debug(ctx, "new slice IDs: %v", newSliceIDs)
+
+	// Remove any slice IDs that have been modified.
+	for i, currentSliceID := range currentSliceIDs {
+		for _, modifiedSliceID := range modifiedSliceIDs {
+			if currentSliceID == modifiedSliceID {
+				currentSliceIDs = append(
+					currentSliceIDs[:i],
+					currentSliceIDs[i+1:]...,
+				)
+			}
+		}
+	}
+
+	// And add the new slice IDs.
+	currentSliceIDs = append(currentSliceIDs, newSliceIDs...)
+
+	c.Config.Logger.Debug(ctx, "updated slice IDs: %v", currentSliceIDs)
+
+	return currentSliceIDs
+}
+
 func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts UpdateOptions) error {
 	c.Config.Logger.Debug(ctx, "controller: running update for group '%v'", req.Group)
 
 	fail := make(chan error, 1)
 	numTotal := len(req.SliceIDs)
+
 	done := make(chan struct{}, numTotal)
+
 	var addInProgress int64
 	var removeInProgress int64
 
+	c.Config.Logger.Debug(ctx, "controller: checking if request is sliceable")
 	if !req.isSliceable() {
 		return maskAnyf(updateNotAllowedError, "cannot update unsliceable group")
 	}
 
+	c.Config.Logger.Debug(ctx, "controller: checking for slice ids in request")
 	for _, sliceID := range req.SliceIDs {
 		if sliceID == "" {
 			return maskAnyf(updateNotAllowedError, "group misses slice ID")
@@ -232,25 +287,46 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 		return maskAnyf(updateNotAllowedError, "invalid min alive option")
 	}
 
+	// We need to track which slice IDs are currently in use.
+	// This list is updated as slices are added and removed.
+	currentSliceIDsMutex := sync.Mutex{}
+	currentSliceIDs := []string{}
+	for _, id := range req.SliceIDs {
+		currentSliceIDs = append(currentSliceIDs, id)
+	}
+
 	for _, sliceID := range req.SliceIDs {
 		newReq := req
 		newReq.SliceIDs = []string{sliceID}
 
 		for {
+			currentSliceReq := req
+
+			c.Config.Logger.Debug(ctx, "controller: attempting to add slice: %v", sliceID)
 			// add
 			maxGrowth := opts.MaxGrowth + numTotal - opts.MinAlive - int(addInProgress)
-			ok, err := c.isGroupAdditionAllowed(ctx, req, maxGrowth)
+
+			currentSliceReq.SliceIDs = currentSliceIDs
+			ok, err := c.isGroupAdditionAllowed(ctx, currentSliceReq, maxGrowth)
 			if err != nil {
 				return maskAny(err)
 			}
 			if ok {
 				go func() {
+					ctx = context.WithValue(ctx, "add slice", sliceID)
+					c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", sliceID)
 					atomic.AddInt64(&addInProgress, 1)
-					err := c.addFirst(ctx, newReq, opts)
+
+					newSliceIDs, err := c.addFirst(ctx, newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
+
+					currentSliceIDsMutex.Lock()
+					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDsMutex.Unlock()
+
 					atomic.AddInt64(&addInProgress, -1)
 					done <- struct{}{}
 				}()
@@ -258,20 +334,31 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				break
 			}
 
+			c.Config.Logger.Debug(ctx, "controller: attempting to remove slice: %v", sliceID)
 			// remove
 			minAlive := opts.MinAlive + int(removeInProgress)
-			ok, err = c.isGroupRemovalAllowed(ctx, req, minAlive)
+
+			currentSliceReq.SliceIDs = currentSliceIDs
+			ok, err = c.isGroupRemovalAllowed(ctx, currentSliceReq, minAlive)
 			if err != nil {
 				return maskAny(err)
 			}
 			if ok {
 				go func() {
+					ctx = context.WithValue(ctx, "remove slice", sliceID)
+					c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", sliceID)
 					atomic.AddInt64(&removeInProgress, 1)
-					err := c.removeFirst(ctx, newReq, opts)
+
+					newSliceIDs, err := c.removeFirst(ctx, newReq, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
+
+					currentSliceIDsMutex.Lock()
+					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDsMutex.Unlock()
+
 					atomic.AddInt64(&removeInProgress, -1)
 					done <- struct{}{}
 				}()
@@ -284,6 +371,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 	}
 
 	tc := 0
+
 	for {
 		select {
 		case err := <-fail:

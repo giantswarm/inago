@@ -5,7 +5,9 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/giantswarm/inago/common"
 	"github.com/giantswarm/inago/logging"
+	"github.com/juju/errgo"
 )
 
 // DummyConfig holds configuration for the DummyFleet struct.
@@ -43,10 +45,22 @@ func (f *DummyFleet) Submit(ctx context.Context, name, content string) error {
 	f.Mutex.Lock()
 	defer f.Mutex.Unlock()
 
+	sliceID, err := common.SliceID(name)
+	if err != nil {
+		return errgo.Mask(err)
+	}
+
 	f.Units[name] = UnitStatus{
 		Current: unitStateLoaded,
 		Desired: unitStateLoaded,
 		Name:    name,
+		SliceID: sliceID,
+		Machine: []MachineStatus{
+			MachineStatus{
+				SystemdActive: "inactive",
+				SystemdSub:    "dead",
+			},
+		},
 	}
 
 	return nil
@@ -68,6 +82,12 @@ func (f *DummyFleet) Start(ctx context.Context, name string) error {
 
 	unitStatus.Current = unitStateLaunched
 	unitStatus.Desired = unitStateLaunched
+	unitStatus.Machine = []MachineStatus{
+		MachineStatus{
+			SystemdActive: "active",
+			SystemdSub:    "running",
+		},
+	}
 
 	f.Units[name] = unitStatus
 
@@ -90,6 +110,12 @@ func (f *DummyFleet) Stop(ctx context.Context, name string) error {
 
 	unitStatus.Current = unitStateLoaded
 	unitStatus.Desired = unitStateLoaded
+	unitStatus.Machine = []MachineStatus{
+		MachineStatus{
+			SystemdActive: "inactive",
+			SystemdSub:    "running",
+		},
+	}
 
 	f.Units[name] = unitStatus
 
