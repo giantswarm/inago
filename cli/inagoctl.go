@@ -23,11 +23,11 @@ var (
 		NoBlock       bool
 		Verbose       bool
 
-		Tunnel                string
-		SSHUsername           string
-		SSHTimeout            time.Duration
-		StrictHostKeyChecking bool
-		KnownHostsFile        string
+		Tunnel                   string
+		SSHUsername              string
+		SSHTimeout               time.Duration
+		SSHStrictHostKeyChecking bool
+		SSHKnownHostsFile        string
 	}
 
 	fs             filesystemspec.FileSystem
@@ -67,8 +67,8 @@ var (
 				Tunnel:                globalFlags.Tunnel,
 				Username:              globalFlags.SSHUsername,
 				Timeout:               globalFlags.SSHTimeout,
-				StrictHostKeyChecking: globalFlags.StrictHostKeyChecking,
-				KnownHostsFile:        globalFlags.KnownHostsFile,
+				StrictHostKeyChecking: globalFlags.SSHStrictHostKeyChecking,
+				KnownHostsFile:        globalFlags.SSHKnownHostsFile,
 			}
 
 			newFleet, err = fleet.NewFleet(newFleetConfig)
@@ -100,8 +100,8 @@ func init() {
 	MainCmd.PersistentFlags().StringVar(&globalFlags.Tunnel, "tunnel", "", "use a tunnel to communicate with fleet")
 	MainCmd.PersistentFlags().StringVar(&globalFlags.SSHUsername, "ssh-username", "core", "username to use when connecting to CoreOS machine")
 	MainCmd.PersistentFlags().DurationVar(&globalFlags.SSHTimeout, "ssh-timeout", time.Duration(10*time.Second), "timeout in seconds when establishing the connection via SSH")
-	MainCmd.PersistentFlags().BoolVar(&globalFlags.StrictHostKeyChecking, "strict-host-key-checking", true, "verify host keys presented by remote machines before initiating SSH connections")
-	MainCmd.PersistentFlags().StringVar(&globalFlags.KnownHostsFile, "known-hosts-file", "~/.fleetctl/known_hosts", "file used to store remote machine fingerprints")
+	MainCmd.PersistentFlags().BoolVar(&globalFlags.SSHStrictHostKeyChecking, "ssh-strict-host-key-checking", true, "verify host keys presented by remote machines before initiating SSH connections")
+	MainCmd.PersistentFlags().StringVar(&globalFlags.SSHKnownHostsFile, "ssh-known-hosts-file", "~/.fleetctl/known_hosts", "file used to store remote machine fingerprints")
 
 	MainCmd.AddCommand(submitCmd)
 	MainCmd.AddCommand(statusCmd)

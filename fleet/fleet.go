@@ -133,26 +133,14 @@ func NewFleet(config Config) (Fleet, error) {
 	var trans http.RoundTripper
 
 	tunneling := config.Tunnel.Tunnel != ""
-	// If a tunnel in provided we need to overwrite the http.Transport.Dial function
+	// If a tunnel is provided we need to overwrite the http.Transport.Dial function
 	// to use the tunnel
 	if tunneling {
 		trans = &http.Transport{
 			Dial: config.Tunnel.NewDialFunc(config),
 		}
-	}
-
-	switch config.Endpoint.Scheme {
-	case "unix", "file":
-		if config.Endpoint.Host != "" {
-			// This commonly happens if the user misses the leading slash after the
-			// scheme. For example, "unix://var/run/fleet.sock" would be parsed as
-			// host "var".
-			return nil, maskAnyf(invalidEndpointError, "cannot connect to host %q with scheme %q", config.Endpoint.Host, config.Endpoint.Scheme)
-		}
-
 		// The Path field is only used for dialing and should not be used when
 		// building any further HTTP requests.
-		sockPath := config.Endpoint.Path
 		config.Endpoint.Path = ""
 
 		// http.Client doesn't support the schemes "unix" or "file", but it
@@ -161,10 +149,20 @@ func NewFleet(config Config) (Fleet, error) {
 
 		// The Host field is not used for dialing, but will be exposed in debug logs.
 		config.Endpoint.Host = "domain-sock"
+	} else {
+		switch config.Endpoint.Scheme {
+		case "unix", "file":
+			if config.Endpoint.Host != "" {
+				// This commonly happens if the user misses the leading slash after the
+				// scheme. For example, "unix://var/run/fleet.sock" would be parsed as
+				// host "var".
+				return nil, maskAnyf(invalidEndpointError, "cannot connect to host %q with scheme %q", config.Endpoint.Host, config.Endpoint.Scheme)
+			}
+			sockPath := config.Endpoint.Path
+			config.Endpoint.Path = ""
+			config.Endpoint.Scheme = "http"
+			config.Endpoint.Host = "domain-sock"
 
-		// if tunneling is not set we need to provide a dial function that
-		// connects to a unix socket
-		if !tunneling {
 			trans = &http.Transport{
 				Dial: func(s, t string) (net.Conn, error) {
 					// http.Client does not natively support dialing a unix domain socket,
@@ -172,11 +170,11 @@ func NewFleet(config Config) (Fleet, error) {
 					return net.Dial("unix", sockPath)
 				},
 			}
+		case "http", "https":
+			trans = http.DefaultTransport
+		default:
+			return nil, maskAnyf(invalidEndpointError, "invalid scheme %q", config.Endpoint.Scheme)
 		}
-	case "http", "https":
-		trans = http.DefaultTransport
-	default:
-		return nil, maskAnyf(invalidEndpointError, "invalid scheme %q", config.Endpoint.Scheme)
 	}
 
 	config.Client.Transport = trans

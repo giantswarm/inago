@@ -29,9 +29,9 @@ func (t *SSHTunnel) NewDialFunc(config Config) func(string, string) (net.Conn, e
 	tunnelFunc := sshClient.Dial
 
 	if config.Endpoint.Scheme == "unix" || config.Endpoint.Scheme == "file" {
-		tgt := config.Endpoint.Path
+		target := config.Endpoint.Path
 		tunnelFunc = func(string, string) (net.Conn, error) {
-			cmd := fmt.Sprintf(`fleetctl fd-forward %s`, tgt)
+			cmd := fmt.Sprintf(`fleetctl fd-forward %s`, target)
 			return ssh.DialCommand(sshClient, cmd)
 		}
 	}
