@@ -240,6 +240,7 @@ func (c controller) updateCurrentSliceIDs(ctx context.Context, currentSliceIDs [
 	c.Config.Logger.Debug(ctx, "modified slice IDs: %v", modifiedSliceIDs)
 	c.Config.Logger.Debug(ctx, "new slice IDs: %v", newSliceIDs)
 
+	// Remove any slice IDs that have been modified.
 	for i, currentSliceID := range currentSliceIDs {
 		for _, modifiedSliceID := range modifiedSliceIDs {
 			if currentSliceID == modifiedSliceID {
@@ -250,6 +251,8 @@ func (c controller) updateCurrentSliceIDs(ctx context.Context, currentSliceIDs [
 			}
 		}
 	}
+
+	// And add the new slice IDs.
 	currentSliceIDs = append(currentSliceIDs, newSliceIDs...)
 
 	c.Config.Logger.Debug(ctx, "updated slice IDs: %v", currentSliceIDs)

@@ -220,6 +220,35 @@ func TestUpdateCurrentSliceIDs(t *testing.T) {
 		newSliceIDs      []string
 		output           []string
 	}{
+		// Test the case where everything is empty.
+		{
+			currentSliceIDs:  []string{},
+			modifiedSliceIDs: []string{},
+			newSliceIDs:      []string{},
+			output:           []string{},
+		},
+		// Test the case where no slices are added.
+		{
+			currentSliceIDs:  []string{"jf8", "8fh", "hf9"},
+			modifiedSliceIDs: []string{"8fh"},
+			newSliceIDs:      []string{},
+			output:           []string{"jf8", "hf9"},
+		},
+		// Test the case where no slices are modified.
+		{
+			currentSliceIDs:  []string{"hfh", "9he", "jm2"},
+			modifiedSliceIDs: []string{},
+			newSliceIDs:      []string{"ns2"},
+			output:           []string{"hfh", "9he", "jm2", "ns2"},
+		},
+		// Test the case where no slices are modified or added.
+		{
+			currentSliceIDs:  []string{"hfh", "9he", "jm2"},
+			modifiedSliceIDs: []string{},
+			newSliceIDs:      []string{},
+			output:           []string{"hfh", "9he", "jm2"},
+		},
+		// Test the usual case, of one slice being modified, and one slice being added.
 		{
 			currentSliceIDs:  []string{"lol", "kek"},
 			modifiedSliceIDs: []string{"lol"},
@@ -239,7 +268,7 @@ func TestUpdateCurrentSliceIDs(t *testing.T) {
 		)
 
 		if !reflect.DeepEqual(test.output, returnedOutput) {
-			t.Fatalf("Test slices not equal: %v != %v", test.output, returnedOutput)
+			t.Fatalf("Should return: %v, returned: %v", test.output, returnedOutput)
 		}
 	}
 }
