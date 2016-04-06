@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,7 +38,6 @@ func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, 
 	} else if err != nil {
 		return 0, maskAny(err)
 	}
-
 	grouped, err := UnitStatusList(groupStatus).Group()
 	if err != nil {
 		return 0, maskAny(err)
@@ -57,7 +57,7 @@ func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, 
 		aggregator := Aggregator{
 			Logger: c.Config.Logger,
 		}
-		ok, err := aggregator.unitHasStatus(groupedStatuses[0], StatusRunning)
+		ok, err := aggregator.UnitHasStatus(groupedStatuses[0], StatusRunning)
 		if err != nil {
 			return 0, maskAny(err)
 		}
@@ -300,11 +300,16 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 		newReq.SliceIDs = []string{sliceID}
 
 		for {
-			currentSliceReq := req
-
 			c.Config.Logger.Debug(ctx, "controller: attempting to add slice: %v", sliceID)
-			// add
-			maxGrowth := opts.MaxGrowth + numTotal - opts.MinAlive - int(addInProgress)
+
+			currentSliceReq := req
+			// Calculating the number of groups allowed to be added during this
+			// iteration respects the total number of running groups. This is because
+			// we later going to check how many are actually running after the
+			// addition. So the next iteration will calculate and check again and
+			// respect the total number of running groups. See also
+			// isGroupAdditionAllowed.
+			maxGrowth := opts.MaxGrowth + numTotal - int(addInProgress)
 
 			currentSliceReq.SliceIDs = currentSliceIDs
 			ok, err := c.isGroupAdditionAllowed(ctx, currentSliceReq, maxGrowth)

@@ -309,19 +309,25 @@ func (a Aggregator) AggregateStatus(fc, fd, sa, ss string) (Status, error) {
 	return aggregatedStatuses[0], nil
 }
 
-func (a Aggregator) unitHasStatus(us fleet.UnitStatus, status Status) (bool, error) {
+func (a Aggregator) UnitHasStatus(us fleet.UnitStatus, statuses ...Status) (bool, error) {
+	if len(statuses) == 0 {
+		return false, maskAny(invalidArgumentError)
+	}
+
 	for _, ms := range us.Machine {
 		aggregated, err := a.AggregateStatus(us.Current, us.Desired, ms.SystemdActive, ms.SystemdSub)
 		if err != nil {
 			return false, maskAny(err)
 		}
 
-		if aggregated != status {
-			return false, nil
+		for _, status := range statuses {
+			if aggregated == status {
+				return true, nil
+			}
 		}
 	}
 
-	return true, nil
+	return false, nil
 }
 
 func (a Aggregator) matchState(indexed, remote string) bool {
