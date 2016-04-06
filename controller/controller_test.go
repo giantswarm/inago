@@ -873,7 +873,7 @@ func TestController_WaitForStatus_Closer(t *testing.T) {
 	closer := make(chan struct{}, 1)
 	closer <- struct{}{}
 
-	err := controller.WaitForStatus(context.Background(), req, desired, closer)
+	err := controller.WaitForStatus(context.Background(), req, closer, desired)
 	Expect(err).To(BeNil())
 }
 
@@ -938,7 +938,7 @@ func TestController_WaitForStatus_Timeout(t *testing.T) {
 	desired := StatusRunning
 	closer := make(chan struct{}, 1)
 
-	err := c.WaitForStatus(context.Background(), req, desired, closer)
+	err := c.WaitForStatus(context.Background(), req, closer, desired)
 	Expect(IsWaitTimeoutReached(err)).To(BeTrue()) // Because WaitForStatus is 0 nothing should happen but directly return the error
 }
 
@@ -1145,8 +1145,18 @@ func TestController_Update(t *testing.T) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 					[]fleet.UnitStatus{
 						{
+							Current: "loaded",
+							Desired: "launched",
+							Machine: []fleet.MachineStatus{
+								{
+									ID:            "test-id",
+									IP:            net.ParseIP("10.0.0.101"),
+									SystemdActive: "active",
+									SystemdSub:    "running",
+									UnitHash:      "test-hash",
+								},
+							},
 							Name:    "zebra-unit@1.service",
-							Current: string(StatusRunning),
 							SliceID: "1",
 						},
 					},
@@ -1155,7 +1165,8 @@ func TestController_Update(t *testing.T) {
 			},
 			req: Request{
 				RequestConfig: RequestConfig{
-					Group: "zebra",
+					Group:    "zebra",
+					SliceIDs: []string{"1"},
 				},
 			},
 			opts: UpdateOptions{
@@ -1170,13 +1181,33 @@ func TestController_Update(t *testing.T) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
 					[]fleet.UnitStatus{
 						{
+							Current: "loaded",
+							Desired: "launched",
+							Machine: []fleet.MachineStatus{
+								{
+									ID:            "test-id-1",
+									IP:            net.ParseIP("10.0.0.101"),
+									SystemdActive: "active",
+									SystemdSub:    "running",
+									UnitHash:      "test-hash",
+								},
+							},
 							Name:    "antelope-unit@1.service",
-							Current: string(StatusRunning),
 							SliceID: "1",
 						},
 						{
+							Current: "loaded",
+							Desired: "launched",
+							Machine: []fleet.MachineStatus{
+								{
+									ID:            "test-id-2",
+									IP:            net.ParseIP("10.0.0.102"),
+									SystemdActive: "active",
+									SystemdSub:    "running",
+									UnitHash:      "test-hash",
+								},
+							},
 							Name:    "antelope-unit@2.service",
-							Current: string(StatusRunning),
 							SliceID: "2",
 						},
 					},
@@ -1185,7 +1216,8 @@ func TestController_Update(t *testing.T) {
 			},
 			req: Request{
 				RequestConfig: RequestConfig{
-					Group: "antelope",
+					Group:    "antelope",
+					SliceIDs: []string{"1", "2"},
 				},
 			},
 			opts: UpdateOptions{
