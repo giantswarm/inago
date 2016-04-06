@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -81,12 +80,17 @@ func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minA
 		return false, maskAny(err)
 	}
 
+	c.Config.Logger.Debug(
+		ctx, "controller: numRunning: %v, minAlive: %v",
+		numRunning, minAlive,
+	)
+
 	if numRunning > minAlive {
-		c.Config.Logger.Debug(ctx, "controller: group removal allowed")
+		c.Config.Logger.Debug(ctx, "controller: group removal allowed (numRunning > minAlive)")
 		return true, nil
 	}
 
-	c.Config.Logger.Debug(ctx, "controller: group removal not allowed")
+	c.Config.Logger.Debug(ctx, "controller: group removal not allowed (numRunning <= minAlive)")
 	return false, nil
 }
 
@@ -98,12 +102,17 @@ func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, max
 		return false, maskAny(err)
 	}
 
+	c.Config.Logger.Debug(
+		ctx, "controller: numRunning: %v, maxGrowth: %v",
+		numRunning, maxGrowth,
+	)
+
 	if numRunning < maxGrowth {
-		c.Config.Logger.Debug(ctx, "controller: group addition allowed")
+		c.Config.Logger.Debug(ctx, "controller: group addition allowed (numRunning < maxGrowth)")
 		return true, nil
 	}
 
-	c.Config.Logger.Debug(ctx, "controller: group addition not allowed")
+	c.Config.Logger.Debug(ctx, "controller: group addition not allowed (numRunning >= maxGrowth)")
 	return false, nil
 }
 
@@ -310,7 +319,12 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 			// respect the total number of running groups. See also
 			// isGroupAdditionAllowed.
 			maxGrowth := opts.MaxGrowth + numTotal - int(addInProgress)
+			c.Config.Logger.Debug(
+				ctx, "controller: opts.MaxGrowth: %v, numTotal: %v, opts.MinAlive: %v, addInProgress: %v, maxGrowth: %v",
+				opts.MaxGrowth, numTotal, opts.MinAlive, int(addInProgress), maxGrowth,
+			)
 
+			c.Config.Logger.Debug(ctx, "controller: currentSliceIDs: %v", currentSliceIDs)
 			currentSliceReq.SliceIDs = currentSliceIDs
 			ok, err := c.isGroupAdditionAllowed(ctx, currentSliceReq, maxGrowth)
 			if err != nil {
@@ -342,7 +356,12 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 			c.Config.Logger.Debug(ctx, "controller: attempting to remove slice: %v", sliceID)
 			// remove
 			minAlive := opts.MinAlive + int(removeInProgress)
+			c.Config.Logger.Debug(
+				ctx, "controller: opts.MinAlive: %v, removeInProgress: %v, minAlive: %v",
+				opts.MinAlive, int(removeInProgress), minAlive,
+			)
 
+			c.Config.Logger.Debug(ctx, "controller: currentSliceIDs: %v", currentSliceIDs)
 			currentSliceReq.SliceIDs = currentSliceIDs
 			ok, err = c.isGroupRemovalAllowed(ctx, currentSliceReq, minAlive)
 			if err != nil {
