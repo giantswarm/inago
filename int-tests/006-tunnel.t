@@ -10,11 +10,9 @@ Validate the test group.
   Groups are valid globally.
 
 Submit 2 slices of update group, using the tunnel flag.
-  $ inagoctl --tunnel=localhost submit $GROUP 2
+  $ inagoctl --tunnel=${INAGO_TUNNEL_ENDPOINT} --ssh-strict-host-key-checking=false submit $GROUP 2
   .*\|\scontext.Background: Succeeded to submit group '002-tunnel-group'. (re)
   $ sleep 5
 
-
 Clean Up:
-
-    $ inagoctl --tunnel=localhost destroy $GROUP > /dev/null 2>&1
+  $ inagoctl --tunnel=${INAGO_TUNNEL_ENDPOINT} --ssh-strict-host-key-checking=false destroy $GROUP > /dev/null 2>&1

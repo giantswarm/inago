@@ -102,9 +102,21 @@ int-test: $(BIN) $(INT_TESTS)
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
-
+	
+	@echo Starting ssh-agent container
+	-docker run \
+	-d --name=ssh-agent whilp/ssh-agent:latest
+	@echo Adding vagrant ssh key to ssh-agent container
+	-docker run \
+	--rm --volumes-from=ssh-agent \
+	-v ~/.vagrant.d:/ssh \
+	whilp/ssh-agent:latest \
+	ssh-add /ssh/insecure_private_key
+	
 	-FLEET_ENDPOINT=$(FLEET_ENDPOINT) make internal-int-test
-
+	
+	@echo Destroying the ssh-agent container
+	docker rm -f ssh-agent
 	@echo Destroying the integration test machine
 	cd $(VAGRANT_PATH) && vagrant destroy -f
 	@echo Removing test machine user-data
@@ -114,6 +126,9 @@ internal-int-test: $(BIN) $(INT_TESTS)
 	docker run \
 		--rm \
 		-e FLEET_ENDPOINT=$(FLEET_ENDPOINT) \
+		-e INAGO_TUNNEL_ENDPOINT=$(INAGO_TUNNEL_ENDPOINT) \
+		-e SSH_AUTH_SOCK=/root/.ssh/socket \
+		--volumes-from ssh-agent  \
 		-v $(CURDIR)/$(BIN):/usr/local/bin/$(BIN) \
 		-v $(INT_TESTS_PATH):$(INT_TESTS_PATH) \
 		zeisss/cram-docker \

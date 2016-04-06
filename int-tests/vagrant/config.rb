@@ -85,4 +85,4 @@ $update_channel='stable'
 # $shared_folders = Hash[*['/home/foo/app1', '/home/foo/app2'].map{|d| [d, d]}.flatten]
 
 # Enable port forwarding from guest(s) to host machine, syntax is: { 80 => 8080 }, auto correction is enabled by default.
-$forwarded_ports = {49153 => 49153}
+$forwarded_ports = {49153 => 49153, 22 => 2202}
