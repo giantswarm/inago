@@ -105,7 +105,9 @@ int-test: $(BIN) $(INT_TESTS)
 	
 	@echo Starting ssh-agent container
 	-docker run \
-	-d --name=ssh-agent whilp/ssh-agent:latest
+	-d \
+	--name=ssh-agent \
+	whilp/ssh-agent:latest
 	@echo Adding vagrant ssh key to ssh-agent container
 	-docker run \
 	--rm --volumes-from=ssh-agent \
