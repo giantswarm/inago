@@ -309,6 +309,9 @@ func (a Aggregator) AggregateStatus(fc, fd, sa, ss string) (Status, error) {
 	return aggregatedStatuses[0], nil
 }
 
+// UnitHasStatus determines if a given unit's status is effectivly equal to a
+// set of given statuses. This method provides status mapping of
+// AggregateStatus and compares the result with the given set of statuses.
 func (a Aggregator) UnitHasStatus(us fleet.UnitStatus, statuses ...Status) (bool, error) {
 	if len(statuses) == 0 {
 		return false, maskAny(invalidArgumentError)
