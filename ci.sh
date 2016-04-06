@@ -12,7 +12,7 @@ elif [ $TEST_SUITE == "integration" ]; then
     eval "$(ssh-agent -s)"
     chmod 400 ./inago-integration-test.pem
     ssh-add ./inago-integration-test.pem 2>/dev/null
-    fab run_int_test
+    fab -A run_int_test
 else
     echo "Unknown test suite"
     exit 1
