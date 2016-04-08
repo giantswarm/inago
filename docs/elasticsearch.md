@@ -14,7 +14,7 @@ Saying that, if you want to do so, and have questions, the team is always availa
 ## Starting the Elasticsearch cluster
 We're going to use Inago's `up` command to bring up multiple group slices of the `elasticsearch` group. `up` is equivalent to `submit`, followed by `start`.
 
-Due to the `Conflicts` statement in the unit file for the group, each group slice will be automatically scheduled onto separate machines.
+Due to the `Conflicts` statement in the unit file for the group, each group slice will be automatically scheduled onto a separate machine.
 ```
 core@core-01 ~ $ ./inagoctl up elasticsearch 3
 2016-04-06 16:57:39.644 | INFO     | context.Background: Succeeded to submit group 'elasticsearch'.
@@ -22,7 +22,7 @@ core@core-01 ~ $ ./inagoctl up elasticsearch 3
 ```
 As you can see, the `elasticsearch` group has been submitted and started. Each group slice has an ID, which can be seen in the output.
 
-We can use the `status` command to inspect the state of the group. The _verbose_ flag is used so that the hash of the unit file is also printed. This will be interesting later, after we upgrade Elasticsearch. You can also see the the group slices have been scheduled onto multiple machines.
+We can use the `status` command to inspect the state of the group. The _verbose_ flag is used so that the hash of the unit file is also printed. This will be interesting later, after we upgrade Elasticsearch. You can also see that the group slices have been scheduled onto multiple machines.
 ```
 core@core-01 ~ $ ./inagoctl status -v elasticsearch
 Group              Units                      FDState   FCState   SAState  Hash                                      IP            Machine
@@ -119,7 +119,7 @@ We need to modify the line to read:
 ```
 Environment="IMAGE=elasticsearch:2.3"
 ```
-This will update us to use the later version of the Elasticsearch Docker image.
+This updates the unit to use the later version of the Elasticsearch Docker image.
 
 Next, we're going to use the `update` command from Inago to perform the update of the Elasticsearch cluster.
 ```
@@ -128,7 +128,10 @@ core@core-01 ~ $ ./inagoctl update elasticsearch --max-growth=1 --min-alive=2 --
 ```
 The arguments used here mean that Inago is allowed to create one additional slice during the update (meaning there will be no more than four instances of Elasticsearch running at any time), and that at least two instances of Elasticsearch have to be running at any time.
 
-The `ready-secs` flag determines how long to wait between rounds of updating. This value gives Elasticsearch enough time to replicate any necessary data.
+The `ready-secs` flag determines how long to wait between rounds of updating.
+This value gives Elasticsearch enough time to replicate any necessary data.
+The amount of time required is dependent on your setup,
+and is affected by the amount of data.
 
 The IDs of the new group slices created during the update are printed in the output.
 
