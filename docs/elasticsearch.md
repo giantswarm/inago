@@ -15,6 +15,27 @@ This large allocation is to give Elasticsearch more than enough space for heap.
 - The `inago` binary, as well as the `elasticsearch` directory from `example`,
 have been copied to all the nodes in the cluster.
 
+It should also be noted that any IP addresses or hostnames used in this example are dependent on your setup.
+
+## Inago Groups
+Inago introduces the concept of a _group_. A group is a set of unit files.
+Groups can be worked with in a similar manner to fleet units -
+for example, they can be sliced, creating a group slice.
+
+In this example, we will be using a group called `elasticsearch`,
+which consists of one unit, named `elasticsearch@.service`.
+We will use this group to create multiple group slices.
+Each group slice of the `elasticsearch` group will contain a slice
+of the `elasticsearch@.service` unit.
+
+For simplicity in this example, there is only one unit in the group.
+It would be possible to place more units in the `elasticsearch` group -
+in this example, Logstash and Kibana would make sense,
+and deploy them as part of a larger "ELK" group.
+
+As an aside, a rule in Inago dictates that units containing an '@' symbol in their filename
+can be sliced - all units in the group need to be sliceable for the group to be valid.
+
 ## Starting the Elasticsearch cluster
 We're going to use Inago's `up` command to bring up multiple group slices of the `elasticsearch` group.
 `up` is equivalent to `submit`, followed by `start`.
@@ -98,9 +119,9 @@ core@core-02 ~ $ curl -XGET '172.17.8.101:9200/inago-example-test-index/external
 ```
 
 ## Updating the Elasticsearch cluster
-Inago operates on _groups_ of unit files.
-If we look at the `elasticsearch@.service` file, in the `elasticsearch` directory,
-you can see the unit file for the group we're using in this example.
+As mentioned previously, Inago operates on _groups_ of unit files.
+If we look at the `elasticsearch@.service` file in the `elasticsearch` directory,
+you can see a unit file of the group we're using in this example.
 
 The Docker image for this unit is set via the line:
 ```
@@ -124,7 +145,6 @@ core@core-02 ~ $ curl 172.17.8.101:9200
 }
 ```
 
-
 However, this isn't the latest version of Elasticsearch! We want to upgrade it to 2.3.
 
 We need to modify the line to read:
@@ -134,6 +154,7 @@ Environment="IMAGE=elasticsearch:2.3"
 This updates the unit to use the later version of the Elasticsearch Docker image.
 
 Next, we're going to use the `update` command from Inago to perform the update of the Elasticsearch cluster.
+This will replace all the currently running group slices with new group slices.
 ```
 core@core-01 ~ $ ./inagoctl update elasticsearch --max-growth=1 --min-alive=2 --ready-secs=60
 2016-04-06 17:11:54.026 | INFO     | context.Background: Succeeded to update 3 slices for group 'elasticsearch': [184 372 88f].
