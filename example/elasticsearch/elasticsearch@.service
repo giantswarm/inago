@@ -1,0 +1,21 @@
+[Unit]
+Description=Elasticsearch Service
+
+[Service]
+Restart=on-failure
+RestartSec=1
+StartLimitInterval=300s
+StartLimitBurst=3
+TimeoutStartSec=0
+EnvironmentFile=/etc/environment
+Environment="IMAGE=elasticsearch:2.2"
+Environment="NAME=%p-%i.service"
+ExecStartPre=/usr/bin/docker pull $IMAGE
+ExecStartPre=-/usr/bin/docker stop -t 10 $NAME
+ExecStartPre=-/usr/bin/docker rm -f $NAME
+ExecStart=/bin/sh -c "/usr/bin/docker run --rm --name $NAME -e ES_HEAP_SIZE=1g -p ${COREOS_PRIVATE_IPV4}:9200:9200 -p ${COREOS_PRIVATE_IPV4}:9300:9300 $IMAGE elasticsearch -Des.logger.level=DEBUG --network.publish_host=${COREOS_PRIVATE_IPV4} --cluster.name=inago-example --discovery.zen.ping.multicast.enabled=false --discovery.zen.ping.unicast.hosts=$(/usr/bin/fleetctl list-units -fields=unit,machine --full --no-legend 2>/dev/null | grep ^elasticsearch@ | cut -d/ -f2 | paste -d, -s)"
+ExecStop=-/usr/bin/docker stop -t 10 $NAME
+ExecStopPost=-/usr/bin/docker rm -f $NAME
+
+[X-Fleet]
+Conflicts=elasticsearch@*.service
