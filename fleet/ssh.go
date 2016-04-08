@@ -96,7 +96,6 @@ func (t *sshTunnel) NewDialFunc() (func(string, string) (net.Conn, error), error
 	if t.Endpoint.Scheme == "unix" || t.Endpoint.Scheme == "file" {
 		return func(string, string) (net.Conn, error) {
 			cmd := fmt.Sprintf(`fleetctl fd-forward %s`, t.Endpoint.Path)
-			fmt.Printf("cmd: %#v\n", cmd)
 			return ssh.DialCommand(sshClient, cmd)
 		}, nil
 	}
