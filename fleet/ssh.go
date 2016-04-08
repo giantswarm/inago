@@ -85,7 +85,7 @@ func (t *sshTunnel) IsActive() bool {
 }
 
 // NewDialFunc returns an http.Dial function which uses the given ssh tunnel to
-// to connect to the configured endpoint.
+// connect to the configured endpoint.
 func (t *sshTunnel) NewDialFunc() (func(string, string) (net.Conn, error), error) {
 	forwardAgent := true
 	sshClient, err := ssh.NewSSHClient(t.Username, t.Tunnel, t.NewHostKeyChecker(), forwardAgent, t.Timeout)
@@ -119,7 +119,6 @@ func (t *sshTunnel) NewHostKeyChecker() *ssh.HostKeyChecker {
 func (t *sshTunnel) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.Mutex.Lock()
 
-	fmt.Printf("req.URL.Path: %#v?%s\n", req.URL.Path, req.URL.Query().Encode())
 	resp, err := t.HTTPTransport.RoundTrip(req)
 
 	/**
