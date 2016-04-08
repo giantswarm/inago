@@ -63,19 +63,21 @@ var (
 			newFleetConfig := fleet.DefaultConfig()
 			newFleetConfig.Endpoint = *URL
 			newFleetConfig.Logger = newLogger
-			newSSHTunnelConfig := fleet.DefaultSSHTunnelConfig()
-			newSSHTunnelConfig.Endpoint = *URL
-			newSSHTunnelConfig.KnownHostsFile = globalFlags.SSHKnownHostsFile
-			newSSHTunnelConfig.Logger = newLogger
-			newSSHTunnelConfig.StrictHostKeyChecking = globalFlags.SSHStrictHostKeyChecking
-			newSSHTunnelConfig.Timeout = globalFlags.SSHTimeout
-			newSSHTunnelConfig.Tunnel = globalFlags.Tunnel
-			newSSHTunnelConfig.Username = globalFlags.SSHUsername
-			newSSHTunnel, err := fleet.NewSSHTunnel(newSSHTunnelConfig)
-			if err != nil {
-				panic(err)
+			if globalFlags.Tunnel != "" {
+				newSSHTunnelConfig := fleet.DefaultSSHTunnelConfig()
+				newSSHTunnelConfig.Endpoint = *URL
+				newSSHTunnelConfig.KnownHostsFile = globalFlags.SSHKnownHostsFile
+				newSSHTunnelConfig.Logger = newLogger
+				newSSHTunnelConfig.StrictHostKeyChecking = globalFlags.SSHStrictHostKeyChecking
+				newSSHTunnelConfig.Timeout = globalFlags.SSHTimeout
+				newSSHTunnelConfig.Tunnel = globalFlags.Tunnel
+				newSSHTunnelConfig.Username = globalFlags.SSHUsername
+				newSSHTunnel, err := fleet.NewSSHTunnel(newSSHTunnelConfig)
+				if err != nil {
+					panic(err)
+				}
+				newFleetConfig.SSHTunnel = newSSHTunnel
 			}
-			newFleetConfig.SSHTunnel = newSSHTunnel
 			newFleet, err = fleet.NewFleet(newFleetConfig)
 			if err != nil {
 				panic(err)
