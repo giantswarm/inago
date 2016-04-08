@@ -7,22 +7,32 @@ It should be noted that this is a demo, and there are dangers to using it in a p
 Saying that, if you want to do so, and have questions, the team is always available on IRC (`#giantswarm` on `freenode`) <3
 
 ## Setup
-- We're using a CoreOS cluster running locally, with Vagrant. See https://coreos.com/os/docs/latest/booting-on-vagrant.html for further information.
+- This demo can be run on any standard fleet cluster.
+For running it locally, we're using a CoreOS cluster running locally, with Vagrant.
+See https://coreos.com/os/docs/latest/booting-on-vagrant.html for further information.
 - There are three nodes in the cluster, and each node has 2048MB of memory allocated to it.
-- The `inago` binary, as well as the `elasticsearch` directory from `example`, have been copied to all the nodes in the cluster.
+This large allocation is to give Elasticsearch more than enough space for heap.
+- The `inago` binary, as well as the `elasticsearch` directory from `example`,
+have been copied to all the nodes in the cluster.
 
 ## Starting the Elasticsearch cluster
-We're going to use Inago's `up` command to bring up multiple group slices of the `elasticsearch` group. `up` is equivalent to `submit`, followed by `start`.
+We're going to use Inago's `up` command to bring up multiple group slices of the `elasticsearch` group.
+`up` is equivalent to `submit`, followed by `start`.
 
-Due to the `Conflicts` statement in the unit file for the group, each group slice will be automatically scheduled onto a separate machine.
+Due to the `Conflicts` statement in the unit file for the group,
+each group slice will be automatically scheduled onto a separate machine.
 ```
 core@core-01 ~ $ ./inagoctl up elasticsearch 3
 2016-04-06 16:57:39.644 | INFO     | context.Background: Succeeded to submit group 'elasticsearch'.
 2016-04-06 16:57:46.656 | INFO     | context.Background: Succeeded to start 3 slices for group 'elasticsearch': [1f4 8f1 9e9].
 ```
-As you can see, the `elasticsearch` group has been submitted and started. Each group slice has an ID, which can be seen in the output.
+As you can see, the `elasticsearch` group has been submitted and started.
+Each group slice has an ID, which can be seen in the output.
 
-We can use the `status` command to inspect the state of the group. The _verbose_ flag is used so that the hash of the unit file is also printed. This will be interesting later, after we upgrade Elasticsearch. You can also see that the group slices have been scheduled onto multiple machines.
+We can use the `status` command to inspect the state of the group.
+The _verbose_ flag is used so that the hash of the unit file is also printed.
+This will be interesting later, after we upgrade Elasticsearch.
+You can also see that the group slices have been scheduled onto multiple machines.
 ```
 core@core-01 ~ $ ./inagoctl status -v elasticsearch
 Group              Units                      FDState   FCState   SAState  Hash                                      IP            Machine
@@ -88,7 +98,9 @@ core@core-02 ~ $ curl -XGET '172.17.8.101:9200/inago-example-test-index/external
 ```
 
 ## Updating the Elasticsearch cluster
-Inago operates on _groups_ of unit files. If we look at the `elasticsearch@.service` file, in the `elasticsearch` directory, you can see the unit file for the group we're using in this example.
+Inago operates on _groups_ of unit files.
+If we look at the `elasticsearch@.service` file, in the `elasticsearch` directory,
+you can see the unit file for the group we're using in this example.
 
 The Docker image for this unit is set via the line:
 ```
@@ -126,7 +138,9 @@ Next, we're going to use the `update` command from Inago to perform the update o
 core@core-01 ~ $ ./inagoctl update elasticsearch --max-growth=1 --min-alive=2 --ready-secs=60
 2016-04-06 17:11:54.026 | INFO     | context.Background: Succeeded to update 3 slices for group 'elasticsearch': [184 372 88f].
 ```
-The arguments used here mean that Inago is allowed to create one additional slice during the update (meaning there will be no more than four instances of Elasticsearch running at any time), and that at least two instances of Elasticsearch have to be running at any time.
+The arguments used here mean that Inago is allowed to create one additional slice
+during the update (meaning there will be no more than four instances of Elasticsearch running at any time),
+and that at least two instances of Elasticsearch have to be running at any time.
 
 The `ready-secs` flag determines how long to wait between rounds of updating.
 This value gives Elasticsearch enough time to replicate any necessary data.
@@ -157,7 +171,8 @@ core@core-02 ~ $ curl -XGET 'http://172.17.8.101:9200/_cluster/health?pretty=tru
 }
 ```
 
-If we had been watching this during the update, we would have seen the Elasticsearch cluster status change between green and yellow, as nodes were added and removed.
+If we had been watching this during the update, we would have seen the Elasticsearch
+cluster status change between green and yellow, as nodes were added and removed.
 The status would never go to red.
 
 We can also check the current version of Elasticsearch running again, via Elasticsearch itself.
@@ -202,6 +217,10 @@ elasticsearch@372  elasticsearch@372.service  launched  launched  active   32e72
 elasticsearch@88f  elasticsearch@88f.service  launched  launched  active   32e7209e49f5ef1c1116fa33c6481aafed8ea46b  172.17.8.102  2dbbe125e237410bb946e7b0f6b95e4c
 ```
 
-That's all, folks! We have managed to start up an Elasticsearch cluster, write data to it, and perform a rolling update on it, all thanks to Inago.
+That's all, folks!
+We have managed to start up an Elasticsearch cluster,
+write data to it, and perform a rolling update on it, all thanks to Inago.
 
-The techniques used here are in no way specific to Elasticsearch. Due to Inago building on top of fleet and systemd unit files, all kinds of distributed systems can be orchestrated with Inago.
+The techniques used here are in no way specific to Elasticsearch.
+Due to Inago building on top of fleet and systemd unit files,
+all kinds of distributed systems can be orchestrated with Inago.
