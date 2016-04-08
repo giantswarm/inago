@@ -2,6 +2,7 @@ package fleet
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -118,8 +119,42 @@ func (t *sshTunnel) NewHostKeyChecker() *ssh.HostKeyChecker {
 // simply a synchronized wrapper to the underlying http.Transport.
 func (t *sshTunnel) RoundTrip(req *http.Request) (*http.Response, error) {
 	t.Mutex.Lock()
-	defer t.Mutex.Unlock()
 
-	fmt.Printf("req.URL.Path: %#v\n", req.URL.Path)
-	return t.HTTPTransport.RoundTrip(req)
+	fmt.Printf("req.URL.Path: %#v?%s\n", req.URL.Path, req.URL.Query().Encode())
+	resp, err := t.HTTPTransport.RoundTrip(req)
+
+	/**
+	Learning:
+
+	The fleet ssh tunnel does not support (for unknown reasons) more than one
+	command-session in parallel. Just adding a mutex here does not 100% help,
+	as the connection is only returned to the idle pool when the body gets closed.
+	If multiple go routines try to call RoundTrip() the first one performs the request,
+	then return the response. Then the second goroutine would start calling its
+	request and since the initial connection is not yet closed would try to open a second
+	connection which would fail with "forward request denied".
+
+	Thus we only unlock the mutex when the body of the response has been closed.
+	This ensures the connection has been returned to the pool.
+	**/
+	resp.Body = &synchronousReadCloser{
+		body:  resp.Body,
+		mutex: &t.Mutex,
+	}
+
+	return resp, err
+}
+
+type synchronousReadCloser struct {
+	body  io.ReadCloser
+	mutex *sync.Mutex
+}
+
+func (s *synchronousReadCloser) Read(p []byte) (n int, err error) {
+	return s.body.Read(p)
+}
+
+func (s *synchronousReadCloser) Close() error {
+	defer s.mutex.Unlock()
+	return s.body.Close()
 }
