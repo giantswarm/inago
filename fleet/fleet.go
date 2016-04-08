@@ -28,9 +28,9 @@ const (
 // Config provides all necessary and injectable configurations for a new
 // fleet client.
 type Config struct {
-	Client   *http.Client
-	Endpoint url.URL
-	Tunnel   SSHTunnel
+	Client    *http.Client
+	Endpoint  url.URL
+	SSHTunnel SSHTunnel
 
 	// Logger provides an initialised logger.
 	Logger logging.Logger
@@ -45,10 +45,10 @@ func DefaultConfig() Config {
 	}
 
 	newConfig := Config{
-		Client:   &http.Client{},
-		Endpoint: *URL,
-		Logger:   logging.NewLogger(logging.DefaultConfig()),
-		Tunnel:   SSHTunnel{},
+		Client:    &http.Client{},
+		Endpoint:  *URL,
+		Logger:    logging.NewLogger(logging.DefaultConfig()),
+		SSHTunnel: nil,
 	}
 
 	return newConfig
@@ -132,22 +132,12 @@ type Fleet interface {
 func NewFleet(config Config) (Fleet, error) {
 	var trans http.RoundTripper
 
-	tunneling := config.Tunnel.Tunnel != ""
 	// If a tunnel is provided we need to overwrite the http.Transport.Dial function
 	// to use the tunnel
-	if tunneling {
-		trans = &http.Transport{
-			Dial: config.Tunnel.NewDialFunc(config),
-		}
-		// The Path field is only used for dialing and should not be used when
-		// building any further HTTP requests.
+	if config.SSHTunnel != nil && config.SSHTunnel.IsActive() {
+		trans = config.SSHTunnel
 		config.Endpoint.Path = ""
-
-		// http.Client doesn't support the schemes "unix" or "file", but it
-		// is safe to use "http" as dialFunc ignores it anyway.
 		config.Endpoint.Scheme = "http"
-
-		// The Host field is not used for dialing, but will be exposed in debug logs.
 		config.Endpoint.Host = "domain-sock"
 	} else {
 		switch config.Endpoint.Scheme {
@@ -178,7 +168,6 @@ func NewFleet(config Config) (Fleet, error) {
 	}
 
 	config.Client.Transport = trans
-
 	client, err := client.NewHTTPClient(config.Client, config.Endpoint)
 	if err != nil {
 		return nil, maskAny(err)
