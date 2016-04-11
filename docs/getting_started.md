@@ -9,6 +9,22 @@ of unit files.
 Additionally, it provides more sugar on top like rolling updates with different
 strategies.
 
+## Getting Inago
+#### Brew
+Install inagoctl via brew.
+```
+$ brew tap giantswarm/giantswarm
+$ brew install inagoctl
+```
+
+#### Binaries
+Download binaries for Linux and Mac OSX: https://github.com/giantswarm/inago/releases
+
+#### Source
+Clone the git repository: `git@github.com:giantswarm/inago.git`
+
+## Running Inago
+
 ## Prerequisites
 
 Inago requires a certain directory structure and unit file names to make the
