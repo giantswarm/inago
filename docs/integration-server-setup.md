@@ -10,6 +10,8 @@ Since the integration tests run in your docker machine (not the fleet machine), 
 provide it with an IP. We use port forwarding on your host for this.
 Set the `FLEET_ENDPOINT` environment variable to `http://ip:491563`, with the IP listed
 under the vboxnet interface of your docker-machine.
+The integration test suite also tests the `--tunnel` flag. Set the
+`INAGO_TUNNEL_ENDPOINT` to `ip:2202`, with the same ip as the `FLEET_ENDPOINT`.
 
 ```
 $ ifconfig
