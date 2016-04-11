@@ -9,4 +9,5 @@ Here we document important concepts and functionality Inago supports.
 - [Unit file structure](structure.md)
 - [Terminology](terminology.md)
 - [Deploy Kubernetes on CoreOS with Inago](k8s.md)
+- [Deploy Elasticsearch with Inago](elasticsearch.md)
 - [Running integration tests](integration-server-setup.md)
