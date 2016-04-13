@@ -6,7 +6,7 @@ GOPATH := $(BUILD_PATH)
 INT_TESTS_PATH := $(shell pwd)/int-tests
 VAGRANT_PATH := $(INT_TESTS_PATH)/vagrant
 
-GOVERSION=1.6
+GOVERSION=1.6.1
 
 BIN := $(PROJECT)ctl
 

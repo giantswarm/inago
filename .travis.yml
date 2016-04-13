@@ -3,7 +3,7 @@ sudo: false # Explicitly use container-based infrastructure
 language: go
 
 go:
-    - 1.6
+    - 1.6.1
     
 env:
     global:
