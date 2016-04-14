@@ -19,6 +19,10 @@ Modify unit
 Update unit
 
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=1
+  .*\|\scontroller: removing units \[([a-z0-9]{3})\] (re)
+  .*\|\scontroller: adding units \[([a-z0-9]{3})\] (re)
+  .*\|\scontroller: adding units \[([a-z0-9]{3})\] (re)
+  .*\|\scontroller: removing units \[([a-z0-9]{3})\] (re)
   .*\|\scontext.Background: Succeeded to update 2 slices for group '006-max-growth-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
   $ sleep 3
 
