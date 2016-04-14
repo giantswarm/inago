@@ -5,12 +5,12 @@ on units running on remote machines from our local environment. Simply add the
 `--tunnel` flag like with `fleetctl`.
 
 Fetching the status of `mygroup` running at `my.remote.host` could work like
-that.
+this.
 ```
 inagoctl --tunnel=my.remote.host status mygroup
 ```
 
-Updating `mygroup` running at `my.remote.host` could work like that. Note that
+Updating `mygroup` running at `my.remote.host` could work like this. Note that
 the updated unit files need to be located where `inagoctl update` is executed.
 ```
 inagoctl --tunnel=my.remote.host update mygroup
