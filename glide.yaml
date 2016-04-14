@@ -1,0 +1,16 @@
+package: github.com/giantswarm/inago
+import:
+- package: github.com/coreos/fleet
+  version: 76516ab4ae194e37aaae9c1f2fa5090553e541f3
+- package: github.com/juju/errgo
+- package: github.com/mattn/go-isatty
+- package: github.com/op/go-logging
+- package: github.com/ryanuber/columnize
+- package: github.com/satori/go.uuid
+- package: github.com/spf13/cobra
+- package: golang.org/x/net
+- package: github.com/onsi/gomega
+- package: github.com/stretchr/testify
+- package: github.com/davecgh/go-spew
+- package: github.com/pmezard/go-difflib
+- package: github.com/stretchr/objx

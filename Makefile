@@ -22,7 +22,9 @@ BUILD_COMMAND=go build\
  				-a -ldflags \
 				"-X github.com/giantswarm/inago/cli.projectVersion=$(VERSION) -X github.com/giantswarm/inago/cli.projectBuild=$(COMMIT)" \
 				-o $(BIN)
-TEST_COMMAND=./go.test.sh
+#TEST_COMMAND=./go.test.sh
+#TEST_COMMAND=go test $$(go list ./... | grep -v vendor)
+TEST_COMMAND=bash -c 'cd .gobuild/src/github.com/giantswarm/inago && go test $$(go list ./... | grep -v vendor)'
 
 all: $(BIN)
 
@@ -34,21 +36,21 @@ clean:
 	@rm -f $(GS_PATH)/$(PROJECT) && cd "$(GS_PATH)" && ln -s ../../../.. $(PROJECT)
 	#
 	# Fetch and pin packages
-	@builder get dep -b 76516ab4ae194e37aaae9c1f2fa5090553e541f3 https://github.com/coreos/fleet.git $(GOPATH)/src/github.com/coreos/fleet
-	@builder get dep -b 08cceb5d0b5331634b9826762a8fd53b29b86ad8 https://github.com/juju/errgo.git $(GOPATH)/src/github.com/juju/errgo
-	@builder get dep -b 65a708cee0a4424f4e353d031ce440643e312f92 https://github.com/spf13/cobra.git $(GOPATH)/src/github.com/spf13/cobra
-	@builder get dep -b 7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7 https://github.com/spf13/pflag.git $(GOPATH)/src/github.com/spf13/pflag
-	@builder get dep -b 983d3a5fab1bf04d1b412465d2d9f8430e2e917e https://github.com/ryanuber/columnize.git $(GOPATH)/src/github.com/ryanuber/columnize
-	@builder get dep -b e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502 https://github.com/satori/go.uuid.git $(GOPATH)/src/github.com/satori/go.uuid
-	@builder get dep -b 56b76bdf51f7708750eac80fa38b952bb9f32639 https://github.com/mattn/go-isatty.git $(GOPATH)/src/github.com/mattn/go-isatty
-	@builder get dep -b e7da8edaa52631091740908acaf2c2d4c9b3ce90 https://github.com/golang/net.git $(GOPATH)/src/golang.org/x/net
-	@builder get dep -b d2e44aa77b7195c0ef782189985dd8550e22e4de https://github.com/op/go-logging.git $(GOPATH)/src/github.com/op/go-logging
-
-	@builder get dep https://github.com/onsi/gomega.git $(GOPATH)/src/github.com/onsi/gomega
-	@builder get dep https://github.com/stretchr/testify.git $(GOPATH)/src/github.com/stretchr/testify
-	@builder get dep https://github.com/davecgh/go-spew.git $(GOPATH)/src/github.com/davecgh/go-spew
-	@builder get dep https://github.com/pmezard/go-difflib.git $(GOPATH)/src/github.com/pmezard/go-difflib
-	@builder get dep https://github.com/stretchr/objx.git $(GOPATH)/src/github.com/stretchr/objx
+	# @builder get dep -b 76516ab4ae194e37aaae9c1f2fa5090553e541f3 https://github.com/coreos/fleet.git $(GOPATH)/src/github.com/coreos/fleet
+	# @builder get dep -b 08cceb5d0b5331634b9826762a8fd53b29b86ad8 https://github.com/juju/errgo.git $(GOPATH)/src/github.com/juju/errgo
+	# @builder get dep -b 65a708cee0a4424f4e353d031ce440643e312f92 https://github.com/spf13/cobra.git $(GOPATH)/src/github.com/spf13/cobra
+	# @builder get dep -b 7f60f83a2c81bc3c3c0d5297f61ddfa68da9d3b7 https://github.com/spf13/pflag.git $(GOPATH)/src/github.com/spf13/pflag
+	# @builder get dep -b 983d3a5fab1bf04d1b412465d2d9f8430e2e917e https://github.com/ryanuber/columnize.git $(GOPATH)/src/github.com/ryanuber/columnize
+	# @builder get dep -b e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502 https://github.com/satori/go.uuid.git $(GOPATH)/src/github.com/satori/go.uuid
+	# @builder get dep -b 56b76bdf51f7708750eac80fa38b952bb9f32639 https://github.com/mattn/go-isatty.git $(GOPATH)/src/github.com/mattn/go-isatty
+	# @builder get dep -b e7da8edaa52631091740908acaf2c2d4c9b3ce90 https://github.com/golang/net.git $(GOPATH)/src/golang.org/x/net
+	# @builder get dep -b d2e44aa77b7195c0ef782189985dd8550e22e4de https://github.com/op/go-logging.git $(GOPATH)/src/github.com/op/go-logging
+	# 
+	# @builder get dep https://github.com/onsi/gomega.git $(GOPATH)/src/github.com/onsi/gomega
+	# @builder get dep https://github.com/stretchr/testify.git $(GOPATH)/src/github.com/stretchr/testify
+	# @builder get dep https://github.com/davecgh/go-spew.git $(GOPATH)/src/github.com/davecgh/go-spew
+	# @builder get dep https://github.com/pmezard/go-difflib.git $(GOPATH)/src/github.com/pmezard/go-difflib
+	# @builder get dep https://github.com/stretchr/objx.git $(GOPATH)/src/github.com/stretchr/objx
 
 deps:
 	@${MAKE} -B -s .gobuild
