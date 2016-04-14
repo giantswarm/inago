@@ -12,7 +12,7 @@ Restart=on-failure
 						StartLimitBurst=3
 						TimeoutStartSec=0
 						EnvironmentFile=/etc/network-environment
-						Environment="IMAGE=giantswarm/k8s-proxy:1.0.1"
+						Environment="IMAGE=giantswarm/k8s-proxy:1.2.0"
 						Environment="NAME=%p-%i.service"
 						Environment="NETWORK_CONFIG_CONTAINER="
 						ExecStartPre=/usr/bin/docker pull $IMAGE
