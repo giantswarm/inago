@@ -13,7 +13,7 @@ StartLimitInterval=300s
 StartLimitBurst=3
 TimeoutStartSec=0
 EnvironmentFile=/etc/environment
-Environment="IMAGE=registry.giantswarm.io/giantswarm/k8s-controller-manager:latest"
+Environment="IMAGE=giantswarm/k8s-controller-manager:1.0.1"
 Environment="NAME=%p.service"
 Environment="NETWORK_CONFIG_CONTAINER="
 ExecStartPre=/usr/bin/docker pull $IMAGE
