@@ -22,6 +22,5 @@ Modify unit and perform update
 
 Shut down
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} stop $GROUP >050.out 2>&1
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP -v >061.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} status $GROUP >065.out 2>&1
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy $GROUP >070.out 2>&1
