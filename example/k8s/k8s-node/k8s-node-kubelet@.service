@@ -12,7 +12,7 @@ StartLimitInterval=300s
 StartLimitBurst=3
 TimeoutStartSec=0
 EnvironmentFile=/etc/network-environment
-Environment="IMAGE=giantswarm/k8s-kubelet:1.0.2"
+Environment="IMAGE=giantswarm/k8s-kubelet:1.0.1"
 Environment="NAME=%p-%i.service"
 Environment="NETWORK_CONFIG_CONTAINER="
 ExecStartPre=/usr/bin/docker pull $IMAGE
