@@ -134,6 +134,8 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 }
 
 func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOptions) (Request, error) {
+	c.Config.Logger.Info(ctx, "controller: adding units")
+
 	// Create new random IDs.
 	req.DesiredSlices = 1
 	req.SliceIDs = nil
@@ -185,6 +187,7 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 }
 
 func (c controller) runRemoveWorker(ctx context.Context, req Request) error {
+	c.Config.Logger.Info(ctx, "controller: removing units")
 	c.Config.Logger.Debug(ctx, "controller: executing stop action, req: %v", req)
 	// Stop.
 	if err := c.executeTaskAction(c.Stop, ctx, req); err != nil {
@@ -318,6 +321,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				return maskAny(err)
 			}
 			if ok {
+				ctx = context.WithValue(ctx, "slice ID", sliceID)
 				// we increase the addInProgress counter before starting the goroutine
 				// to avoid a race condition in the allowed calculation
 				atomic.AddInt64(&addInProgress, 1)
