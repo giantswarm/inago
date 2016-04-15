@@ -35,10 +35,10 @@ Changing content of update-group-bar unit file.
 
 Update update-group.
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update --max-growth 2 --min-alive 1 $GROUP
-  .*\|\scontroller: adding units \[([a-z0-9]{3})\] (re)
-  .*\|\scontroller: adding units \[([a-z0-9]{3})\] (re)
-  .*\|\scontroller: removing units \[([a-z0-9]{3})\] (re)
-  .*\|\scontroller: removing units \[([a-z0-9]{3})\] (re)
+  .*\|\scontext.Background.WithValue("task-id", "([a-z0-9-])").WithValue("slice ID", "([a-z0-9]{3})"): controller: adding units (re)
+  .*\|\scontext.Background.WithValue("task-id", "([a-z0-9-])").WithValue("slice ID", "([a-z0-9]{3})"): controller: adding units (re)
+  .*\|\scontext.Background.WithValue("task-id", "([a-z0-9-])").WithValue("slice ID", "([a-z0-9]{3})"): controller: removing units (re)
+  .*\|\scontext.Background.WithValue("task-id", "([a-z0-9-])").WithValue("slice ID", "([a-z0-9]{3})"): controller: removing units (re)
   .*\|\scontext.Background: Succeeded to update 2 slices for group '002-update-group': \[([a-z0-9]{3}\s?){2}\]. (re)
 
 Test the status of the updated group.

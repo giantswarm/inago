@@ -144,7 +144,7 @@ func (c controller) addFirst(ctx context.Context, req Request, opts UpdateOption
 }
 
 func (c controller) runAddWorker(ctx context.Context, req Request, opts UpdateOptions) (Request, error) {
-	c.Config.Logger.Info(nil, "controller: adding units %v", req.SliceIDs)
+	c.Config.Logger.Info(ctx, "controller: adding units")
 
 	// Create new random IDs.
 	req.DesiredSlices = 1
@@ -197,7 +197,7 @@ func (c controller) removeFirst(ctx context.Context, req Request, opts UpdateOpt
 }
 
 func (c controller) runRemoveWorker(ctx context.Context, req Request) error {
-	c.Config.Logger.Info(nil, "controller: removing units %v", req.SliceIDs)
+	c.Config.Logger.Info(ctx, "controller: removing units")
 	c.Config.Logger.Debug(ctx, "controller: executing stop action, req: %v", req)
 	// Stop.
 	if err := c.executeTaskAction(c.Stop, ctx, req); err != nil {
