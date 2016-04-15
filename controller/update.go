@@ -72,20 +72,20 @@ func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, 
 	return len(sliceIDs), nil
 }
 
-func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int, removalInProgress *int64) (bool, error) {
+func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int, removeInProgress *int64) (bool, error) {
 	c.Config.Logger.Debug(ctx, "controller: checking group removal allowed, req: %v", req)
 
 	c.Config.Logger.Debug(
-		ctx, "controller: removalInProgress: %v, minAlive: %v",
-		*removalInProgress, minAlive,
+		ctx, "controller: removeInProgress: %v, minAlive: %v",
+		*removeInProgress, minAlive,
 	)
 
-	if (minAlive - int(*removalInProgress)) > 0 {
-		c.Config.Logger.Debug(ctx, "controller: group removal allowed ((minAlive - int(removalInProgress)) > 0)")
+	if (minAlive - int(*removeInProgress)) > 0 {
+		c.Config.Logger.Debug(ctx, "controller: group removal allowed ((minAlive - int(removeInProgress)) > 0)")
 		return true, nil
 	}
 
-	c.Config.Logger.Debug(ctx, "controller: group removal not allowed ((minAlive - int(removalInProgress)) <= 0)")
+	c.Config.Logger.Debug(ctx, "controller: group removal not allowed ((minAlive - int(removeInProgress)) <= 0)")
 	return false, nil
 }
 
@@ -346,7 +346,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 			// remove
 			// we are only allowed to remove if the number of minAlive slices
 			// minus the ones, that are beeing removed right now is greater than 0
-			//=> (minAlive - int(removalInProgress)) > 0)
+			//=> (minAlive - int(removeInProgress)) > 0)
 			c.Config.Logger.Debug(
 				ctx, "controller: opts.MinAlive: %v, removeInProgress: %v",
 				opts.MinAlive, int(removeInProgress),
