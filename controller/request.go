@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -49,6 +50,8 @@ func NewRequest(config RequestConfig) Request {
 		RequestConfig: config,
 		Units:         []Unit{},
 	}
+
+	req.Group = strings.TrimRight(req.Group, "/")
 
 	return req
 }

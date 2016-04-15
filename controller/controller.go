@@ -392,6 +392,10 @@ func (c controller) Update(ctx context.Context, req Request, opts UpdateOptions)
 			message: "to keep all current units alive, max growth must be greater than 0",
 			broken:  opts.MinAlive == numRunning && opts.MaxGrowth < 1,
 		},
+		{
+			message: "number of units of unsliced groups must not be allowed to grow",
+			broken:  !req.isSliceable() && opts.MaxGrowth > 0,
+		},
 	}
 	for _, rule := range updateAllowedRules {
 		if rule.broken {
