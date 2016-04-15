@@ -21,8 +21,8 @@ Update unit
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=1
   .*controller: removing units (re)
   .*controller: adding units (re)
-  .*controller: adding units (re)
   .*controller: removing units (re)
+  .*controller: adding units (re)
   .*\|\scontext.Background: Succeeded to update 2 slices for group '006-max-growth-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
   $ sleep 3
 
