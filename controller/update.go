@@ -72,47 +72,37 @@ func (c controller) getNumRunningSlices(ctx context.Context, req Request) (int, 
 	return len(sliceIDs), nil
 }
 
-func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int) (bool, error) {
+func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minAlive int, removeInProgress *int64) (bool, error) {
 	c.Config.Logger.Debug(ctx, "controller: checking group removal allowed, req: %v", req)
 
-	numRunning, err := c.getNumRunningSlices(ctx, req)
-	if err != nil {
-		return false, maskAny(err)
-	}
-
 	c.Config.Logger.Debug(
-		ctx, "controller: numRunning: %v, minAlive: %v",
-		numRunning, minAlive,
+		ctx, "controller: removeInProgress: %v, minAlive: %v",
+		*removeInProgress, minAlive,
 	)
 
-	if numRunning > minAlive {
-		c.Config.Logger.Debug(ctx, "controller: group removal allowed (numRunning > minAlive)")
+	if (minAlive - int(*removeInProgress)) > 0 {
+		c.Config.Logger.Debug(ctx, "controller: group removal allowed ((minAlive - int(removeInProgress)) > 0)")
 		return true, nil
 	}
 
-	c.Config.Logger.Debug(ctx, "controller: group removal not allowed (numRunning <= minAlive)")
+	c.Config.Logger.Debug(ctx, "controller: group removal not allowed ((minAlive - int(removeInProgress)) <= 0)")
 	return false, nil
 }
 
-func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, maxGrowth int) (bool, error) {
+func (c controller) isGroupAdditionAllowed(ctx context.Context, req Request, maxGrowth int, additionInProgress *int64) (bool, error) {
 	c.Config.Logger.Debug(ctx, "controller: checking group addition allowed, req: %v", req)
 
-	numRunning, err := c.getNumRunningSlices(ctx, req)
-	if err != nil {
-		return false, maskAny(err)
-	}
-
 	c.Config.Logger.Debug(
-		ctx, "controller: numRunning: %v, maxGrowth: %v",
-		numRunning, maxGrowth,
+		ctx, "controller: additionInProgress: %v, maxGrowth: %v",
+		*additionInProgress, maxGrowth,
 	)
 
-	if numRunning < maxGrowth {
-		c.Config.Logger.Debug(ctx, "controller: group addition allowed (numRunning < maxGrowth)")
+	if (maxGrowth - int(*additionInProgress)) > 0 {
+		c.Config.Logger.Debug(ctx, "controller: group addition allowed ((maxGrowth  - additionInProgress) > 0)")
 		return true, nil
 	}
 
-	c.Config.Logger.Debug(ctx, "controller: group addition not allowed (numRunning >= maxGrowth)")
+	c.Config.Logger.Debug(ctx, "controller: group addition not allowed ((maxGrowth  - additionInProgress) <= 0)")
 	return false, nil
 }
 
@@ -277,8 +267,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 	done := make(chan struct{}, numTotal)
 
-	var addInProgress int64
-	var removeInProgress int64
+	var addInProgress, removeInProgress int64
 
 	c.Config.Logger.Debug(ctx, "controller: checking if request is sliceable")
 	if !req.isSliceable() {
@@ -312,29 +301,29 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 			c.Config.Logger.Debug(ctx, "controller: attempting to add slice: %v", sliceID)
 
 			currentSliceReq := req
-			// Calculating the number of groups allowed to be added during this
-			// iteration respects the total number of running groups. This is because
-			// we later going to check how many are actually running after the
-			// addition. So the next iteration will calculate and check again and
-			// respect the total number of running groups. See also
-			// isGroupAdditionAllowed.
-			maxGrowth := opts.MaxGrowth + numTotal - int(addInProgress)
+			// We try to add slices first. We are only allowed to increase to number
+			// slices if the MaxGrowth value minus the additions that are currently
+			// in progress is greater than zero.
+			// => ((opts.MaxGrowth  - additionInProgress) > 0)
+			// See also isGroupAdditionAllowed.
 			c.Config.Logger.Debug(
-				ctx, "controller: opts.MaxGrowth: %v, numTotal: %v, opts.MinAlive: %v, addInProgress: %v, maxGrowth: %v",
-				opts.MaxGrowth, numTotal, opts.MinAlive, int(addInProgress), maxGrowth,
+				ctx, "controller: opts.MaxGrowth: %v, numTotal: %v, opts.MinAlive: %v, addInProgress: %v",
+				opts.MaxGrowth, numTotal, opts.MinAlive, int(addInProgress),
 			)
 
 			c.Config.Logger.Debug(ctx, "controller: currentSliceIDs: %v", currentSliceIDs)
 			currentSliceReq.SliceIDs = currentSliceIDs
-			ok, err := c.isGroupAdditionAllowed(ctx, currentSliceReq, maxGrowth)
+			ok, err := c.isGroupAdditionAllowed(ctx, currentSliceReq, opts.MaxGrowth, &addInProgress)
 			if err != nil {
 				return maskAny(err)
 			}
 			if ok {
-				go func() {
+				// we increase the addInProgress counter before starting the goroutine
+				// to avoid a race condition in the allowed calculation
+				atomic.AddInt64(&addInProgress, 1)
+				go func(ctx context.Context) {
 					ctx = context.WithValue(ctx, "add slice", sliceID)
 					c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", sliceID)
-					atomic.AddInt64(&addInProgress, 1)
 
 					newSliceIDs, err := c.addFirst(ctx, newReq, opts)
 					if err != nil {
@@ -348,30 +337,34 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 					atomic.AddInt64(&addInProgress, -1)
 					done <- struct{}{}
-				}()
+				}(ctx)
 
 				break
 			}
 
 			c.Config.Logger.Debug(ctx, "controller: attempting to remove slice: %v", sliceID)
 			// remove
-			minAlive := opts.MinAlive + int(removeInProgress)
+			// we are only allowed to remove if the number of minAlive slices
+			// minus the ones, that are beeing removed right now is greater than 0
+			//=> (minAlive - int(removeInProgress)) > 0)
 			c.Config.Logger.Debug(
-				ctx, "controller: opts.MinAlive: %v, removeInProgress: %v, minAlive: %v",
-				opts.MinAlive, int(removeInProgress), minAlive,
+				ctx, "controller: opts.MinAlive: %v, removeInProgress: %v",
+				opts.MinAlive, int(removeInProgress),
 			)
 
 			c.Config.Logger.Debug(ctx, "controller: currentSliceIDs: %v", currentSliceIDs)
 			currentSliceReq.SliceIDs = currentSliceIDs
-			ok, err = c.isGroupRemovalAllowed(ctx, currentSliceReq, minAlive)
+			ok, err = c.isGroupRemovalAllowed(ctx, currentSliceReq, opts.MinAlive, &removeInProgress)
 			if err != nil {
 				return maskAny(err)
 			}
 			if ok {
-				go func() {
+				// we increase the removeInProgress counter before starting the goroutine
+				// to avoid a race condition in the allowed calculation
+				atomic.AddInt64(&removeInProgress, 1)
+				go func(ctx context.Context) {
 					ctx = context.WithValue(ctx, "remove slice", sliceID)
 					c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", sliceID)
-					atomic.AddInt64(&removeInProgress, 1)
 
 					newSliceIDs, err := c.removeFirst(ctx, newReq, opts)
 					if err != nil {
@@ -385,7 +378,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 					atomic.AddInt64(&removeInProgress, -1)
 					done <- struct{}{}
-				}()
+				}(ctx)
 
 				break
 			}
