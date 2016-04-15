@@ -1117,6 +1117,30 @@ func TestController_UpdateValidation(t *testing.T) {
 				ReadySecs: 1,
 			},
 		},
+		// Test that growth of 8, a minalive of 3, with one running unit, does return an error.
+		{
+			fleetSetUp: func(f *fleetMock) {
+				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
+					[]fleet.UnitStatus{
+						{
+							Name:    "jabberwocky-unit.service",
+							Current: string(StatusRunning),
+						},
+					},
+					nil,
+				)
+			},
+			req: Request{
+				RequestConfig: RequestConfig{
+					Group: "jabberwocky",
+				},
+			},
+			opts: UpdateOptions{
+				MinAlive:  1,
+				MaxGrowth: 8,
+				ReadySecs: 1,
+			},
+		},
 	}
 
 	for _, test := range tests {
