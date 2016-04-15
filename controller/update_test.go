@@ -173,6 +173,7 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 		fleetSetUp          func(f fleet.Fleet)
 		req                 Request
 		minAlive            int
+		removeInProgress    int64
 		groupRemovalAllowed bool
 		errMatcher          func(err error) bool
 	}{
@@ -181,6 +182,25 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 		{
 			req:                 Request{},
 			minAlive:            0,
+			removeInProgress:    0,
+			groupRemovalAllowed: false,
+			errMatcher:          nil,
+		},
+		// Test group removal is allowed if we ask to keep 1 alive,
+		// and there is no removal in progress.
+		{
+			req:                 Request{},
+			minAlive:            1,
+			removeInProgress:    0,
+			groupRemovalAllowed: true,
+			errMatcher:          nil,
+		},
+		// Test group removal is not allowed if we ask to keep 1 alive,
+		// and there is 1 removal in progress.
+		{
+			req:                 Request{},
+			minAlive:            1,
+			removeInProgress:    1,
 			groupRemovalAllowed: false,
 			errMatcher:          nil,
 		},
@@ -193,7 +213,7 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 			test.fleetSetUp(dummyFleet)
 		}
 
-		groupRemovalAllowed, err := testController.isGroupRemovalAllowed(context.Background(), test.req, test.minAlive)
+		groupRemovalAllowed, err := testController.isGroupRemovalAllowed(context.Background(), test.req, test.minAlive, &test.removeInProgress)
 
 		if err != nil && test.errMatcher == nil {
 			t.Logf("%v: method returned unexpected error '%v'", i, err)
@@ -207,6 +227,71 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 
 		if groupRemovalAllowed != test.groupRemovalAllowed {
 			t.Logf("%v: returned bool '%v' did not match expected: '%v'", i, groupRemovalAllowed, test.groupRemovalAllowed)
+			t.Fail()
+		}
+	}
+}
+
+// TestIsGroupRemovalAllowed tests the isGroupRemovalAllowed method.
+func TestIsGroupAdditionAllowed(t *testing.T) {
+	var tests = []struct {
+		fleetSetUp           func(f fleet.Fleet)
+		req                  Request
+		maxGrowth            int
+		additionInProgress   int64
+		groupAdditionAllowed bool
+		errMatcher           func(err error) bool
+	}{
+		// Test group addition is not allowed if we ask to not grow,
+		// and there is no addition in progress.
+		{
+			req:                  Request{},
+			maxGrowth:            0,
+			additionInProgress:   0,
+			groupAdditionAllowed: false,
+			errMatcher:           nil,
+		},
+		// Test group addition is allowed if we ask to grow 1,
+		// and there is no removal in progress.
+		{
+			req:                  Request{},
+			maxGrowth:            1,
+			additionInProgress:   0,
+			groupAdditionAllowed: true,
+			errMatcher:           nil,
+		},
+		// Test group addition is not allowed if we ask to grow 1,
+		// and there is 1 addition in progress.
+		{
+			req:                  Request{},
+			maxGrowth:            1,
+			additionInProgress:   1,
+			groupAdditionAllowed: false,
+			errMatcher:           nil,
+		},
+	}
+
+	for i, test := range tests {
+		testController, dummyFleet := getTestController()
+
+		if test.fleetSetUp != nil {
+			test.fleetSetUp(dummyFleet)
+		}
+
+		groupAdditionAllowed, err := testController.isGroupAdditionAllowed(context.Background(), test.req, test.maxGrowth, &test.additionInProgress)
+
+		if err != nil && test.errMatcher == nil {
+			t.Logf("%v: method returned unexpected error '%v'", i, err)
+			t.Fail()
+		}
+
+		if err != nil && test.errMatcher != nil && !test.errMatcher(err) {
+			t.Logf("%v: method returned error '%v', which did not match expected error", i, err)
+			t.Fail()
+		}
+
+		if groupAdditionAllowed != test.groupAdditionAllowed {
+			t.Logf("%v: returned bool '%v' did not match expected: '%v'", i, groupAdditionAllowed, test.groupAdditionAllowed)
 			t.Fail()
 		}
 	}
