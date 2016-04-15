@@ -1117,7 +1117,8 @@ func TestController_UpdateValidation(t *testing.T) {
 				ReadySecs: 1,
 			},
 		},
-		// Test that growth of 8, a minalive of 3, with one running unit, does return an error.
+		// Test that growth of 8, a minalive of 1, with one running unit, does
+		// return an error. See also https://github.com/giantswarm/inago/issues/187
 		{
 			fleetSetUp: func(f *fleetMock) {
 				f.On("GetStatusWithMatcher", mock.AnythingOfType("func(string) bool")).Return(
