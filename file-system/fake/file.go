@@ -13,7 +13,7 @@ type file struct {
 	Dir     bool
 	Mode    os.FileMode
 	ModTime time.Time
-	Buffer  *bytes.Reader
+	Buffer  *bytes.Buffer
 }
 
 // newDir creates a new file instance based on a dir name. The default file
@@ -39,7 +39,7 @@ func newFile(name string, content []byte, perm os.FileMode) file {
 		Dir:     false,
 		Mode:    perm,
 		ModTime: time.Now(),
-		Buffer:  bytes.NewReader(content),
+		Buffer:  bytes.NewBuffer(content),
 	}
 }
 
@@ -50,20 +50,14 @@ func (f file) Close() error {
 
 // Read wraps io.Reader's functionality around the internal bytes.Reader
 // instance.
-func (f file) Read(p []byte) (n int, err error) {
-	return f.Buffer.Read(p)
+func (f file) Read(b []byte) (n int, err error) {
+	return f.Buffer.Read(b)
 }
 
-// ReadAt wraps io.ReaderAt's functionality around the internal bytes.Reader
+// Read wraps io.Writer's functionality around the internal bytes.Writer
 // instance.
-func (f file) ReadAt(p []byte, off int64) (n int, err error) {
-	return f.Buffer.ReadAt(p, off)
-}
-
-// Seek wraps io.Seeker's functionality around the internal bytes.Reader
-// instance.
-func (f file) Seek(offset int64, whence int) (int64, error) {
-	return f.Buffer.Seek(offset, whence)
+func (f file) Write(b []byte) (n int, err error) {
+	return f.Buffer.Write(b)
 }
 
 // Stat returns the fileInfo structure describing the file instance.

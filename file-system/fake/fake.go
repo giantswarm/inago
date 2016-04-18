@@ -29,7 +29,7 @@ func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 
 	for filename, fileInfo := range f.Storage {
 		dir := filepath.Base(dirname)
-		if strings.HasPrefix(filename, dir) && fileInfo.IsDir() {
+		if strings.HasPrefix(filename, dir) {
 			newFileInfos = append(newFileInfos, fileInfo)
 		}
 	}
@@ -50,11 +50,7 @@ func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 func (f *fake) ReadFile(filename string) ([]byte, error) {
 	if fi, ok := f.Storage[filename]; ok {
 		if c, ok := fi.(fileInfo); ok {
-			var b []byte
-			_, err := c.File.Read(b)
-			if err != nil {
-				return nil, maskAny(err)
-			}
+			b := c.File.Buffer.Bytes()
 			return b, nil
 		}
 
@@ -73,12 +69,14 @@ func (f *fake) ReadFile(filename string) ([]byte, error) {
 func (f *fake) WriteFile(filename string, bytes []byte, perm os.FileMode) error {
 	dir := filepath.Dir(filename)
 
-	var ps []string
-	for _, d := range strings.Split(filepath.FromSlash(dir), string(filepath.Separator)) {
-		ps = append(ps, d)
+	if dir != "." {
+		var ps []string
+		for _, d := range strings.Split(filepath.FromSlash(dir), string(filepath.Separator)) {
+			ps = append(ps, d)
 
-		p := filepath.Join(ps...)
-		f.Storage[p] = newDirFileInfo(p)
+			p := filepath.Join(ps...)
+			f.Storage[p] = newDirFileInfo(p)
+		}
 	}
 
 	f.Storage[filename] = newFileFileInfo(filename, bytes, perm)
