@@ -18,7 +18,7 @@ Modify unit
 
 Update unit
 
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=0
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=0 --ready-secs=5
   .*\|\scontext.Background: Succeeded to update 2 slices for group '007-min-alive-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
   $ sleep 3
 
