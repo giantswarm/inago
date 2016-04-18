@@ -15,7 +15,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 	testCases := []struct {
 		WriteFiles   []writeFiles
 		DirName      string
-		Expected     []string // expected dir names
+		Expected     []string // expected dir/file names
 		ErrorMatcher func(err error) bool
 	}{
 		{
@@ -63,19 +63,29 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     []string{"mydir", "mydir/foo", "mydir/foo/bar"},
+			Expected:     []string{"foo"},
 			ErrorMatcher: nil,
 		},
 		{
 			WriteFiles: []writeFiles{
 				{
+					FileName: "mydir/foo/zap/README.md",
+					Bytes:    []byte("readme"),
+					Perm:     os.ModePerm,
+				},
+				{
 					FileName: "mydir/foo/bar.txt",
+					Bytes:    []byte("bar"),
+					Perm:     os.ModePerm,
+				},
+				{
+					FileName: "mydir/foo/baz.ext",
 					Bytes:    []byte("baz"),
 					Perm:     os.ModePerm,
 				},
 			},
-			DirName:      "mydir",
-			Expected:     []string{"mydir", "mydir/foo", "mydir/foo/bar.txt"},
+			DirName:      "mydir/foo",
+			Expected:     []string{"zap", "bar.txt", "baz.ext"},
 			ErrorMatcher: nil,
 		},
 		{
@@ -86,9 +96,9 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 					Perm:     os.ModePerm,
 				},
 			},
-			DirName:      "mydir",
-			Expected:     []string{"mydir", "mydir/foo", "mydir/foo/bar.ext"},
-			ErrorMatcher: nil,
+			DirName:      "mydir/foo/bar.ext",
+			Expected:     nil,
+			ErrorMatcher: IsNotADirectory,
 		},
 	}
 
@@ -191,6 +201,23 @@ func Test_FileSystem_ReadFile(t *testing.T) {
 			},
 			FileName:     "foo/bar.jpg",
 			Expected:     "content",
+			ErrorMatcher: nil,
+		},
+		{
+			WriteFiles: []writeFiles{
+				{
+					FileName: "foo/bar.jpg",
+					Bytes:    []byte("content"),
+					Perm:     os.ModePerm,
+				},
+				{
+					FileName: "foo/ab/cd/bar.jpg",
+					Bytes:    []byte("11111"),
+					Perm:     os.ModePerm,
+				},
+			},
+			FileName:     "foo/ab/cd/bar.jpg",
+			Expected:     "11111",
 			ErrorMatcher: nil,
 		},
 	}

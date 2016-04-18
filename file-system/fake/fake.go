@@ -27,11 +27,32 @@ type fake struct {
 func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 	newFileInfos := []os.FileInfo{}
 
-	for filename, fileInfo := range f.Storage {
-		dir := filepath.Base(dirname)
-		if strings.HasPrefix(filename, dir) {
-			newFileInfos = append(newFileInfos, fileInfo)
+	for filename, fi := range f.Storage {
+		if filename == dirname {
+			if fi.IsDir() {
+				continue
+			} else {
+				return nil, os.NewSyscallError("readdirent", notADirectoryError)
+			}
 		}
+		if !strings.HasPrefix(filename, dirname) {
+			continue
+		}
+		fn := strings.Replace(filename, dirname+"/", "", 1)
+		if fn == "" {
+			continue
+		}
+		splitted := strings.Split(fn, string(filepath.Separator))
+		if len(splitted) != 1 {
+			continue
+		}
+		if c, ok := fi.(fileInfo); ok {
+			c.File.Name = splitted[0]
+			newFileInfos = append(newFileInfos, c)
+			continue
+		}
+
+		return nil, maskAny(invalidImplementationError)
 	}
 
 	if len(newFileInfos) > 0 {
@@ -73,7 +94,6 @@ func (f *fake) WriteFile(filename string, bytes []byte, perm os.FileMode) error 
 		var ps []string
 		for _, d := range strings.Split(filepath.FromSlash(dir), string(filepath.Separator)) {
 			ps = append(ps, d)
-
 			p := filepath.Join(ps...)
 			f.Storage[p] = newDirFileInfo(p)
 		}

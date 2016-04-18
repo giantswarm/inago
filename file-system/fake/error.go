@@ -36,3 +36,20 @@ var invalidImplementationError = errgo.New("invalid implementation")
 func IsInvalidImplementation(err error) bool {
 	return errgo.Cause(err) == invalidImplementationError
 }
+
+var notADirectoryError = errgo.New("not a directory")
+
+// IsNotADirectory checks for the given error to be notADirectoryError.
+func IsNotADirectory(err error) bool {
+	cause := errgo.Cause(err)
+
+	if cause == nil {
+		return false
+	}
+
+	if sce, ok := cause.(*os.SyscallError); ok {
+		return sce.Err == notADirectoryError
+	}
+
+	return errgo.Cause(err) == notADirectoryError
+}
