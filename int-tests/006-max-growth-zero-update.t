@@ -1,4 +1,4 @@
-This test checks the behaviourof an update with max-growth zero
+This test checks the behaviour of an update with max-growth zero
 
 Setup unit file
 
