@@ -325,14 +325,14 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 					ctx := context.WithValue(ctx, "add slice", req.SliceIDs)
 					c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", req.SliceIDs)
 
-					newSliceIDs, err := c.addFirst(ctx, newReq, opts)
+					newSliceIDs, err := c.addFirst(ctx, req, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
 
 					currentSliceIDsMutex.Lock()
-					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, req.SliceIDs, newSliceIDs)
 					currentSliceIDsMutex.Unlock()
 
 					atomic.AddInt64(&addInProgress, -1)
@@ -366,14 +366,14 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 					ctx := context.WithValue(ctx, "remove slice", req.SliceIDs)
 					c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", req.SliceIDs)
 
-					newSliceIDs, err := c.removeFirst(ctx, newReq, opts)
+					newSliceIDs, err := c.removeFirst(ctx, req, opts)
 					if err != nil {
 						fail <- maskAny(err)
 						return
 					}
 
 					currentSliceIDsMutex.Lock()
-					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, newReq.SliceIDs, newSliceIDs)
+					currentSliceIDs = c.updateCurrentSliceIDs(ctx, currentSliceIDs, req.SliceIDs, newSliceIDs)
 					currentSliceIDsMutex.Unlock()
 
 					atomic.AddInt64(&removeInProgress, -1)
