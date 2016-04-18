@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -39,8 +38,6 @@ func Test_Request_NewRequest(t *testing.T) {
 
 	for i, testCase := range testCases {
 		newRequest := NewRequest(testCase.Input)
-		fmt.Printf("%#v\n", newRequest)
-		fmt.Printf("%#v\n", testCase.Expected)
 		if !reflect.DeepEqual(newRequest, testCase.Expected) {
 			t.Fatal("case", i, "expected", testCase.Expected, "got", newRequest)
 		}
