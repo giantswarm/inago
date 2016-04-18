@@ -321,9 +321,9 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				// we increase the addInProgress counter before starting the goroutine
 				// to avoid a race condition in the allowed calculation
 				atomic.AddInt64(&addInProgress, 1)
-				go func(ctx context.Context) {
-					ctx = context.WithValue(ctx, "add slice", sliceID)
-					c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", sliceID)
+				go func(req Request) {
+					ctx := context.WithValue(ctx, "add slice", req.SliceIDs)
+					c.Config.Logger.Debug(ctx, "controller: starting to add slice: %v", req.SliceIDs)
 
 					newSliceIDs, err := c.addFirst(ctx, newReq, opts)
 					if err != nil {
@@ -337,7 +337,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 					atomic.AddInt64(&addInProgress, -1)
 					done <- struct{}{}
-				}(ctx)
+				}(newReq)
 
 				break
 			}
@@ -362,9 +362,9 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 				// we increase the removeInProgress counter before starting the goroutine
 				// to avoid a race condition in the allowed calculation
 				atomic.AddInt64(&removeInProgress, 1)
-				go func(ctx context.Context) {
-					ctx = context.WithValue(ctx, "remove slice", sliceID)
-					c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", sliceID)
+				go func(req Request) {
+					ctx := context.WithValue(ctx, "remove slice", req.SliceIDs)
+					c.Config.Logger.Debug(ctx, "controller: starting to remove slice: %v", req.SliceIDs)
 
 					newSliceIDs, err := c.removeFirst(ctx, newReq, opts)
 					if err != nil {
@@ -378,7 +378,7 @@ func (c controller) UpdateWithStrategy(ctx context.Context, req Request, opts Up
 
 					atomic.AddInt64(&removeInProgress, -1)
 					done <- struct{}{}
-				}(ctx)
+				}(newReq)
 
 				break
 			}
