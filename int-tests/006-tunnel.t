@@ -35,6 +35,10 @@ Changing content of update-group-bar unit file.
 
 Update update-group.
   $ inagoctl --tunnel=${INAGO_TUNNEL_ENDPOINT} --ssh-strict-host-key-checking=false update --max-growth 2 --min-alive 1 $GROUP
+  .*controller: adding units (re)
+  .*controller: adding units (re)
+  .*controller: removing units (re)
+  .*controller: removing units (re)
   .*\|\scontext.Background: Succeeded to update 2 slices for group '002-tunnel-group': \[([a-z0-9]{3}\s?){2}\]. (re)
 
 Test the status of the updated group.
