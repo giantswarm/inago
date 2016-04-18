@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [ $TEST_SUITE == "unit" ]; then
     make lint
