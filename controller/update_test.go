@@ -177,13 +177,13 @@ func TestIsGroupRemovalAllowed(t *testing.T) {
 		groupRemovalAllowed bool
 		errMatcher          func(err error) bool
 	}{
-		// Test group removal is not allowed if we ask to keep 0 alive,
-		// and fleet has no units in it.
+		// Test group removal is always allowed when the we don't require
+		// any slices to be alive.
 		{
 			req:                 Request{},
 			minAlive:            0,
 			removeInProgress:    0,
-			groupRemovalAllowed: false,
+			groupRemovalAllowed: true,
 			errMatcher:          nil,
 		},
 		// Test group removal is allowed if we ask to keep 1 alive,
