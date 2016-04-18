@@ -10,19 +10,34 @@ import (
 // for testing.
 type file struct {
 	Name    string
+	Dir     bool
 	Mode    os.FileMode
 	ModTime time.Time
 	Buffer  *bytes.Reader
 }
 
-// newFile creates a new file instance based on a file name and it's contents
-// from strings. The content of the new instance will be stored in an internal
-// bytes.Reader instance. The default file mode will be 0777 and the last
-// modification time the moment when the function is called.
-func newFile(name string, content []byte) file {
+// newDir creates a new file instance based on a dir name. The default file
+// mode will be 0644 and the last modification time the moment when the
+// function is called.
+func newDir(name string) file {
 	return file{
 		Name:    name,
-		Mode:    os.FileMode(0777),
+		Dir:     true,
+		Mode:    os.FileMode(0644),
+		ModTime: time.Now(),
+		Buffer:  nil,
+	}
+}
+
+// newFile creates a new file instance based on a file name and it's contents
+// from strings. The content of the new instance will be stored in an internal
+// bytes.Reader instance. The last modification time the moment when the
+// function is called.
+func newFile(name string, content []byte, perm os.FileMode) file {
+	return file{
+		Name:    name,
+		Dir:     false,
+		Mode:    perm,
 		ModTime: time.Now(),
 		Buffer:  bytes.NewReader(content),
 	}
@@ -56,9 +71,17 @@ func (f file) Stat() (os.FileInfo, error) {
 	return fileInfo{File: f}, nil
 }
 
-func newFileInfo(name string, content []byte) os.FileInfo {
+func newFileFileInfo(name string, content []byte, perm os.FileMode) os.FileInfo {
 	newFileInfo := fileInfo{
-		File: newFile(name, content),
+		File: newFile(name, content, perm),
+	}
+
+	return newFileInfo
+}
+
+func newDirFileInfo(name string) os.FileInfo {
+	newFileInfo := fileInfo{
+		File: newDir(name),
 	}
 
 	return newFileInfo
@@ -90,9 +113,9 @@ func (fi fileInfo) ModTime() time.Time {
 	return fi.File.ModTime
 }
 
-// IsDir always return false since it only uses file instances.
+// IsDir determines whether the current file represents a directory or a file.
 func (fi fileInfo) IsDir() bool {
-	return false
+	return fi.File.Dir
 }
 
 // Sys always returns nil to stay conformant to the os.FileInfo interface.

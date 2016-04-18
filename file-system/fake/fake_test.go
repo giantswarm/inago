@@ -63,7 +63,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     []string{"mydir/foo"},
+			Expected:     []string{"mydir", "mydir/foo"},
 			ErrorMatcher: nil,
 		},
 		{
@@ -75,7 +75,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     []string{"mydir/foo"},
+			Expected:     []string{"mydir", "mydir/foo"},
 			ErrorMatcher: nil,
 		},
 		{
@@ -87,7 +87,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     []string{"mydir/foo"},
+			Expected:     []string{"mydir", "mydir/foo"},
 			ErrorMatcher: nil,
 		},
 	}
@@ -114,12 +114,15 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				var contains bool
 				for _, fileInfo := range fileInfos {
 					if fileInfo.Name() == e {
+						if !fileInfo.IsDir() {
+							t.Fatal("case", j+1, "of", i+1, "expected", true, "got", false)
+						}
 						contains = true
 						break
 					}
 				}
 				if !contains {
-					t.Fatal("case", j+1, "of", i+1, "expected", false, "got", true)
+					t.Fatal("case", j+1, "of", i+1, "expected", true, "got", false)
 				}
 			}
 		}

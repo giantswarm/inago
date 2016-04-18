@@ -28,3 +28,11 @@ func IsNoSuchFileOrDirectory(err error) bool {
 
 	return errgo.Cause(err) == noSuchFileOrDirectoryError
 }
+
+var invalidImplementationError = errgo.New("invalid implementation")
+
+// IsInvalidImplementation checks for the given error to be
+// invalidImplementationError.
+func IsInvalidImplementation(err error) bool {
+	return errgo.Cause(err) == invalidImplementationError
+}

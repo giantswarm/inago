@@ -14,25 +14,23 @@ import (
 // memory content.
 func NewFileSystem() filesystemspec.FileSystem {
 	newFileSystem := &fake{
-		Storages: map[string]map[string][]byte{},
+		Storage: map[string]os.FileInfo{},
 	}
 
 	return newFileSystem
 }
 
 type fake struct {
-	Storages map[string]map[string][]byte
+	Storage map[string]os.FileInfo
 }
 
 func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 	newFileInfos := []os.FileInfo{}
 
-	for dir, storage := range f.Storages {
-		d := strings.Split(filepath.FromSlash(dir), string(filepath.Separator))[0]
-		if d == dirname {
-			for _, content := range storage {
-				newFileInfos = append(newFileInfos, newFileInfo(dir, content))
-			}
+	for filename, fileInfo := range f.Storage {
+		dir := filepath.Base(dirname)
+		if strings.HasPrefix(filename, dir) && fileInfo.IsDir() {
+			newFileInfos = append(newFileInfos, fileInfo)
 		}
 	}
 
@@ -50,13 +48,17 @@ func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 }
 
 func (f *fake) ReadFile(filename string) ([]byte, error) {
-	dir := filepath.Dir(filename)
-	base := filepath.Base(filename)
-
-	if s, ok := f.Storages[dir]; ok {
-		if bytes, ok := s[base]; ok {
-			return bytes, nil
+	if fi, ok := f.Storage[filename]; ok {
+		if c, ok := fi.(fileInfo); ok {
+			var b []byte
+			_, err := c.File.Read(b)
+			if err != nil {
+				return nil, maskAny(err)
+			}
+			return b, nil
 		}
+
+		return nil, maskAny(invalidImplementationError)
 	}
 
 	pathErr := &os.PathError{
@@ -70,12 +72,16 @@ func (f *fake) ReadFile(filename string) ([]byte, error) {
 
 func (f *fake) WriteFile(filename string, bytes []byte, perm os.FileMode) error {
 	dir := filepath.Dir(filename)
-	base := filepath.Base(filename)
 
-	if _, ok := f.Storages[dir]; !ok {
-		f.Storages[dir] = map[string][]byte{}
+	var ps []string
+	for _, d := range strings.Split(filepath.FromSlash(dir), string(filepath.Separator)) {
+		ps = append(ps, d)
+
+		p := filepath.Join(ps...)
+		f.Storage[p] = newDirFileInfo(p)
 	}
 
-	f.Storages[dir][base] = bytes
+	f.Storage[filename] = newFileFileInfo(filename, bytes, perm)
+
 	return nil
 }
