@@ -15,19 +15,19 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 	testCases := []struct {
 		WriteFiles   []writeFiles
 		DirName      string
-		Expected     string // expected dir name
+		Expected     []string // expected dir names
 		ErrorMatcher func(err error) bool
 	}{
 		{
 			WriteFiles:   nil,
 			DirName:      "",
-			Expected:     "",
+			Expected:     nil,
 			ErrorMatcher: nil,
 		},
 		{
 			WriteFiles:   nil,
 			DirName:      "mydir",
-			Expected:     "",
+			Expected:     nil,
 			ErrorMatcher: IsNoSuchFileOrDirectory,
 		},
 		{
@@ -39,7 +39,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     "",
+			Expected:     nil,
 			ErrorMatcher: IsNoSuchFileOrDirectory,
 		},
 		{
@@ -51,7 +51,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     "",
+			Expected:     nil,
 			ErrorMatcher: IsNoSuchFileOrDirectory,
 		},
 		{
@@ -63,7 +63,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     "mydir",
+			Expected:     []string{"mydir/foo"},
 			ErrorMatcher: nil,
 		},
 		{
@@ -75,7 +75,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     "mydir",
+			Expected:     []string{"mydir/foo"},
 			ErrorMatcher: nil,
 		},
 		{
@@ -87,7 +87,7 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 				},
 			},
 			DirName:      "mydir",
-			Expected:     "mydir",
+			Expected:     []string{"mydir/foo"},
 			ErrorMatcher: nil,
 		},
 	}
@@ -107,9 +107,19 @@ func Test_FileSystem_ReadDir(t *testing.T) {
 			t.Fatal("case", i+1, "expected", true, "got", false)
 		}
 		if testCase.ErrorMatcher == nil {
-			for j, fileInfo := range fileInfos {
-				if fileInfo.Name() != testCase.Expected {
-					t.Fatal("case", j+1, "of", i+1, "expected", testCase.Expected, "got", fileInfo.Name())
+			if len(testCase.Expected) != len(fileInfos) {
+				t.Fatal("case", i+1, "expected", len(testCase.Expected), "got", len(fileInfos))
+			}
+			for j, e := range testCase.Expected {
+				var contains bool
+				for _, fileInfo := range fileInfos {
+					if fileInfo.Name() == e {
+						contains = true
+						break
+					}
+				}
+				if !contains {
+					t.Fatal("case", j+1, "of", i+1, "expected", false, "got", true)
 				}
 			}
 		}

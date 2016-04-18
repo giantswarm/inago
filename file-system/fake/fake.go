@@ -5,6 +5,7 @@ package filesystemfake
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/giantswarm/inago/file-system/spec"
 )
@@ -26,9 +27,12 @@ type fake struct {
 func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 	newFileInfos := []os.FileInfo{}
 
-	if s, ok := f.Storages[dirname]; ok {
-		for filename, content := range s {
-			newFileInfos = append(newFileInfos, newFileInfo(filename, content))
+	for dir, storage := range f.Storages {
+		d := strings.Split(filepath.FromSlash(dir), string(filepath.Separator))[0]
+		if d == dirname {
+			for _, content := range storage {
+				newFileInfos = append(newFileInfos, newFileInfo(dir, content))
+			}
 		}
 	}
 
