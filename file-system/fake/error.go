@@ -1,6 +1,8 @@
 package filesystemfake
 
 import (
+	"os"
+
 	"github.com/juju/errgo"
 )
 
@@ -10,9 +12,19 @@ var (
 
 var noSuchFileOrDirectoryError = errgo.New("no such file or directory")
 
-// IsNoSuchFileOrDirectoryError checks for the given error to be
-// noSuchFileOrDirectoryError. This error is returned in case there cannot
-// any file be found as requested.
-func IsNoSuchFileOrDirectoryError(err error) bool {
+// IsNoSuchFileOrDirectory checks for the given error to be
+// noSuchFileOrDirectoryError. This error is returned in case there cannot any
+// file be found as requested.
+func IsNoSuchFileOrDirectory(err error) bool {
+	cause := errgo.Cause(err)
+
+	if cause == nil {
+		return false
+	}
+
+	if pe, ok := cause.(*os.PathError); ok {
+		return pe.Err == noSuchFileOrDirectoryError
+	}
+
 	return errgo.Cause(err) == noSuchFileOrDirectoryError
 }
