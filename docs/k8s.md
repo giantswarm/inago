@@ -24,7 +24,7 @@ $ inagoctl up k8s-network
 2016-04-14 15:32:01.532 | INFO     | context.Background: Succeeded to start group 'k8s-network'.
 ```
 
-Then, we can schedule the k8s-master group.
+Then we can schedule the k8s-master group.
 
 ```
 $ inagoctl up k8s-master
