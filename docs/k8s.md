@@ -42,7 +42,11 @@ $ inagoctl up k8s-node 3
 2016-04-14 15:41:36.847 | INFO     | context.Background: Succeeded to start 3 slices for group 'k8s-node'
 ```
 
-And you're done! You can check if your cluster is running with [`kubectl`](https://coreos.com/kubernetes/docs/latest/configure-kubectl.html):
+And we're done!
+
+## Testing your Kubernetes cluster
+
+You can check if your cluster is running with [`kubectl`](https://coreos.com/kubernetes/docs/latest/configure-kubectl.html):
 
 ```
 $ kubectl cluster-info
@@ -53,11 +57,49 @@ Client Version: version.Info{Major:"1", Minor:"2", GitVersion:"v1.2.0", GitCommi
 Server Version: version.Info{Major:"1", Minor:"2", GitVersion:"v1.2.0", GitCommit:"5cb86ee022267586db386f62781338b0483733b3", GitTreeState:"clean"}
 ```
 
-Note: We assume running `kubectl` on the same node as the API server here. If you're running on a different node, you can use the `-s` flag to connect to the right one (for more details the the last chapter of this page).
+A further `kubectl describe nodes` will show that we’re running 3 nodes with kubelet and proxy version 1.2.0 deployed.
 
-## Testing your Kubernetes cluster
+Note: We assume running `kubectl` on the same node as the API server here. If you're running on a different node, you can use the `-s` flag to connect to the right one.
 
+For finding the right node, login to a CoreOS machine and run
 
+```
+$ fleetctl list-units -fields=unit,machine --full --no-legend 2>/dev/null | grep ^k8s-master-api-server.service | cut -d/ -f2 | paste -d, -s
+172.17.8.102
+```
+
+By now, everything should be ready to deploy our first pod. We use a prepared a little image based on the [Kubernetes hello world example](http://kubernetes.io/docs/hellonode/) that we can start with
+
+```
+kubectl run hello-node --image=puja/k8s-hello-node:v1 --port=8080
+```
+
+This shouldn’t take much, and we can check if it is running.
+
+```
+$ kubectl get deployments
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+hello-node   1         1         1            1           1m
+$ kubectl get pods
+NAME                          READY     STATUS    RESTARTS   AGE
+hello-node-3488712740-zponq   1/1       Running   0          1m
+```
+
+As we have 3 nodes let’s scale the pod up to 3 replicas.
+
+```
+$ kubectl scale deployment hello-node --replicas=3
+```
+
+Wait a while and check again.
+
+```
+$ kubectl get deployments
+NAME         DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+hello-node   3         3         3            3           6m
+```
+
+Voilà, we have 3 replicas of our hello world pod available.
 
 ## Updating your Kubernetes cluster
 
@@ -78,17 +120,19 @@ and
 Now, a single command lets us update the whole k8s-node group
 
 ```
-$ inagoctl update k8s-node --max-growth=0 --min-alive=1 --ready-secs=60
+$ inagoctl update k8s-node --max-growth=0 --min-alive=2 --ready-secs=60
 2016-04-14 15:45:22.988 | INFO     | context.Background: Succeeded to update 3 slices for group 'k8s-node': [045 3a9 79b].
 ```
 
-And we're done! Another `kubectl describe nodes` will show that we're now running version 1.2.2 on our nodes.
+And we're done! After a while, all nodes will be updated and another `kubectl describe nodes` will show that we’re now running 3 nodes with kubelet and proxy version 1.2.2 deployed.
 
-Looking closely at the update command above we can inspect some of its options. `--max-growth=0` tells Inago to not start any additional instances, which means it has to remove an instance to be able to start a new one. In this example this is due to the fact that we don't have any free machine left. `--min-alive=1` tells Inago to keep at least one instance of the group alive during the update process, we could also use `2` here, to have more availability during the update. Last but not least `--ready-secs=60` tells Inago to wait 60 seconds between updates. This gives the new instances some time to start replicating or do some other bootstrapping activities. Note that this might need to be higher, once you're actually running pods on these nodes, as the pods might need to get rescheduled.
+Looking closely at the update command above we can inspect some of its options. `--max-growth=0` tells Inago to not start any additional instances, which means it has to remove an instance to be able to start a new one. In this example this is due to the fact that we don't have any free machine left. `--min-alive=2` tells Inago to keep at least two instances of the group alive during the update process. the `ready-secs` flag determines how long Inago waits between rounds of updating. This gives the new node a bit of time to start replicating that pod we scheduled.
+
+Watching `kubectl get deployments` during the update process, we would see that available instances of our hello-node pod shortly go down to 2, while a Kubernetes node is being updated and then quickly come up again to 3.
 
 ### Updating the Master
 
-Now sadly, we didn't use an HA deployment of the Kubernetes master, so Inago's update command isn't of help much here. Accordingly, we will have a short downtime of our API while we update this group. Luckily, Kubernetes nodes and their pods don't rely on the API server that much and will usually not be impacted by this downtime.
+Now sadly, we didn't use an HA deployment of the Kubernetes master, so Inago's update command isn't of help much here. Accordingly, we will have a short downtime of our API while we update this group. Luckily, Kubernetes nodes and their pods don't rely on the API server that much and will usually stay running while we update the master.
 
 Again we need to update our unit files to use the newest image. After that a short series of commands will update the group.
 
@@ -105,26 +149,3 @@ $ inagoctl up k8s-master
 ```
 
 A quick look at `kubectl version` will tell us that we're now running a 1.2.2 server.
-
-## Start your first pod
-
-First, we need the IP of the machine running the API server. Login to a CoreOS machine
-and run
-
-```
-$ fleetctl list-units -fields=unit,machine --full --no-legend 2>/dev/null | grep ^k8s-master-api-server.service | cut -d/ -f2 | paste -d, -s
-172.17.8.102
-```
-
-Now we can start an nginx example by running:
-`kubectl -s 172.17.8.102:8080 run my-nginx --image=nginx --replicas=2 --port=80`
-
-To validate that the pods indeed got started, we can take a look at the pods.
-
-```
-$ kubectl -s 172.17.8.102:8080 get pods
-NAME             READY     STATUS    RESTARTS   AGE
-my-nginx-0uhad   0/1       Pending   0          13s
-my-nginx-zuztz   0/1       Pending   0          13s
-nginx            1/1       Running   1          1h
-```
