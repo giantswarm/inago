@@ -18,15 +18,11 @@ var noSuchFileOrDirectoryError = errgo.New("no such file or directory")
 func IsNoSuchFileOrDirectory(err error) bool {
 	cause := errgo.Cause(err)
 
-	if cause == nil {
-		return false
-	}
-
 	if pe, ok := cause.(*os.PathError); ok {
 		return pe.Err == noSuchFileOrDirectoryError
 	}
 
-	return errgo.Cause(err) == noSuchFileOrDirectoryError
+	return cause == noSuchFileOrDirectoryError
 }
 
 var invalidImplementationError = errgo.New("invalid implementation")
@@ -43,13 +39,9 @@ var notADirectoryError = errgo.New("not a directory")
 func IsNotADirectory(err error) bool {
 	cause := errgo.Cause(err)
 
-	if cause == nil {
-		return false
-	}
-
 	if sce, ok := cause.(*os.SyscallError); ok {
 		return sce.Err == notADirectoryError
 	}
 
-	return errgo.Cause(err) == notADirectoryError
+	return cause == notADirectoryError
 }
