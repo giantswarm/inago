@@ -16,12 +16,20 @@ Further, this deployment uses a single Kubernetes master, so the API is not high
 You can use this deployment on any CoreOS fleet cluster. Below we work with a 3 node cluster. For a simple way to setup a CoreOS cluster on your laptop try the official [Vagrant setup](https://coreos.com/os/docs/latest/booting-on-vagrant.html).
 Once your CoreOS cluster is up and running you can deploy Kubernetes in two easy steps:
 
-First, we schedule the k8s-master group:
+First, we need to setup the network environment. This, needs to be done only once, but on all nodes, which is why we set this up to be a global unit (running on all machines).
+
+```
+$ inagoctl up k8s-network
+2016-04-14 15:31:05.273 | INFO     | context.Background: Succeeded to submit group 'k8s-master'.
+2016-04-14 15:32:01.532 | INFO     | context.Background: Succeeded to start group 'k8s-network'.
+```
+
+Then, we can schedule the k8s-master group.
 
 ```
 $ inagoctl up k8s-master
 2016-04-14 15:33:09.396 | INFO     | context.Background: Succeeded to submit group 'k8s-master'.
-2016-04-14 15:35:01.558 | INFO     | context.Background: Succeeded to start group 'k8s-master'.
+2016-04-14 15:34:01.558 | INFO     | context.Background: Succeeded to start group 'k8s-master'.
 ```
 
 You can check if it is up with `inagoctl status k8s-master`.
@@ -46,6 +54,10 @@ Server Version: version.Info{Major:"1", Minor:"2", GitVersion:"v1.2.0", GitCommi
 ```
 
 Note: We assume running `kubectl` on the same node as the API server here. If you're running on a different node, you can use the `-s` flag to connect to the right one (for more details the the last chapter of this page).
+
+## Testing your Kubernetes cluster
+
+
 
 ## Updating your Kubernetes cluster
 

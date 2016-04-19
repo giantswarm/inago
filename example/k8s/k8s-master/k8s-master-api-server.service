@@ -1,7 +1,7 @@
 [Unit]
 Description=k8s-master-api-server
 Requires=k8s-master-controller-manager.service
-After=k8s-master-setup-network-env.service
+After=k8s-network-setup-env.service
 
 [Service]
 User=core
