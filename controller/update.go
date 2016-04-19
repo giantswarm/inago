@@ -79,9 +79,10 @@ func (c controller) isGroupRemovalAllowed(ctx context.Context, req Request, minA
 		ctx, "controller: removeInProgress: %v, minAlive: %v",
 		*removeInProgress, minAlive,
 	)
-
-	if (minAlive - int(*removeInProgress)) > 0 {
-		c.Config.Logger.Debug(ctx, "controller: group removal allowed ((minAlive - int(removeInProgress)) > 0)")
+	// if minAlive = 0 we don't need to calculate if we can remove slices,
+	// as the user provided us with the information, that killing slices is fine
+	if (minAlive-int(*removeInProgress)) > 0 || minAlive == 0 {
+		c.Config.Logger.Debug(ctx, "controller: group removal allowed ((minAlive - int(removeInProgress)) > 0) || minAlive == 0")
 		return true, nil
 	}
 

@@ -2,7 +2,7 @@ This test checks the behaviour of an update with max-growth zero
 
 Setup unit file
 
-  $ GROUP=006-max-growth-zero-update
+  $ GROUP=007-min-alive-zero-update
   $ mkdir $GROUP
   $ echo "[Unit]\nDescription=Unit 1\n[Service]\nExecStart=/bin/bash -c 'while true; do echo Hello %n; sleep 10; done'\n" > $GROUP/$GROUP-unit@.service
 
@@ -18,15 +18,15 @@ Modify unit
 
 Update unit
 
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=1
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=0 --ready-secs=2
+  .*controller: removing units (re)
   .*controller: removing units (re)
   .*controller: adding units (re)
-  .*controller: removing units (re)
   .*controller: adding units (re)
-  .*\|\scontext.Background: Succeeded to update 2 slices for group '006-max-growth-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
+  .*\|\scontext.Background: Succeeded to update 2 slices for group '007-min-alive-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
   $ sleep 3
 
 Tear down
 
   $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} destroy $GROUP
-  .*\|\scontext.Background: Succeeded to destroy 2 slices for group '006-max-growth-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
+  .*\|\scontext.Background: Succeeded to destroy 2 slices for group '007-min-alive-zero-update': \[[a-z0-9]{3} [a-z0-9]{3}\]. (re)
