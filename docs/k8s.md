@@ -5,11 +5,11 @@ The [example folder](https://github.com/giantswarm/inago/tree/master/example) co
 two groups: `k8s-master` and `k8s-node`.
 
 ## Note
-The deployment sets up a Kubernetes cluster, which uses insecure communication
+The deployment sets up a Kubernetes cluster with insecure communication 
 between the components. Use this only as a Demo or POC. If you want to deploy a
 Kubernetes cluster for production please modify the example, so secure
 communication is used: [Cluster TLS using OpenSSL](https://coreos.com/Kubernetes/docs/latest/openssl.html).
-Further, this deployment uses a single Kubernetes master, so the API is not highly available. For HA deployments of Kubernetes check out: [Building High-Availability Clusters](http://kubernetes.io/docs/admin/high-availability/).
+Further, this deployment uses a single Kubernetes master, so the API is not highly available. For HA deployments of Kubernetes check out [Building High-Availability Clusters](http://kubernetes.io/docs/admin/high-availability/).
 
 ## Deployment
 
