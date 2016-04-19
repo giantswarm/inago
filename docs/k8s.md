@@ -132,7 +132,7 @@ Watching `kubectl get deployments` during the update process, we would see that 
 
 ### Updating the Master
 
-Now sadly, we didn't use an HA deployment of the Kubernetes master, so Inago's update command isn't of help much here. Accordingly, we will have a short downtime of our API while we update this group. Luckily, Kubernetes nodes and their pods don't rely on the API server that much and will usually stay running while we update the master.
+Now sadly, we didn't use an HA deployment of the Kubernetes master, so Inago's update command currently won't work here. Accordingly, we will have a short downtime of our API while we update this group. Luckily, Kubernetes nodes and their pods don't rely on the API server that much and will usually stay running while we update the master.
 
 Again we need to update our unit files to use the newest image. After that a short series of commands will update the group.
 
@@ -149,3 +149,7 @@ $ inagoctl up k8s-master
 ```
 
 A quick look at `kubectl version` will tell us that we're now running a 1.2.2 server.
+
+## That's all, folks!
+
+We have managed to start up a Kubernetes cluster, start a replicated pod on it, and perform a rolling update of the Kubernetes nodes without downtimes of both Kubernetes and the running pod, all thanks to Inago.
