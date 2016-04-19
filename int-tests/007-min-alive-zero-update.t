@@ -18,7 +18,7 @@ Modify unit
 
 Update unit
 
-  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=0 --ready-secs=5
+  $ inagoctl --fleet-endpoint=${FLEET_ENDPOINT} update $GROUP --max-growth=0 --min-alive=0 --ready-secs=2
   .*controller: removing units (re)
   .*controller: removing units (re)
   .*controller: adding units (re)
