@@ -5,6 +5,7 @@ package filesystemfake
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/giantswarm/inago/file-system/spec"
 )
@@ -13,23 +14,45 @@ import (
 // memory content.
 func NewFileSystem() filesystemspec.FileSystem {
 	newFileSystem := &fake{
-		Storages: map[string]map[string][]byte{},
+		Storage: map[string]os.FileInfo{},
 	}
 
 	return newFileSystem
 }
 
 type fake struct {
-	Storages map[string]map[string][]byte
+	Storage map[string]os.FileInfo
 }
 
 func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 	newFileInfos := []os.FileInfo{}
 
-	if s, ok := f.Storages[dirname]; ok {
-		for filename, content := range s {
-			newFileInfos = append(newFileInfos, newFileInfo(filename, content))
+	for filename, fi := range f.Storage {
+		if filename == dirname {
+			if fi.IsDir() {
+				continue
+			} else {
+				return nil, os.NewSyscallError("readdirent", notADirectoryError)
+			}
 		}
+		if !strings.HasPrefix(filename, dirname) {
+			continue
+		}
+		fn := strings.Replace(filename, dirname+"/", "", 1)
+		if fn == "" {
+			continue
+		}
+		splitted := strings.Split(fn, string(filepath.Separator))
+		if len(splitted) != 1 {
+			continue
+		}
+		if c, ok := fi.(fileInfo); ok {
+			c.File.Name = splitted[0]
+			newFileInfos = append(newFileInfos, c)
+			continue
+		}
+
+		return nil, maskAny(invalidImplementationError)
 	}
 
 	if len(newFileInfos) > 0 {
@@ -46,13 +69,13 @@ func (f *fake) ReadDir(dirname string) ([]os.FileInfo, error) {
 }
 
 func (f *fake) ReadFile(filename string) ([]byte, error) {
-	dir := filepath.Dir(filename)
-	base := filepath.Base(filename)
-
-	if s, ok := f.Storages[dir]; ok {
-		if bytes, ok := s[base]; ok {
-			return bytes, nil
+	if fi, ok := f.Storage[filename]; ok {
+		if c, ok := fi.(fileInfo); ok {
+			b := c.File.Buffer.Bytes()
+			return b, nil
 		}
+
+		return nil, maskAny(invalidImplementationError)
 	}
 
 	pathErr := &os.PathError{
@@ -66,12 +89,17 @@ func (f *fake) ReadFile(filename string) ([]byte, error) {
 
 func (f *fake) WriteFile(filename string, bytes []byte, perm os.FileMode) error {
 	dir := filepath.Dir(filename)
-	base := filepath.Base(filename)
 
-	if _, ok := f.Storages[dir]; !ok {
-		f.Storages[dir] = map[string][]byte{}
+	if dir != "." {
+		var ps []string
+		for _, d := range strings.Split(filepath.FromSlash(dir), string(filepath.Separator)) {
+			ps = append(ps, d)
+			p := filepath.Join(ps...)
+			f.Storage[p] = newDirFileInfo(p)
+		}
 	}
 
-	f.Storages[dir][base] = bytes
+	f.Storage[filename] = newFileFileInfo(filename, bytes, perm)
+
 	return nil
 }

@@ -69,6 +69,7 @@ test: $(SOURCE) VERSION .gobuild
 	@echo Testing inside Docker container for $(GOOS)/$(GOARCH)
 	docker run \
 	    --rm \
+	    -t \
 	    -v $(shell pwd):/usr/code \
 	    -e GOPATH=/usr/code/.gobuild \
 	    -e GOOS=$(GOOS) \
@@ -88,7 +89,7 @@ ci-build: $(SOURCE) VERSION .gobuild
 ci-test: $(SOURCE) VERSION .gobuild
 	echo Testing for $(GOOS)/$(GOARCH)
 	$(TEST_COMMAND)
-	
+
 # Use with `GOOS=linux FLEET_ENDPOINT=http://192.168.99.1:49153/ make int-test`
 # Set fleet endpoint to a fleet API endpoint available to the container.
 
@@ -102,7 +103,7 @@ int-test: $(BIN) $(INT_TESTS)
 	@echo Starting CoreOS integration test machine
 	cd $(VAGRANT_PATH) && vagrant up
 	sleep 10
-	
+
 	@echo Starting ssh-agent container
 	-docker run \
 	-d \
@@ -114,9 +115,9 @@ int-test: $(BIN) $(INT_TESTS)
 	-v ~/.vagrant.d:/ssh \
 	whilp/ssh-agent:latest \
 	ssh-add /ssh/insecure_private_key
-	
+
 	-FLEET_ENDPOINT=$(FLEET_ENDPOINT) make internal-int-test
-	
+
 	@echo Destroying the ssh-agent container
 	docker rm -f ssh-agent
 	@echo Destroying the integration test machine
@@ -139,7 +140,7 @@ internal-int-test: $(BIN) $(INT_TESTS)
 bin-dist: $(SOURCE) VERSION .gobuild
 	# Remove any old bin-dist or build directories
 	rm -rf bin-dist build
-	
+
 	# Build for all supported OSs
 	for OS in darwin linux; do \
 		rm -f $(BIN); \

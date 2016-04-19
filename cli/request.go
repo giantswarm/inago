@@ -23,6 +23,9 @@ func readUnitFiles(fs filesystemspec.FileSystem, dir string) (map[string]string,
 		if fileInfo.IsDir() {
 			continue
 		}
+		if !strings.HasPrefix(fileInfo.Name(), dir) {
+			continue
+		}
 
 		raw, err := fs.ReadFile(filepath.Join(dir, fileInfo.Name()))
 		if err != nil {

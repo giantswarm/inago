@@ -472,8 +472,8 @@ func givenControllerWithConfig(fmc fleetMockConfig) (Controller, *fleetMock) {
 	newControllerConfig.TaskService = newTaskService
 	newControllerConfig.Logger = newLogger
 	newControllerConfig.WaitCount = 1
-	newControllerConfig.WaitSleep = 10 * time.Millisecond
-	newControllerConfig.WaitTimeout = 30 * time.Millisecond
+	newControllerConfig.WaitSleep = 5 * time.Millisecond
+	newControllerConfig.WaitTimeout = 100 * time.Millisecond
 	newController := NewController(newControllerConfig)
 
 	return newController, newFleetMock
