@@ -15,7 +15,7 @@ For running it locally, look at using CoreOS with Vagrant.
 See https://coreos.com/os/docs/latest/booting-on-vagrant.html for further information.
 - There are three nodes in the cluster, and each node has 2048MB of memory allocated to it.
 This large allocation is to give Elasticsearch more than enough space for heap.
-- The `inago` binary, as well as the `elasticsearch` directory from `example`,
+- The `inago` binary, as well as the [`elasticsearch`](https://github.com/giantswarm/inago/tree/master/examples/elasticsearch),
 has been copied to all the nodes in the cluster.
 
 It should be noted that any IP addresses or hostnames used in this example are dependent on your setup.
