@@ -1,7 +1,7 @@
 # Kubernetes
 
 With Inago you can easily deploy Kubernetes on a CoreOS cluster.
-The [example folder](https://github.com/giantswarm/inago/tree/master/example) contains a simple [k8s example](https://github.com/giantswarm/inago/tree/master/example/k8s). The Kubernetes deployment is split into
+The [examples folder](https://github.com/giantswarm/inago/tree/master/examples) contains a simple [k8s example](https://github.com/giantswarm/inago/tree/master/examples/k8s). The Kubernetes deployment is split into
 two groups: `k8s-master` and `k8s-node`.
 
 ## Note
