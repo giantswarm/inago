@@ -1,0 +1,41 @@
+[Unit]
+Description=k8s-master-api-server
+Requires=k8s-master-controller-manager.service
+After=k8s-network-setup-env.service
+
+[Service]
+User=core
+EnvironmentFile=/etc/environment
+Restart=on-failure
+RestartSec=1
+StartLimitInterval=300s
+StartLimitBurst=3
+TimeoutStartSec=0
+EnvironmentFile=/etc/network-environment
+EnvironmentFile=/etc/environment
+Environment="IMAGE=giantswarm/k8s-api-server:1.2.0"
+Environment="NAME=%p.service"
+Environment="NETWORK_CONFIG_CONTAINER="
+ExecStartPre=/usr/bin/docker pull $IMAGE
+ExecStartPre=-/usr/bin/docker stop -t 10 $NAME
+ExecStartPre=-/usr/bin/docker rm -f $NAME
+ExecStart=/usr/bin/docker run --rm --name $NAME --net=host $IMAGE \
+--service_account_key_file=/opt/bin/kube-serviceaccount.key \
+--service_account_lookup=false \
+--allow_privileged=true \
+--runtime_config=api/v1 \
+--insecure_bind_address=0.0.0.0 \
+--insecure_port=8080 \
+--kubelet_https=true \
+--secure_port=6443 \
+--address=0.0.0.0 \
+--port=8080 \
+--service-cluster-ip-range=10.100.0.0/16 \
+--etcd_servers=http://${COREOS_PRIVATE_IPV4}:2379 \
+--advertise-address=${COREOS_PRIVATE_IPV4} \
+--public_address_override=${COREOS_PRIVATE_IPV4} \
+--logtostderr=true
+ExecStop=-/usr/bin/docker stop -t 10 $NAME
+ExecStopPost=-/usr/bin/docker rm -f $NAME
+
+[X-Fleet]
