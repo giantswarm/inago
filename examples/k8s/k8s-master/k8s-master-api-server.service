@@ -28,12 +28,9 @@ ExecStart=/usr/bin/docker run --rm --name $NAME --net=host $IMAGE \
 --insecure_port=8080 \
 --kubelet_https=true \
 --secure_port=6443 \
---address=0.0.0.0 \
---port=8080 \
 --service-cluster-ip-range=10.100.0.0/16 \
 --etcd_servers=http://${COREOS_PRIVATE_IPV4}:2379 \
 --advertise-address=${COREOS_PRIVATE_IPV4} \
---public_address_override=${COREOS_PRIVATE_IPV4} \
 --logtostderr=true
 ExecStop=-/usr/bin/docker stop -t 10 $NAME
 ExecStopPost=-/usr/bin/docker rm -f $NAME

@@ -26,7 +26,7 @@ ExecStart=/bin/sh -c "/usr/bin/docker run --rm --pid=host --net=host --privilege
 -v /etc/os-release:/etc/os-release \
 -v /usr/share/ca-certificates/:/etc/ssl/certs \
 -v /sys:/sys:ro \
--v /var/lib/docker/:/var/lib/docker:ro \
+-v /var/lib/docker/:/var/lib/docker:rw \
 -v /var/lib/kubelet/:/var/lib/kubelet:rw \
 -v /var/run:/var/run:rw \
 $IMAGE \
