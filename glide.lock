@@ -1,0 +1,72 @@
+hash: 51f9c99e4c2f2eaeaccf2cb485ed657197e5ba788c8a6652722cb123592ac6cc
+updated: 2016-04-14T10:57:23.238365212+01:00
+imports:
+- name: github.com/coreos/fleet
+  version: 76516ab4ae194e37aaae9c1f2fa5090553e541f3
+  subpackages:
+  - client
+  - machine
+  - schema
+  - ssh
+  - unit
+  - Godeps/_workspace/src/github.com/coreos/go-systemd/unit
+  - log
+  - pkg
+  - Godeps/_workspace/src/google.golang.org/api/googleapi
+  - job
+  - registry
+  - Godeps/_workspace/src/github.com/docker/libcontainer/netlink
+  - Godeps/_workspace/src/golang.org/x/crypto/ssh
+  - Godeps/_workspace/src/golang.org/x/crypto/ssh/agent
+  - Godeps/_workspace/src/golang.org/x/crypto/ssh/terminal
+  - Godeps/_workspace/src/github.com/jonboulle/clockwork
+  - Godeps/_workspace/src/google.golang.org/api/googleapi/internal/uritemplates
+  - Godeps/_workspace/src/github.com/coreos/go-semver/semver
+  - etcd
+  - pkg/lease
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+- name: github.com/giantswarm/inago
+  version: 367b7af682b593f8736e8b70e5aad3ff76dcdc51
+  subpackages:
+  - cli
+  - controller
+  - file-system/real
+  - file-system/spec
+  - fleet
+  - logging
+  - task
+  - common
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/juju/errgo
+  version: 08cceb5d0b5331634b9826762a8fd53b29b86ad8
+- name: github.com/mattn/go-isatty
+  version: 56b76bdf51f7708750eac80fa38b952bb9f32639
+- name: github.com/onsi/gomega
+  version: 7ce781ea776b2fd506491011353bded2e40c8467
+- name: github.com/op/go-logging
+  version: 970db520ece77730c7e4724c61121037378659d9
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+- name: github.com/ryanuber/columnize
+  version: 983d3a5fab1bf04d1b412465d2d9f8430e2e917e
+- name: github.com/satori/go.uuid
+  version: f9ab0dce87d815821e221626b772e3475a0d2749
+- name: github.com/spf13/cobra
+  version: 4c05eb1145f16d0e6bb4a3e1b6d769f4713cb41f
+- name: github.com/spf13/pflag
+  version: 8f6a28b0916586e7f22fe931ae2fcfc380b1c0e6
+- name: github.com/stretchr/objx
+  version: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
+- name: github.com/stretchr/testify
+  version: bcd9e3389dd03b0b668d11f4d462a6af6c2dfd60
+- name: golang.org/x/net
+  version: fb93926129b8ec0056f2f458b1f519654814edf0
+  subpackages:
+  - context
+- name: golang.org/x/sys
+  version: 324e1375807370c3934e14f3a97e7d160832f6b4
+  subpackages:
+  - unix
+devImports: []
