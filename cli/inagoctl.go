@@ -6,12 +6,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/giantswarm/inago/file-system/real"
-	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/giantswarm/inago/fleet"
 	"github.com/giantswarm/inago/logging"
 	"github.com/giantswarm/inago/task"
@@ -30,7 +29,7 @@ var (
 		SSHKnownHostsFile        string
 	}
 
-	fs             filesystemspec.FileSystem
+	fs             afero.Afero
 	newLogger      logging.Logger
 	newFleet       fleet.Fleet
 	newTaskService task.Service
@@ -47,7 +46,7 @@ var (
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
 			// command runs.
-			fs = filesystemreal.NewFileSystem()
+			fs = afero.Afero{afero.NewOsFs()}
 
 			loggingConfig := logging.DefaultConfig()
 			if globalFlags.Verbose {

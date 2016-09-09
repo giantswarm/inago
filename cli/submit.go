@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/giantswarm/inago/file-system/spec"
 	"github.com/juju/errgo"
 )
 
@@ -63,7 +63,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 	})
 }
 
-func createSubmitRequest(fs filesystemspec.FileSystem, group string, scale int) (controller.Request, error) {
+func createSubmitRequest(fs afero.Afero, group string, scale int) (controller.Request, error) {
 	newRequestConfig := controller.DefaultRequestConfig()
 	newRequestConfig.Group = group
 

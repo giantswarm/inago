@@ -5,14 +5,14 @@ import (
 	"strings"
 
 	"github.com/juju/errgo"
+	"github.com/spf13/afero"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/giantswarm/inago/file-system/spec"
 )
 
 // readUnitFiles reads the given dir and returns a map of filename => filecontent.
 // If any read operation fails, the error is immediately returned.
-func readUnitFiles(fs filesystemspec.FileSystem, dir string) (map[string]string, error) {
+func readUnitFiles(fs afero.Afero, dir string) (map[string]string, error) {
 	fileInfos, err := fs.ReadDir(dir)
 	if err != nil {
 		return nil, maskAny(err)
@@ -40,7 +40,7 @@ func readUnitFiles(fs filesystemspec.FileSystem, dir string) (map[string]string,
 
 // extendRequestWithContent reads all unitfiles for the given group and returns
 // a new Request with the Units filled.
-func extendRequestWithContent(fs filesystemspec.FileSystem, req controller.Request) (controller.Request, error) {
+func extendRequestWithContent(fs afero.Afero, req controller.Request) (controller.Request, error) {
 	unitFiles, err := readUnitFiles(fs, req.Group)
 	if err != nil {
 		return controller.Request{}, maskAny(err)
