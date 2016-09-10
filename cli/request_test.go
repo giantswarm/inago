@@ -5,10 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/juju/errgo"
+	"github.com/spf13/afero"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/giantswarm/inago/file-system/fake"
 )
 
 func givenSomeUnitFileContent() string {
@@ -79,7 +78,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			Error: &os.PathError{
 				Op:   "open",
 				Path: "dirname",
-				Err:  errgo.New("no such file or directory"),
+				Err:  os.ErrNotExist,
 			},
 			Input: controller.Request{
 				RequestConfig: controller.RequestConfig{
@@ -118,7 +117,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		newFileSystem := filesystemfake.NewFileSystem()
+		newFileSystem := afero.Afero{afero.NewMemMapFs()}
 
 		for _, setup := range testCase.Setup {
 			err := newFileSystem.WriteFile(setup.FileName, setup.FileContent, setup.FilePerm)

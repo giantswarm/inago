@@ -4,19 +4,17 @@ import (
 	"os"
 	"testing"
 
-	"github.com/giantswarm/inago/file-system/fake"
-	"github.com/giantswarm/inago/file-system/spec"
-
 	. "github.com/onsi/gomega"
+	"github.com/spf13/afero"
 )
 
-func givenFileSystemWithSingleUnitGroup(name string) filesystemspec.FileSystem {
-	fs := filesystemfake.NewFileSystem()
+func givenFileSystemWithSingleUnitGroup(name string) afero.Afero {
+	fs := afero.Afero{afero.NewMemMapFs()}
 	fs.WriteFile(name+"/"+name+"-1.service", []byte(`some content`), os.FileMode(0644))
 	return fs
 }
-func givenFileSystemWithSliceableUnitGroup(name string) filesystemspec.FileSystem {
-	fs := filesystemfake.NewFileSystem()
+func givenFileSystemWithSliceableUnitGroup(name string) afero.Afero {
+	fs := afero.Afero{afero.NewMemMapFs()}
 	fs.WriteFile(name+"/"+name+"-1@.service", []byte(`some content`), os.FileMode(0644))
 	return fs
 }
