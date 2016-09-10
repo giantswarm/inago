@@ -45,6 +45,7 @@ clean:
 	@builder get dep -b d2e44aa77b7195c0ef782189985dd8550e22e4de https://github.com/op/go-logging.git $(GOPATH)/src/github.com/op/go-logging
 
 	@builder get dep https://github.com/onsi/gomega.git $(GOPATH)/src/github.com/onsi/gomega
+	@builder get dep -b v2 https://github.com/go-yaml/yaml $(GOPATH)/src/gopkg.in/yaml.v2
 	@builder get dep https://github.com/stretchr/testify.git $(GOPATH)/src/github.com/stretchr/testify
 	@builder get dep https://github.com/davecgh/go-spew.git $(GOPATH)/src/github.com/davecgh/go-spew
 	@builder get dep https://github.com/pmezard/go-difflib.git $(GOPATH)/src/github.com/pmezard/go-difflib
