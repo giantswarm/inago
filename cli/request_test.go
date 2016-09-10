@@ -117,7 +117,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 	}
 
 	for i, testCase := range testCases {
-		newFileSystem := afero.Afero{afero.NewMemMapFs()}
+		newFileSystem := afero.Afero{Fs: afero.NewMemMapFs()}
 
 		for _, setup := range testCase.Setup {
 			err := newFileSystem.WriteFile(setup.FileName, setup.FileContent, setup.FilePerm)
