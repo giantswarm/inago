@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/juju/errgo"
 	"github.com/spf13/afero"
 
 	"github.com/giantswarm/inago/controller"
@@ -66,7 +67,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		// unwanted files.
 		{
 			Setup:    []testFileSystemSetup{},
-			Error:    nil,
+			Error:    noUnitFilesError,
 			Input:    controller.Request{},
 			Expected: controller.Request{},
 		},
@@ -127,8 +128,8 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		}
 
 		output, err := extendRequestWithContent(newFileSystem, testCase.Input)
-		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
-			t.Fatal("case", i+1, "expected", testCase.Error, "got", err)
+		if !reflect.DeepEqual(errgo.Cause(err), errgo.Cause(testCase.Error)) {
+			t.Fatalf("case %d: expected %v, got %v", i+1, testCase.Error, err)
 		}
 
 		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
