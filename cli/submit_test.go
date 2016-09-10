@@ -9,12 +9,12 @@ import (
 )
 
 func givenFileSystemWithSingleUnitGroup(name string) afero.Afero {
-	fs := afero.Afero{afero.NewMemMapFs()}
+	fs := afero.Afero{Fs: afero.NewMemMapFs()}
 	fs.WriteFile(name+"/"+name+"-1.service", []byte(`some content`), os.FileMode(0644))
 	return fs
 }
 func givenFileSystemWithSliceableUnitGroup(name string) afero.Afero {
-	fs := afero.Afero{afero.NewMemMapFs()}
+	fs := afero.Afero{Fs: afero.NewMemMapFs()}
 	fs.WriteFile(name+"/"+name+"-1@.service", []byte(`some content`), os.FileMode(0644))
 	return fs
 }
