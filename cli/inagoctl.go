@@ -46,7 +46,7 @@ var (
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
 			// command runs.
-			fs = afero.Afero{afero.NewOsFs()}
+			fs = afero.Afero{Fs: afero.NewOsFs()}
 
 			loggingConfig := logging.DefaultConfig()
 			if globalFlags.Verbose {
