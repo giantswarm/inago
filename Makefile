@@ -87,7 +87,14 @@ test: $(SOURCE) VERSION .gobuild
 	    $(TEST_COMMAND)
 
 lint:
-	go vet -x ./...
+	docker run \
+	    --rm \
+	    -t \
+	    -v $(shell pwd):/usr/code \
+	    -e GOPATH=/usr/code/.gobuild \
+	    -w /usr/code \
+	    golang:$(GOVERSION) \
+	    go vet -x ./...
 	golint ./...
 
 ci-build: $(SOURCE) VERSION .gobuild
