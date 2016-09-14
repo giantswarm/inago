@@ -28,10 +28,10 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		{
 			Group: "dirname",
 			Files: []fileDesc{
-				{Name: "dirname/dirname_unit.service", Content: "some unit content"},
+				{Name: "dirname/dirname_unit.service", Content: "unit1"},
 			},
 			Units: []controller.Unit{
-				{Name: "dirname_unit.service", Content: "unchecked"},
+				{Name: "dirname_unit.service", Content: "unit1"},
 			},
 			Error: nil,
 		},
@@ -58,12 +58,12 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			Group: "groupname",
 			Files: []fileDesc{
 				{Name: "groupname/nesteddir/REAMDE.md", Content: "DO NOT READ ME"},
-				{Name: "groupname/groupname-1.service", Content: "unchecked"},
-				{Name: "groupname/groupname-2.service", Content: "unchecked"},
+				{Name: "groupname/groupname-1.service", Content: "unit1"},
+				{Name: "groupname/groupname-2.service", Content: "unit2"},
 			},
 			Units: []controller.Unit{
-				{Name: "groupname-1.service", Content: "unchecked"},
-				{Name: "groupname-2.service", Content: "unchecked"},
+				{Name: "groupname-1.service", Content: "unit1"},
+				{Name: "groupname-2.service", Content: "unit2"},
 			},
 			Error: nil,
 		},
@@ -92,12 +92,12 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		for _, wunit := range testCase.Units {
 			found := false
 			for _, unit := range req.Units {
-				if unit.Name == wunit.Name {
+				if reflect.DeepEqual(unit, wunit) {
 					found = true
 				}
 			}
 			if !found {
-				t.Errorf("case %d: expected %s, got none", i+1, wunit.Name)
+				t.Errorf("case %d: expected %v, got none", i+1, wunit)
 			}
 		}
 	}
