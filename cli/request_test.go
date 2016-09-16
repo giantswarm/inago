@@ -1,25 +1,26 @@
 package cli
 
 import (
+	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/juju/errgo"
-	"github.com/spf13/afero"
 
 	"github.com/giantswarm/inago/controller"
 )
 
 type fileDesc struct {
-	Name    string
+	Path    string
 	Content string
 }
 
 func Test_Request_ExtendWithContent(t *testing.T) {
 	testCases := []struct {
 		Group string
-		Files []fileDesc // Files relative to the group directory.
+		Files []fileDesc
 		Units []controller.Unit
 		Error error
 	}{
@@ -28,7 +29,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		{
 			Group: "dirname",
 			Files: []fileDesc{
-				{Name: "dirname/dirname_unit.service", Content: "unit1"},
+				{Path: "dirname/dirname_unit.service", Content: "unit1"},
 			},
 			Units: []controller.Unit{
 				{Name: "dirname_unit.service", Content: "unit1"},
@@ -41,25 +42,27 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			Group: "",
 			Files: []fileDesc{},
 			Units: []controller.Unit{},
-			Error: noUnitFilesError,
+			Error: groupNotExistError,
 		},
 
 		// This test ensures that trying to load unit files when no files are in
 		// the file system throws an error.
 		{
-			Group: "dirname",
+			Group: "g2",
 			Files: []fileDesc{},
 			Units: []controller.Unit{},
-			Error: &os.PathError{Op: "open", Path: "dirname", Err: os.ErrNotExist},
+			Error: noUnitFilesError,
 		},
 
-		// This test ensures that folders inside a group folder are ignored
+		// This test ensures that: all directories inside a group directory are ignored;
+		// regular files inside group directory not prefixed with group name are ignored.
 		{
 			Group: "groupname",
 			Files: []fileDesc{
-				{Name: "groupname/nesteddir/REAMDE.md", Content: "DO NOT READ ME"},
-				{Name: "groupname/groupname-1.service", Content: "unit1"},
-				{Name: "groupname/groupname-2.service", Content: "unit2"},
+				{Path: "groupname/gorupname-dir/REAMDE.md", Content: "DO NOT READ ME"},
+				{Path: "groupname/badprefix-1.service", Content: "DO NOT READ ME"},
+				{Path: "groupname/groupname-1.service", Content: "unit1"},
+				{Path: "groupname/groupname-2.service", Content: "unit2"},
 			},
 			Units: []controller.Unit{
 				{Name: "groupname-1.service", Content: "unit1"},
@@ -69,21 +72,16 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 		},
 	}
 
+	cleanDir := chdirTmp(t)
+	defer cleanDir()
+
 	for i, testCase := range testCases {
-		newFileSystem := afero.Afero{Fs: afero.NewMemMapFs()}
-
-		for _, f := range testCase.Files {
-			err := newFileSystem.WriteFile(f.Name, []byte(f.Content), os.FileMode(0644))
-			if err != nil {
-				t.Fatal("case", i+1, "expected", nil, "got", err)
-			}
-		}
-
+		prepareDir(t, i+1, testCase.Group, testCase.Files)
 		req := controller.NewRequest(controller.RequestConfig{Group: testCase.Group})
-		req, err := extendRequestWithContent(newFileSystem, req)
+		req, err := extendRequestWithContent(req)
 
-		if !reflect.DeepEqual(errgo.Cause(err), errgo.Cause(testCase.Error)) {
-			t.Fatalf("case %d: expected %v, got %v", i+1, testCase.Error, err)
+		if !reflect.DeepEqual(errgo.Cause(err), testCase.Error) {
+			t.Fatalf("case %d: expected %v, got %v", i+1, testCase.Error, errgo.Cause(err))
 		}
 
 		if len(req.Units) != len(testCase.Units) {
@@ -173,6 +171,51 @@ func Test_Request_ParseGroupCLIArgs_Error(t *testing.T) {
 		_, _, err := parseGroupCLIArgs(test.Input)
 		if !test.CheckError(err) {
 			t.Fatalf("got unexpected Error '%v'", err)
+		}
+	}
+}
+
+// chdirTmp creates a temporary directory and changes the working directory to it.
+// Returned clean function removes the temporary directory and reverts working directory.
+// Must not be used in Parallel tests.
+func chdirTmp(t *testing.T) (clean func()) {
+	tmpdir, err := ioutil.TempDir(".", "tmp-test-")
+	if err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
+	defer func() {
+		if t.Failed() {
+			os.RemoveAll(tmpdir)
+		}
+	}()
+	if err := os.Chdir(tmpdir); err != nil {
+		t.Fatalf("expected nil, got %v", err)
+	}
+	return func() {
+		os.Chdir("..")
+		os.RemoveAll(tmpdir)
+	}
+}
+
+// prepareDir creates the group directory and files described by files argument.
+func prepareDir(t *testing.T, index int, group string, files []fileDesc) {
+	// Create group directory.
+	if err := os.Mkdir(group, os.FileMode(0755)); err != nil && group != "" {
+		t.Fatalf("case %d: expected nil, got %v", index, err)
+	}
+	// Create directories and file for each file's path.
+	for _, f := range files {
+		parts := strings.Split(f.Path, "/")
+		path := "."
+		for _, dir := range parts[:len(parts)-1] {
+			path = path + "/" + dir
+			if err := os.Mkdir(path, os.FileMode(0755)); err != nil && !os.IsExist(err) {
+				t.Fatalf("case %d: expected nil, got %v", index, err)
+			}
+		}
+		err := ioutil.WriteFile(f.Path, []byte(f.Content), os.FileMode(0644))
+		if err != nil {
+			t.Fatalf("case %d: expected nil, got %v", index, err)
 		}
 	}
 }

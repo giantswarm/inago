@@ -1,22 +1,29 @@
 package cli
 
 import (
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/juju/errgo"
-	"github.com/spf13/afero"
 
 	"github.com/giantswarm/inago/controller"
 )
 
-var noUnitFilesError = errgo.New("no unit files")
+var (
+	groupNotExistError = errgo.New("group does not exist")
+	noUnitFilesError   = errgo.New("no unit files")
+)
 
 // readUnitFiles reads the given dir and returns a map of filename => filecontent.
 // If any read operation fails, the error is immediately returned.
-func readUnitFiles(fs afero.Afero, dir string) (map[string]string, error) {
-	fileInfos, err := fs.ReadDir(dir)
+func readUnitFiles(dir string) (map[string]string, error) {
+	fileInfos, err := ioutil.ReadDir(dir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, maskAny(groupNotExistError)
+		}
 		return nil, maskAny(err)
 	}
 
@@ -29,7 +36,7 @@ func readUnitFiles(fs afero.Afero, dir string) (map[string]string, error) {
 			continue
 		}
 
-		raw, err := fs.ReadFile(filepath.Join(dir, fileInfo.Name()))
+		raw, err := ioutil.ReadFile(filepath.Join(dir, fileInfo.Name()))
 		if err != nil {
 			return nil, maskAny(err)
 		}
@@ -42,8 +49,8 @@ func readUnitFiles(fs afero.Afero, dir string) (map[string]string, error) {
 
 // extendRequestWithContent reads all unitfiles for the given group and returns
 // a new Request with the Units filled.
-func extendRequestWithContent(fs afero.Afero, req controller.Request) (controller.Request, error) {
-	unitFiles, err := readUnitFiles(fs, req.Group)
+func extendRequestWithContent(req controller.Request) (controller.Request, error) {
+	unitFiles, err := readUnitFiles(req.Group)
 	if err != nil {
 		return controller.Request{}, maskAny(err)
 	}

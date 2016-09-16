@@ -59,7 +59,7 @@ func validateRun(cmd *cobra.Command, args []string) {
 		newRequestConfig.Group = group
 		request := controller.NewRequest(newRequestConfig)
 
-		request, err := extendRequestWithContent(fs, request)
+		request, err := extendRequestWithContent(request)
 		if err != nil {
 			newLogger.Error(newCtx, "%#v", maskAny(err))
 			os.Exit(1)

@@ -43,13 +43,6 @@ clean:
 	@builder get dep -b 56b76bdf51f7708750eac80fa38b952bb9f32639 https://github.com/mattn/go-isatty.git $(GOPATH)/src/github.com/mattn/go-isatty
 	@builder get dep -b e7da8edaa52631091740908acaf2c2d4c9b3ce90 https://github.com/golang/net.git $(GOPATH)/src/golang.org/x/net
 	@builder get dep -b d2e44aa77b7195c0ef782189985dd8550e22e4de https://github.com/op/go-logging.git $(GOPATH)/src/github.com/op/go-logging
-	# afero deps
-	@builder get dep -b 20500e2abd0d1f4564a499e83d11d6c73cd58c27 https://github.com/spf13/afero.git $(GOPATH)/src/github.com/spf13/afero
-	@builder get dep -b 2788f0dbd16903de03cb8186e5c7d97b69ad387b https://github.com/kr/fs.git $(GOPATH)/src/github.com/kr/fs
-	@builder get dep -b 17b591df37844cde689f4d5813e5cea0927d8dd2 https://github.com/pkg/errors.git $(GOPATH)/src/github.com/pkg/errors
-	@builder get dep -b 8197a2e580736b78d704be0fc47b2324c0591a32 https://github.com/pkg/sftp.git $(GOPATH)/src/github.com/pkg/sftp
-	@builder get dep -b aa2481cbfe81d911eb62b642b7a6b5ec58bbea71 https://github.com/golang/crypto.git $(GOPATH)/src/golang.org/x/crypto
-	@builder get dep -b 1e65e9bf72c307081cea196f47ef37aed17eb316 https://github.com/golang/text.git $(GOPATH)/src/golang.org/x/text
 
 	@builder get dep https://github.com/onsi/gomega.git $(GOPATH)/src/github.com/onsi/gomega
 	@builder get dep -b v2 https://github.com/go-yaml/yaml $(GOPATH)/src/gopkg.in/yaml.v2

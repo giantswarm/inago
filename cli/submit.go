@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
@@ -42,7 +41,7 @@ func submitRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	req, err := createSubmitRequest(fs, group, scale)
+	req, err := createSubmitRequest(group, scale)
 	if err != nil {
 		newLogger.Error(newCtx, "%#v", maskAny(err))
 		os.Exit(1)
@@ -63,12 +62,12 @@ func submitRun(cmd *cobra.Command, args []string) {
 	})
 }
 
-func createSubmitRequest(fs afero.Afero, group string, scale int) (controller.Request, error) {
+func createSubmitRequest(group string, scale int) (controller.Request, error) {
 	newRequestConfig := controller.DefaultRequestConfig()
 	newRequestConfig.Group = group
 
 	req := controller.NewRequest(newRequestConfig)
-	req, err := extendRequestWithContent(fs, req)
+	req, err := extendRequestWithContent(req)
 	if err != nil {
 		return controller.Request{}, err
 	}

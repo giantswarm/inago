@@ -1,34 +1,24 @@
 package cli
 
 import (
+	"io/ioutil"
 	"os"
 	"testing"
 
 	. "github.com/onsi/gomega"
-	"github.com/spf13/afero"
 )
-
-func givenFileSystemWithSingleUnitGroup(name string) afero.Afero {
-	fs := afero.Afero{Fs: afero.NewMemMapFs()}
-	fs.WriteFile(name+"/"+name+"-1.service", []byte(`some content`), os.FileMode(0644))
-	return fs
-}
-func givenFileSystemWithSliceableUnitGroup(name string) afero.Afero {
-	fs := afero.Afero{Fs: afero.NewMemMapFs()}
-	fs.WriteFile(name+"/"+name+"-1@.service", []byte(`some content`), os.FileMode(0644))
-	return fs
-}
 
 func TestCreateSubmitRequest_NoSlices(t *testing.T) {
 	RegisterTestingT(t)
 
-	groupname := "foo"
-	fs := givenFileSystemWithSingleUnitGroup(groupname)
+	group := tempDir(t)
+	defer os.RemoveAll(group)
+	writeFile(t, group+"/"+group+"-1.service", "some content")
 	scale := 1
 
-	req, err := createSubmitRequest(fs, groupname, scale)
+	req, err := createSubmitRequest(group, scale)
 	Expect(err).To(BeNil())
-	Expect(req.Group).To(Equal(groupname))
+	Expect(req.Group).To(Equal(group))
 	Expect(req.DesiredSlices).To(Equal(1))
 	Expect(req.SliceIDs).To(BeNil())
 }
@@ -36,26 +26,40 @@ func TestCreateSubmitRequest_NoSlices(t *testing.T) {
 func TestCreateSubmitRequest_NoSlices_InvalidScale(t *testing.T) {
 	RegisterTestingT(t)
 
-	groupname := "foo"
-	fs := givenFileSystemWithSingleUnitGroup(groupname)
+	group := tempDir(t)
+	defer os.RemoveAll(group)
+	writeFile(t, group+"/"+group+"-1.service", "some content")
 	scale := 3
 
-	_, err := createSubmitRequest(fs, groupname, scale)
+	_, err := createSubmitRequest(group, scale)
 	Expect(err).To(Not(BeNil()))
-
 }
 
 func TestCreateSubmitRequest_WithSlices(t *testing.T) {
 	RegisterTestingT(t)
 
-	groupname := "foo"
-	fs := givenFileSystemWithSliceableUnitGroup(groupname)
-
+	group := tempDir(t)
+	defer os.RemoveAll(group)
+	writeFile(t, group+"/"+group+"-1@.service", "some content")
 	scale := 3
 
-	req, err := createSubmitRequest(fs, groupname, scale)
+	req, err := createSubmitRequest(group, scale)
 	Expect(err).To(BeNil())
-	Expect(req.Group).To(Equal(groupname))
+	Expect(req.Group).To(Equal(group))
 	Expect(req.DesiredSlices).To(Equal(3))
 	Expect(len(req.SliceIDs)).To(Equal(0))
+}
+
+func tempDir(t *testing.T) string {
+	name, err := ioutil.TempDir(".", "tmp-test-")
+	if err != nil {
+		t.Fatalf("unexpected TempDir error = %v", err)
+	}
+	return name
+}
+
+func writeFile(t *testing.T, path, content string) {
+	if err := ioutil.WriteFile(path, []byte(content), os.FileMode(0664)); err != nil {
+		t.Fatalf("unexpected WriteFile error = %v", err)
+	}
 }

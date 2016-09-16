@@ -46,7 +46,7 @@ func updateRun(cmd *cobra.Command, args []string) {
 	newRequestConfig.Group = group
 	req := controller.NewRequest(newRequestConfig)
 
-	req, err := extendRequestWithContent(fs, req)
+	req, err := extendRequestWithContent(req)
 	handleUpdateCmdError(err)
 	req, err = newController.ExtendWithExistingSliceIDs(req)
 	handleUpdateCmdError(err)

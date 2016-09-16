@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"golang.org/x/net/context"
 
@@ -29,7 +28,6 @@ var (
 		SSHKnownHostsFile        string
 	}
 
-	fs             afero.Afero
 	newLogger      logging.Logger
 	newFleet       fleet.Fleet
 	newTaskService task.Service
@@ -46,8 +44,6 @@ var (
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			// This callback is executed after flags are parsed and before any
 			// command runs.
-			fs = afero.Afero{Fs: afero.NewOsFs()}
-
 			loggingConfig := logging.DefaultConfig()
 			if globalFlags.Verbose {
 				loggingConfig.LogLevel = "DEBUG"
