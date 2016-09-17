@@ -57,7 +57,7 @@ func TestCreateSubmitRequest(t *testing.T) {
 	defer cleanDir()
 
 	for i, tt := range tests {
-		prepareDir(t, i+1, tt.Group, tt.Files)
+		prepareDir(t, i, tt.Group, tt.Files)
 		req, err := createSubmitRequest(tt.Group, tt.Scale)
 
 		if !reflect.DeepEqual(errgo.Cause(err), tt.Error) {

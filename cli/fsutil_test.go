@@ -13,7 +13,7 @@ import (
 func chdirTmp(t *testing.T) (clean func()) {
 	tmpdir, err := ioutil.TempDir(".", "tmp-test-")
 	if err != nil {
-		t.Fatalf("expected nil, got %v", err)
+		t.Fatalf("unexpected TempDir error = %v", err)
 	}
 	defer func() {
 		if t.Failed() {
@@ -21,7 +21,7 @@ func chdirTmp(t *testing.T) (clean func()) {
 		}
 	}()
 	if err := os.Chdir(tmpdir); err != nil {
-		t.Fatalf("expected nil, got %v", err)
+		t.Fatalf("unexpected Chdir error = %v", err)
 	}
 	return func() {
 		os.Chdir("..")
@@ -33,7 +33,7 @@ func chdirTmp(t *testing.T) (clean func()) {
 func prepareDir(t *testing.T, index int, group string, files []fileDesc) {
 	// Create group directory.
 	if err := os.Mkdir(group, os.FileMode(0755)); err != nil && group != "" {
-		t.Fatalf("case %d: expected nil, got %v", index, err)
+		t.Fatalf("#%d: unexpected Mkdir error = %v", index, err)
 	}
 	// Create directories and file for each file's path.
 	for _, f := range files {
@@ -42,12 +42,12 @@ func prepareDir(t *testing.T, index int, group string, files []fileDesc) {
 		for _, dir := range parts[:len(parts)-1] {
 			path = path + "/" + dir
 			if err := os.Mkdir(path, os.FileMode(0755)); err != nil && !os.IsExist(err) {
-				t.Fatalf("case %d: expected nil, got %v", index, err)
+				t.Fatalf("#%d: unexpected Mkdir error = %v", index, err)
 			}
 		}
 		err := ioutil.WriteFile(f.Path, []byte(f.Content), os.FileMode(0644))
 		if err != nil {
-			t.Fatalf("case %d: expected nil, got %v", index, err)
+			t.Fatalf("#%d: unexpected WriteFile error = %v", index, err)
 		}
 	}
 }

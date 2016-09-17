@@ -73,7 +73,7 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 	defer cleanDir()
 
 	for i, testCase := range testCases {
-		prepareDir(t, i+1, testCase.Group, testCase.Files)
+		prepareDir(t, i, testCase.Group, testCase.Files)
 		req := controller.NewRequest(controller.RequestConfig{Group: testCase.Group})
 		req, err := extendRequestWithContent(req)
 
