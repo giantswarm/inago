@@ -5,10 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/juju/errgo"
 	"github.com/spf13/cobra"
 
 	"github.com/giantswarm/inago/controller"
-	"github.com/juju/errgo"
 )
 
 var (
@@ -19,6 +19,8 @@ var (
 		Run:   submitRun,
 	}
 )
+
+var invalidScaleError = errgo.New("invalid scale: must be 1 for unscalable groups")
 
 func submitRun(cmd *cobra.Command, args []string) {
 	newLogger.Debug(newCtx, "cli: starting submit")
@@ -76,7 +78,7 @@ func createSubmitRequest(group string, scale int) (controller.Request, error) {
 		req.DesiredSlices = scale
 	} else {
 		if scale != 1 {
-			return controller.Request{}, errgo.Newf("invalid scale: must be 1 for unscalable groups")
+			return controller.Request{}, invalidScaleError
 		}
 		req.DesiredSlices = 1
 	}
