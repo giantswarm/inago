@@ -1,55 +1,47 @@
 package cli
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
-	"github.com/giantswarm/inago/controller"
 	"github.com/juju/errgo"
 )
 
 func TestCreateSubmitRequest(t *testing.T) {
 	tests := []struct {
-		Group         string
+		GroupDir      string
 		Scale         int
 		Files         []fileDesc
-		DesiredSlices int
-		Units         []controller.Unit
 		Error         error
+		DesiredSlices int
 	}{
 		{
-			Group:         "g1",
-			Scale:         1,
-			DesiredSlices: 1,
+			GroupDir: "g1",
+			Scale:    1,
 			Files: []fileDesc{
 				{Path: "g1/g1-1.service", Content: "unit1"},
 			},
-			Units: []controller.Unit{
-				{Name: "g1-1.service", Content: "unit1"},
-			},
-			Error: nil,
+			Error:         nil,
+			DesiredSlices: 1,
 		},
 		{
-			Group:         "g2",
-			Scale:         3,
-			DesiredSlices: 0,
+			GroupDir: "g2",
+			Scale:    3,
 			Files: []fileDesc{
 				{Path: "g2/g2-1.service", Content: "unit1"},
 			},
-			Units: []controller.Unit{},
-			Error: invalidScaleError,
+			Error:         invalidScaleError,
+			DesiredSlices: 0,
 		},
 		{
-			Group:         "g3",
-			Scale:         3,
-			DesiredSlices: 3,
+			GroupDir: "g3",
+			Scale:    3,
 			Files: []fileDesc{
 				{Path: "g3/g3-1@.service", Content: "unit1"},
 			},
-			Units: []controller.Unit{
-				{Name: "g3-1@.service", Content: "unit1"},
-			},
-			Error: nil,
+			Error:         nil,
+			DesiredSlices: 3,
 		},
 	}
 
@@ -57,8 +49,8 @@ func TestCreateSubmitRequest(t *testing.T) {
 	defer cleanDir()
 
 	for i, tt := range tests {
-		prepareDir(t, i, tt.Group, tt.Files)
-		req, err := createSubmitRequest(tt.Group, tt.Scale)
+		prepareDir(t, i, filepath.Clean(tt.GroupDir), tt.Files)
+		req, err := createSubmitRequest(tt.GroupDir, tt.Scale)
 
 		if !reflect.DeepEqual(errgo.Cause(err), tt.Error) {
 			t.Errorf("#%d: unexpected error = %v", i, err)
@@ -66,15 +58,11 @@ func TestCreateSubmitRequest(t *testing.T) {
 		if tt.Error != nil {
 			continue
 		}
-		if req.Group != tt.Group {
-			t.Errorf("#%d: Group = %s, want %s", i, req.Group, tt.Group)
-		}
 		if req.DesiredSlices != tt.DesiredSlices {
 			t.Errorf("#%d: DesiredSlices = %d, want %d", i, req.DesiredSlices, tt.DesiredSlices)
 		}
-		wsliceIDs := []string(nil)
-		if !reflect.DeepEqual(req.SliceIDs, wsliceIDs) {
-			t.Errorf("#%d: SliceIDs = %v, want %v", i, req.SliceIDs, wsliceIDs)
+		if req.SliceIDs != nil {
+			t.Errorf("#%d: SliceIDs = %v, want nil", i, req.SliceIDs)
 		}
 	}
 }

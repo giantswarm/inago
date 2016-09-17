@@ -32,21 +32,17 @@ func chdirTmp(t *testing.T) (clean func()) {
 // prepareDir creates the group directory and files described by files argument.
 func prepareDir(t *testing.T, index int, group string, files []fileDesc) {
 	// Create group directory.
-	if err := os.Mkdir(group, os.FileMode(0755)); err != nil && group != "" {
+	if err := os.MkdirAll(group, os.FileMode(0755)); err != nil && group != "" {
 		t.Fatalf("#%d: unexpected Mkdir error = %v", index, err)
 	}
 	// Create directories and file for each file's path.
 	for _, f := range files {
-		parts := strings.Split(f.Path, "/")
-		path := "."
-		for _, dir := range parts[:len(parts)-1] {
-			path = path + "/" + dir
-			if err := os.Mkdir(path, os.FileMode(0755)); err != nil && !os.IsExist(err) {
-				t.Fatalf("#%d: unexpected Mkdir error = %v", index, err)
+		if i := strings.LastIndex(f.Path, "/"); i > 0 {
+			if err := os.MkdirAll(f.Path[:i], os.FileMode(0755)); err != nil && !os.IsExist(err) {
+				t.Fatalf("#%d: unexpected MkdirAll error = %v", index, err)
 			}
 		}
-		err := ioutil.WriteFile(f.Path, []byte(f.Content), os.FileMode(0644))
-		if err != nil {
+		if err := ioutil.WriteFile(f.Path, []byte(f.Content), os.FileMode(0644)); err != nil {
 			t.Fatalf("#%d: unexpected WriteFile error = %v", index, err)
 		}
 	}

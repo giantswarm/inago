@@ -17,7 +17,7 @@ var (
 	}
 
 	updateCmd = &cobra.Command{
-		Use:   "update <group>",
+		Use:   "update <directory>",
 		Short: "Update a group",
 		Long:  "Update a group to the latest version on the local filesystem",
 		Run:   updateRun,
@@ -42,11 +42,7 @@ func updateRun(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	newRequestConfig := controller.DefaultRequestConfig()
-	newRequestConfig.Group = group
-	req := controller.NewRequest(newRequestConfig)
-
-	req, err := extendRequestWithContent(req)
+	req, err := newRequestWithUnits(group)
 	handleUpdateCmdError(err)
 	req, err = newController.ExtendWithExistingSliceIDs(req)
 	handleUpdateCmdError(err)

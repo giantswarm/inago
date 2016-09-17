@@ -13,7 +13,7 @@ import (
 
 var (
 	submitCmd = &cobra.Command{
-		Use:   "submit <group> [scale]",
+		Use:   "submit <directory> [scale]",
 		Short: "Submit a group",
 		Long:  "Submit a group to the cluster, with an optional scale",
 		Run:   submitRun,
@@ -65,15 +65,10 @@ func submitRun(cmd *cobra.Command, args []string) {
 }
 
 func createSubmitRequest(group string, scale int) (controller.Request, error) {
-	newRequestConfig := controller.DefaultRequestConfig()
-	newRequestConfig.Group = group
-
-	req := controller.NewRequest(newRequestConfig)
-	req, err := extendRequestWithContent(req)
+	req, err := newRequestWithUnits(group)
 	if err != nil {
-		return controller.Request{}, err
+		return controller.Request{}, maskAny(err)
 	}
-
 	if strings.Contains(req.Units[0].Name, "@") {
 		req.DesiredSlices = scale
 	} else {

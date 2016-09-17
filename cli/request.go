@@ -16,53 +16,22 @@ var (
 	noUnitFilesError   = errgo.New("no unit files")
 )
 
-// readUnitFiles reads the given dir and returns a map of filename => filecontent.
-// If any read operation fails, the error is immediately returned.
-func readUnitFiles(dir string) (map[string]string, error) {
-	fileInfos, err := ioutil.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, maskAny(groupNotExistError)
-		}
-		return nil, maskAny(err)
-	}
-
-	unitFiles := map[string]string{}
-	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-			continue
-		}
-		if !strings.HasPrefix(fileInfo.Name(), dir) {
-			continue
-		}
-
-		raw, err := ioutil.ReadFile(filepath.Join(dir, fileInfo.Name()))
-		if err != nil {
-			return nil, maskAny(err)
-		}
-
-		unitFiles[fileInfo.Name()] = string(raw)
-	}
-
-	return unitFiles, nil
-}
-
-// extendRequestWithContent reads all unitfiles for the given group and returns
-// a new Request with the Units filled.
-func extendRequestWithContent(req controller.Request) (controller.Request, error) {
-	unitFiles, err := readUnitFiles(req.Group)
+// newRequestWithUnits reads the group directory's path for unit files and returns a copy of
+// request filled with units and the group name set. The group name is the name of the gorup
+// directory. An unit file is read only when it is not a directory and its name is prefixed
+// with the group's name.
+func newRequestWithUnits(groupdir string) (controller.Request, error) {
+	var group string
+	abs, err := filepath.Abs(groupdir)
 	if err != nil {
 		return controller.Request{}, maskAny(err)
 	}
-	for name, content := range unitFiles {
-		req.Units = append(req.Units, controller.Unit{Name: name, Content: content})
-	}
+	group = filepath.Base(abs)
 
-	if len(req.Units) == 0 {
-		return controller.Request{}, noUnitFilesError
-	}
-
-	return req, nil
+	config := controller.DefaultRequestConfig()
+	config.Group = group
+	req := controller.NewRequest(config)
+	return filledWithUnits(req, abs, group)
 }
 
 // parseGroupCLIArgs parses the given group arguments into a group and the
@@ -85,4 +54,32 @@ func parseGroupCLIArgs(args []string) (string, []string, error) {
 	}
 
 	return group, sliceIDs, nil
+}
+
+func filledWithUnits(req controller.Request, dir, group string) (controller.Request, error) {
+	finfos, err := ioutil.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return controller.Request{}, maskAny(groupNotExistError)
+		}
+		return controller.Request{}, maskAny(err)
+	}
+	if len(finfos) == 0 {
+		return controller.Request{}, noUnitFilesError
+	}
+	req.Units = make([]controller.Unit, 0, 1)
+	for _, f := range finfos {
+		if f.IsDir() {
+			continue
+		}
+		if !strings.HasPrefix(f.Name(), group) {
+			continue
+		}
+		raw, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
+		if err != nil {
+			return controller.Request{}, maskAny(err)
+		}
+		req.Units = append(req.Units, controller.Unit{Name: f.Name(), Content: string(raw)})
+	}
+	return req, nil
 }

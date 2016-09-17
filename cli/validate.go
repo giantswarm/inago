@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"sort"
-	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -24,42 +23,27 @@ var (
 func validateRun(cmd *cobra.Command, args []string) {
 	groups := args
 
+	requests := []controller.Request{}
+
 	// If no groups are specified, assume all directories in current
 	// directory are groups to be checked.
-	if len(args) == 0 {
+	if len(groups) == 0 {
 		files, err := ioutil.ReadDir(".")
 		if err != nil {
 			newLogger.Error(newCtx, "%#v", maskAny(err))
 			os.Exit(1)
 		}
-
-		for _, file := range files {
-			if file.IsDir() && !strings.HasPrefix(file.Name(), ".") {
-				// If the directory is empty, don't validate it
-				subfiles, err := ioutil.ReadDir(file.Name())
-				if err != nil {
-					newLogger.Error(newCtx, "%#v", maskAny(err))
-					os.Exit(1)
-				}
-				if len(subfiles) == 0 {
-					continue
-				}
-				// The directory contains files, add it to the list of groups
-				// that should be validated
-				groups = append(groups, file.Name())
+		sort.Sort(fileInfoSlice(files))
+		for _, f := range files {
+			if r, err := newRequestWithUnits(f.Name()); err == nil {
+				requests = append(requests, r)
 			}
 		}
 	}
 
 	sort.Strings(groups)
-
-	requests := []controller.Request{}
 	for _, group := range groups {
-		newRequestConfig := controller.DefaultRequestConfig()
-		newRequestConfig.Group = group
-		request := controller.NewRequest(newRequestConfig)
-
-		request, err := extendRequestWithContent(request)
+		request, err := newRequestWithUnits(group)
 		if err != nil {
 			newLogger.Error(newCtx, "%#v", maskAny(err))
 			os.Exit(1)
@@ -85,3 +69,9 @@ func validateRun(cmd *cobra.Command, args []string) {
 		fmt.Printf("Groups are not valid globally: %v\n", FormatValidationError(validationErr))
 	}
 }
+
+type fileInfoSlice []os.FileInfo
+
+func (p fileInfoSlice) Len() int           { return len(p) }
+func (p fileInfoSlice) Less(i, j int) bool { return p[i].Name() < p[j].Name() }
+func (p fileInfoSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }

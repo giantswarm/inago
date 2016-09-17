@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -14,86 +15,89 @@ type fileDesc struct {
 	Content string
 }
 
-func Test_Request_ExtendWithContent(t *testing.T) {
-	testCases := []struct {
-		Group string
-		Files []fileDesc
-		Units []controller.Unit
-		Error error
+func TestNewRequestWithUnits(t *testing.T) {
+	tests := []struct {
+		GroupDir string
+		Files    []fileDesc
+		Error    error
+		Group    string
+		Units    []controller.Unit
 	}{
-		// This test ensures that loading a single unit from a directory results in
-		// the expected controller request.
 		{
-			Group: "dirname",
+			GroupDir: "g1",
 			Files: []fileDesc{
-				{Path: "dirname/dirname_unit.service", Content: "unit1"},
-			},
-			Units: []controller.Unit{
-				{Name: "dirname_unit.service", Content: "unit1"},
+				{Path: "g1/g1-1.service", Content: "unit1"},
 			},
 			Error: nil,
-		},
-
-		// This test ensures that noUnitFilesError is returned for empty gorup.
-		{
-			Group: "",
-			Files: []fileDesc{},
-			Units: []controller.Unit{},
-			Error: groupNotExistError,
-		},
-
-		// This test ensures that trying to load unit files when no files are in
-		// the file system throws an error.
-		{
-			Group: "g2",
-			Files: []fileDesc{},
-			Units: []controller.Unit{},
-			Error: noUnitFilesError,
-		},
-
-		// This test ensures that: all directories inside a group directory are ignored;
-		// regular files inside group directory not prefixed with group name are ignored.
-		{
-			Group: "groupname",
-			Files: []fileDesc{
-				{Path: "groupname/gorupname-dir/REAMDE.md", Content: "DO NOT READ ME"},
-				{Path: "groupname/badprefix-1.service", Content: "DO NOT READ ME"},
-				{Path: "groupname/groupname-1.service", Content: "unit1"},
-				{Path: "groupname/groupname-2.service", Content: "unit2"},
-			},
+			Group: "g1",
 			Units: []controller.Unit{
-				{Name: "groupname-1.service", Content: "unit1"},
-				{Name: "groupname-2.service", Content: "unit2"},
+				{Name: "g1-1.service", Content: "unit1"},
+			},
+		},
+		{
+			GroupDir: "g2",
+			Files:    []fileDesc{},
+			Error:    noUnitFilesError,
+			Group:    "g_ignore",
+			Units:    []controller.Unit{},
+		},
+		{
+			GroupDir: "g3",
+			Files: []fileDesc{
+				{Path: "g3/g3-dir/g3-1.service", Content: "DO NOT READ ME"},
+				{Path: "g3/badprefix-1.service", Content: "DO NOT READ ME"},
+				{Path: "g3/g3-1.service", Content: "unit1"},
+				{Path: "g3/g3-2.service", Content: "unit2"},
 			},
 			Error: nil,
+			Group: "g3",
+			Units: []controller.Unit{
+				{Name: "g3-1.service", Content: "unit1"},
+				{Name: "g3-2.service", Content: "unit2"},
+			},
+		},
+		{
+			GroupDir: "a/g4",
+			Files: []fileDesc{
+				{Path: "a/g4/g4-1.service", Content: "unit1"},
+			},
+			Error: nil,
+			Group: "g4",
+			Units: []controller.Unit{
+				{Name: "g4-1.service", Content: "unit1"},
+			},
+		},
+		{
+			GroupDir: "././/a/b/c/../c/g5/d/..",
+			Files: []fileDesc{
+				{Path: "a/b/c/g5/g5-1.service", Content: "unit1"},
+			},
+			Error: nil,
+			Group: "g5",
+			Units: []controller.Unit{
+				{Name: "g5-1.service", Content: "unit1"},
+			},
 		},
 	}
 
 	cleanDir := chdirTmp(t)
 	defer cleanDir()
 
-	for i, testCase := range testCases {
-		prepareDir(t, i, testCase.Group, testCase.Files)
-		req := controller.NewRequest(controller.RequestConfig{Group: testCase.Group})
-		req, err := extendRequestWithContent(req)
+	for i, tt := range tests {
+		prepareDir(t, i, filepath.Clean(tt.GroupDir), tt.Files)
+		req, err := newRequestWithUnits(tt.GroupDir)
 
-		if !reflect.DeepEqual(errgo.Cause(err), testCase.Error) {
-			t.Fatalf("case %d: expected %v, got %v", i+1, testCase.Error, errgo.Cause(err))
+		if !reflect.DeepEqual(errgo.Cause(err), tt.Error) {
+			t.Errorf("#%d: unexpected error = %v", i, err)
 		}
-
-		if len(req.Units) != len(testCase.Units) {
-			t.Errorf("case %d: expected %d, got %d", i+1, len(testCase.Units), len(req.Units))
+		if tt.Error != nil {
+			continue
 		}
-		for _, wunit := range testCase.Units {
-			found := false
-			for _, unit := range req.Units {
-				if reflect.DeepEqual(unit, wunit) {
-					found = true
-				}
-			}
-			if !found {
-				t.Errorf("case %d: expected %v, got none", i+1, wunit)
-			}
+		if req.Group != tt.Group {
+			t.Errorf("#%d: Group = %s, want %s", i, req.Group, tt.Group)
+		}
+		if !reflect.DeepEqual(req.Units, tt.Units) {
+			t.Errorf("#%d: Units = %s, want %s", i, req.Units, tt.Units)
 		}
 	}
 }
