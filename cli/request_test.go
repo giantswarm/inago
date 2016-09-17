@@ -78,6 +78,17 @@ func TestNewRequestWithUnits(t *testing.T) {
 				{Name: "g5-1.service", Content: "unit1"},
 			},
 		},
+		{
+			GroupDir: "a/g6//",
+			Files: []fileDesc{
+				{Path: "a/g6/g6-1.service", Content: "unit1"},
+			},
+			Error: nil,
+			Group: "g6",
+			Units: []controller.Unit{
+				{Name: "g6-1.service", Content: "unit1"},
+			},
+		},
 	}
 
 	cleanDir := chdirTmp(t)
