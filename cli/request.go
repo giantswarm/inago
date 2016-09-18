@@ -21,17 +21,19 @@ var (
 // directory. An unit file is read only when it is not a directory and its name is prefixed
 // with the group's name.
 func newRequestWithUnits(groupdir string) (controller.Request, error) {
-	var group string
-	abs, err := filepath.Abs(groupdir)
+	group, err := base(groupdir)
 	if err != nil {
 		return controller.Request{}, maskAny(err)
 	}
-	group = filepath.Base(abs)
-
+	units, err := readUnits(filepath.Clean(groupdir), group)
+	if err != nil {
+		return controller.Request{}, maskAny(err)
+	}
 	config := controller.DefaultRequestConfig()
 	config.Group = group
 	req := controller.NewRequest(config)
-	return filledWithUnits(req, abs, group)
+	req.Units = units
+	return req, nil
 }
 
 // parseGroupCLIArgs parses the given group arguments into a group and the
@@ -56,18 +58,26 @@ func parseGroupCLIArgs(args []string) (string, []string, error) {
 	return group, sliceIDs, nil
 }
 
-func filledWithUnits(req controller.Request, dir, group string) (controller.Request, error) {
+// base returns the last element of an absolute representation of path.
+func base(path string) (string, error) {
+	abs, err := filepath.Abs(path)
+	return filepath.Base(abs), err
+}
+
+// readUnits read unit files form a given directory ensuring that there is at least one unit file.
+// Unit file names are required to be prefixed by the group name.
+func readUnits(dir, group string) ([]controller.Unit, error) {
 	finfos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return controller.Request{}, maskAny(groupNotExistError)
+			return nil, maskAny(groupNotExistError)
 		}
-		return controller.Request{}, maskAny(err)
+		return nil, maskAny(err)
 	}
 	if len(finfos) == 0 {
-		return controller.Request{}, noUnitFilesError
+		return nil, noUnitFilesError
 	}
-	req.Units = make([]controller.Unit, 0, 1)
+	units := make([]controller.Unit, 0, 1)
 	for _, f := range finfos {
 		if f.IsDir() {
 			continue
@@ -77,9 +87,9 @@ func filledWithUnits(req controller.Request, dir, group string) (controller.Requ
 		}
 		raw, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
 		if err != nil {
-			return controller.Request{}, maskAny(err)
+			return nil, maskAny(err)
 		}
-		req.Units = append(req.Units, controller.Unit{Name: f.Name(), Content: string(raw)})
+		units = append(units, controller.Unit{Name: f.Name(), Content: string(raw)})
 	}
-	return req, nil
+	return units, nil
 }
