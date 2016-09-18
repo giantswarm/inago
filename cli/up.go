@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
@@ -14,13 +16,11 @@ var (
 )
 
 func upRun(cmd *cobra.Command, args []string) {
-	submitRun(cmd, args)
-
-	// If a scale argument has been passed to submit,
-	// remove it from the args list, as start doesn't want it.
-	if len(args) > 1 {
-		args = args[:1]
+	group, err := base(args[0])
+	if err != nil {
+		newLogger.Error(newCtx, "%#v\n", maskAny(err))
+		os.Exit(1)
 	}
-
-	startRun(cmd, args)
+	submitRun(cmd, args)
+	startRun(cmd, []string{group})
 }
