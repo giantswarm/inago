@@ -60,6 +60,7 @@ def cleanup_fleet():
 def run_int_test():
     """ Run the integration test. """
 
+    build_directory = ''
     try:
         build_directory = create_build_directory()
 
@@ -67,4 +68,5 @@ def run_int_test():
         upload_binary_and_tests(build_directory)
         run_cram_container(build_directory)
     finally:
-        remove_build_directory(build_directory)
+        if build_directory:
+            remove_build_directory(build_directory)
