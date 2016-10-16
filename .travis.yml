@@ -10,7 +10,8 @@ env:
         - BUILDER_VERSION=0.11.0
     matrix:
         - TEST_SUITE=unit
-        - TEST_SUITE=integration
+        # We no longer run an integration test machine (16/10/16)
+        # - TEST_SUITE=integration
 
 cache:
     directories:

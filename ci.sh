@@ -2,7 +2,7 @@
 set -e
 
 if [ $TEST_SUITE == "unit" ]; then
-    make lint
+    # make lint
     make ci-test
     make ci-build
     ./inagoctl
