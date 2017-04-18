@@ -46,7 +46,7 @@ And we're done!
 
 ## Testing your Kubernetes cluster
 
-You can check if your cluster is running with [`kubectl`](https://coreos.com/kubernetes/docs/latest/configure-kubectl.html):
+You can check if your cluster is running with [`kubectl`](https://coreos.com/kubernetes/docs/latest/configure-kubectl.html).  If you download the statically compiled version directly from kubernetes you will need to symlink the hosts file into /etc with `sudo ln -s /usr/share/baselayout/hosts /etc/hosts`:
 
 ```
 $ kubectl cluster-info
