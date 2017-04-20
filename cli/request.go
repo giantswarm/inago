@@ -10,6 +10,8 @@ import (
 	"github.com/giantswarm/inago/controller"
 )
 
+var noUnitFilesError = errgo.New("no unit files")
+
 // readUnitFiles reads the given dir and returns a map of filename => filecontent.
 // If any read operation fails, the error is immediately returned.
 func readUnitFiles(fs afero.Afero, dir string) (map[string]string, error) {
@@ -50,7 +52,7 @@ func extendRequestWithContent(fs afero.Afero, req controller.Request) (controlle
 	}
 
 	if len(req.Units) == 0 {
-		return controller.Request{}, errgo.Newf("No unit files found for group '%s'", req.Group)
+		return controller.Request{}, noUnitFilesError
 	}
 
 	return req, nil

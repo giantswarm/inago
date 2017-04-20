@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/juju/errgo"
 	"github.com/spf13/afero"
 
 	"github.com/giantswarm/inago/controller"
@@ -27,10 +28,10 @@ type testFileSystemSetup struct {
 
 func Test_Request_ExtendWithContent(t *testing.T) {
 	testCases := []struct {
-		Setup    []testFileSystemSetup
-		Error    error
-		Input    controller.Request
-		Expected controller.Request
+		Setup []testFileSystemSetup
+		Error error
+		Group string
+		Units []controller.Unit
 	}{
 		// This test ensures that loading a single unit from a directory results in
 		// the expected controller request.
@@ -43,32 +44,21 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 				},
 			},
 			Error: nil,
-			Input: controller.Request{
-				RequestConfig: controller.RequestConfig{
-					Group:    "dirname",
-					SliceIDs: []string{},
-				},
-			},
-			Expected: controller.Request{
-				RequestConfig: controller.RequestConfig{
-					SliceIDs: []string{},
-				},
-				Units: []controller.Unit{
-					{
-						Name:    "dirname_unit.service",
-						Content: givenSomeUnitFileContent(),
-					},
+			Group: "dirname",
+			Units: []controller.Unit{
+				{
+					Name:    "dirname_unit.service",
+					Content: givenSomeUnitFileContent(),
 				},
 			},
 		},
 
-		// This test ensures that extending an empty request does not inject
-		// unwanted files.
+		// This test ensures that noUnitFilesError is returned for empty gorup.
 		{
-			Setup:    []testFileSystemSetup{},
-			Error:    nil,
-			Input:    controller.Request{},
-			Expected: controller.Request{},
+			Setup: []testFileSystemSetup{},
+			Error: noUnitFilesError,
+			Group: "",
+			Units: []controller.Unit{},
 		},
 
 		// This test ensures that trying to load unit files when no files are in
@@ -80,13 +70,8 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 				Path: "dirname",
 				Err:  os.ErrNotExist,
 			},
-			Input: controller.Request{
-				RequestConfig: controller.RequestConfig{
-					Group:    "dirname",
-					SliceIDs: []string{},
-				},
-			},
-			Expected: controller.Request{},
+			Group: "dirname",
+			Units: []controller.Unit{},
 		},
 
 		// This test ensures that folders inside a group folder are ignored
@@ -96,21 +81,15 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 				{FileName: "groupname/groupname-1.service", FileContent: []byte(givenSomeUnitFileContent()), FilePerm: os.FileMode(0644)},
 				{FileName: "groupname/groupname-2.service", FileContent: []byte(givenSomeUnitFileContent()), FilePerm: os.FileMode(0644)},
 			},
-			Input: controller.Request{
-				RequestConfig: controller.RequestConfig{
-					Group: "groupname",
+			Group: "groupname",
+			Units: []controller.Unit{
+				{
+					Name:    "groupname-1.service",
+					Content: givenSomeUnitFileContent(),
 				},
-			},
-			Expected: controller.Request{
-				Units: []controller.Unit{
-					{
-						Name:    "groupname-1.service",
-						Content: givenSomeUnitFileContent(),
-					},
-					{
-						Name:    "groupname-2.service",
-						Content: givenSomeUnitFileContent(),
-					},
+				{
+					Name:    "groupname-2.service",
+					Content: givenSomeUnitFileContent(),
 				},
 			},
 		},
@@ -126,27 +105,25 @@ func Test_Request_ExtendWithContent(t *testing.T) {
 			}
 		}
 
-		output, err := extendRequestWithContent(newFileSystem, testCase.Input)
-		if testCase.Error != nil && err.Error() != testCase.Error.Error() {
-			t.Fatal("case", i+1, "expected", testCase.Error, "got", err)
+		req := controller.NewRequest(controller.RequestConfig{Group: testCase.Group})
+		req, err := extendRequestWithContent(newFileSystem, req)
+
+		if !reflect.DeepEqual(errgo.Cause(err), errgo.Cause(testCase.Error)) {
+			t.Fatalf("case %d: expected %v, got %v", i+1, testCase.Error, err)
 		}
 
-		if len(output.SliceIDs) != len(testCase.Expected.SliceIDs) {
-			t.Fatal("case", i+1, "expected", len(testCase.Expected.SliceIDs), "got", len(output.SliceIDs))
+		if len(req.Units) != len(testCase.Units) {
+			t.Errorf("case %d: expected %d, got %d", i+1, len(testCase.Units), len(req.Units))
 		}
-
-		if len(output.Units) != len(testCase.Expected.Units) {
-			t.Fatalf("case %d: expected %d units in output, got %d", i+1, len(testCase.Expected.Units), len(output.Units))
-		}
-		for _, outputUnit := range testCase.Expected.Units {
+		for _, wunit := range testCase.Units {
 			found := false
-			for _, expectedUnit := range output.Units {
-				if outputUnit.Name == expectedUnit.Name {
+			for _, unit := range req.Units {
+				if unit.Name == wunit.Name {
 					found = true
 				}
 			}
 			if !found {
-				t.Fatalf("case %d: expected %s to be in output, not found", i+1, outputUnit.Name)
+				t.Errorf("case %d: expected %s, got none", i+1, wunit.Name)
 			}
 		}
 	}
