@@ -34,7 +34,7 @@ before_install:
     - cp ./builder-cache/builder-$BUILDER_VERSION ./builder || wget https://downloads.giantswarm.io/builder/$BUILDER_VERSION/builder && chmod +x ./builder
     - chmod +x ./builder
     - export PATH=$PATH:$PWD
-    - go get -u github.com/golang/lint/golint
+    - go get -u golang.org/x/lint/golint
 
 script:
     - ./ci.sh
